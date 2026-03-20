@@ -781,6 +781,58 @@
         font-size: 1.1em;
         margin-bottom: 10px;
       }
+
+      /* Help Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 3000;
+      }
+      .modal-content {
+        background: var(--panel);
+        padding: 25px;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        border: 1px solid #444;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .modal-content h3 {
+        margin-top: 0;
+        color: var(--accent);
+      }
+      .modal-content p,
+      .modal-content li {
+        color: #bdc3c7;
+        line-height: 1.6;
+      }
+      .modal-content code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+      .help-icon {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #555;
+        color: white;
+        text-align: center;
+        line-height: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-left: 10px;
+        font-size: 0.8em;
+      }
     </style>
   </head>
   <body>
@@ -893,10 +945,13 @@
 
       <!-- Scale Calculator -->
       <div class="importer-area">
-        <h2 class="area-title">Scale Calculator</h2>
+        <h2 class="area-title">
+          Scale Calculator
+          <span class="help-icon" onclick="showHelpModal()">?</span>
+        </h2>
         <textarea
           id="chord-importer-textarea"
-          placeholder="| Dm7 G7 | Cmaj7 | Am7 D7 | Gmaj7 |"
+          placeholder="| Dm7 G7 | Cmaj7 | •/• | Am7(b5) D7(b9) | G-7 C7 | Fmaj7 |"
         ></textarea>
         <button
           class="btn-add-step"
@@ -905,6 +960,55 @@
         >
           Import & Calculate Scales
         </button>
+      </div>
+
+      <!-- Help Modal Structure -->
+      <div id="help-modal" class="modal-overlay" onclick="hideHelpModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+          <h3>Scale Calculator Notation</h3>
+          <p>
+            The calculator parses chord progressions and suggests appropriate
+            scales. It understands the following formats:
+          </p>
+          <ul>
+            <li>
+              <strong>Chords:</strong> Standard notation like
+              <code>Cmaj7</code>, <code>G7</code>, <code>Am7</code>,
+              <code>F#m7b5</code>. Flats (<code>Db</code>) and sharps
+              (<code>C#</code>) are both accepted.
+            </li>
+            <li>
+              <strong>Separators:</strong> Use spaces, newlines, or pipe symbols
+              (<code>|</code>) to separate chords.
+            </li>
+            <li>
+              <strong>Alterations:</strong> Specify alterations in parentheses,
+              e.g., <code>G7(b9, #5)</code>. This will often suggest the Altered
+              Scale.
+            </li>
+            <li>
+              <strong>Repeat Signs:</strong> Use <code>•/•</code> or
+              <code>%</code> to repeat the previous measure's chords.
+            </li>
+            <li>
+              <strong>Minor Chords:</strong> Use <code>m</code>, <code>-</code>,
+              or <code>min</code> for minor. E.g., <code>Dm7</code>,
+              <code>D-7</code>.
+            </li>
+            <li>
+              <strong>Diminished:</strong> Use <code>dim</code> or
+              <code>°</code> for diminished. E.g., <code>Ddim7</code>,
+              <code>D°7</code>.
+            </li>
+          </ul>
+          <button
+            class="btn-reset"
+            style="float: right"
+            onclick="hideHelpModal()"
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       <!-- Progression Player Area -->
@@ -1217,14 +1321,26 @@
           const sound = metronomeSamples[soundName];
           if (sound.type === "buffer") {
             if (sound.down && !sound.downBuffer) {
-              const response = await fetch(sound.down);
-              const arrayBuffer = await response.arrayBuffer();
-              sound.downBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+              try {
+                const response = await fetch(sound.down);
+                const arrayBuffer = await response.arrayBuffer();
+                sound.downBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+              } catch (e) {
+                console.warn(
+                  "Audio decode failed for down sample, falling back to osc",
+                  e,
+                );
+                sound.type = "osc";
+              }
             }
             if (sound.up && !sound.upBuffer) {
-              const response = await fetch(sound.up);
-              const arrayBuffer = await response.arrayBuffer();
-              sound.upBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+              try {
+                const response = await fetch(sound.up);
+                const arrayBuffer = await response.arrayBuffer();
+                sound.upBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+              } catch (e) {
+                console.warn("Audio decode failed for up sample", e);
+              }
             }
           }
         }
@@ -1772,6 +1888,14 @@
         document.getElementById("navMenu").classList.toggle("active");
       }
 
+      // --- Help Modal ---
+      function showHelpModal() {
+        document.getElementById("help-modal").style.display = "flex";
+      }
+      function hideHelpModal() {
+        document.getElementById("help-modal").style.display = "none";
+      }
+
       // --- Progression Import/Export ---
       function exportProgressionData() {
         const progression = [];
@@ -1834,46 +1958,99 @@
         // Clear existing steps
         document.getElementById("progression-steps").innerHTML = "";
 
+        // More robust map
         const chordToScaleMap = {
-          maj7: "Ionio (Maj7)",
-          M7: "Ionio (Maj7)",
-          Δ: "Ionio (Maj7)",
-          m7: "Dorico (m7)",
-          "-7": "Dorico (m7)",
-          7: "Misolidio (7)",
-          m7b5: "Minore Melodica",
-          ø: "Minore Melodica", // Locrian #2 is a common choice, which is from Melodic Minor
-          dim7: "Diminuita (T/S)",
-          "°7": "Diminuita (T/S)",
+          // Order matters: more specific first
+          "7(b9,#5)": "Altered (7alt)",
+          "7(b9)": "Altered (7alt)",
+          "7(#9)": "Altered (7alt)",
+          "7(b5)": "Altered (7alt)",
+          "7(#5)": "Esatonale",
           "7alt": "Altered (7alt)",
           alt: "Altered (7alt)",
           "maj7#11": "Lidio (Maj7#11)",
           "7#11": "Lidio Dominante",
+          m7b5: "Minore Melodica", // Locrian #2
+          ø7: "Minore Melodica",
+          dim7: "Diminuita (T/S)",
+          "°7": "Diminuita (T/S)",
+          maj7: "Ionio (Maj7)",
+          M7: "Ionio (Maj7)",
+          Δ7: "Ionio (Maj7)",
+          m7: "Dorico (m7)",
+          "-7": "Dorico (m7)",
+          11: "Misolidio (7)", // F11 is often F7sus4
+          13: "Misolidio (7)",
+          7: "Misolidio (7)",
           m: "Minore Naturale (Aeolian)",
+          maj: "Ionio (Maj7)",
+          "": "Ionio (Maj7)", // Default for plain root (e.g., "C")
         };
 
-        const chords = text.split(/[|\s\n]+/).filter((c) => c.trim() !== "");
+        // Pre-process to handle repeat signs
+        const measures = text
+          .split("|")
+          .map((m) => m.trim())
+          .filter((m) => m);
+        let processedChords = [];
+        let lastMeasureChords = [];
 
-        chords.forEach((chordStr) => {
-          const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/);
+        measures.forEach((measure) => {
+          if (measure === "•/•" || measure === "%") {
+            processedChords.push(...lastMeasureChords);
+          } else {
+            const chordsInMeasure = measure.split(/\s+/).filter((c) => c);
+            processedChords.push(...chordsInMeasure);
+            lastMeasureChords = chordsInMeasure;
+          }
+        });
+
+        processedChords.forEach((chordStr) => {
+          // Regex to capture root, quality, and alterations
+          const match = chordStr
+            .trim()
+            .match(
+              /^([A-G][#b]?)(m|min|maj|M|dim|°|-|ø|Δ)?(\d+|alt)?(\(.*\))?/,
+            );
           if (!match) return;
 
           let root = match[1];
-          // Normalize flats to sharps for consistency with 'notes' array
           const flatMap = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#" };
           if (flatMap[root]) root = flatMap[root];
+          if (!notes.includes(root)) return;
 
-          const quality = match[2].trim();
-          let scaleName = "Misolidio (7)"; // Default for unknown
+          let quality = (match[2] || "") + (match[3] || "");
+          const alterations = match[4] || "";
 
-          // Find best scale match
-          for (const key in chordToScaleMap) {
-            if (quality === key) {
-              scaleName = chordToScaleMap[key];
-              break;
+          // Normalize quality
+          quality = quality
+            .replace("min", "m")
+            .replace("maj", "M")
+            .replace("dim", "°");
+          if (quality.includes("M")) quality = "maj7";
+          if (quality.includes("m") && quality.includes("7")) quality = "m7";
+          if (quality.includes("°") && quality.includes("7")) quality = "°7";
+          if (quality.includes("ø") && quality.includes("7")) quality = "ø7";
+
+          let scaleName = "Misolidio (7)"; // Default
+
+          // Check for alterations first
+          if (
+            alterations.includes("b9") ||
+            alterations.includes("#9") ||
+            alterations.includes("b5") ||
+            alterations.includes("#5")
+          ) {
+            scaleName = "Altered (7alt)";
+          } else {
+            // Find best scale match from map
+            for (const key in chordToScaleMap) {
+              if (quality === key) {
+                scaleName = chordToScaleMap[key];
+                break;
+              }
             }
           }
-          if (!notes.includes(root)) return; // Skip if root is invalid
 
           addProgressionStep({
             root,
