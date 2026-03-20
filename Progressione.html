@@ -560,7 +560,8 @@
       .progression-step select {
         flex-grow: 1;
       }
-      .progression-step .prog-duration-input {
+      .progression-step .prog-duration-input,
+      .progression-step .prog-beats-input {
         width: 60px;
         padding: 8px 12px;
         box-sizing: border-box;
@@ -602,6 +603,28 @@
         gap: 10px;
       }
 
+      /* Volume Slider */
+      input[type="range"] {
+        -webkit-appearance: none;
+        background: transparent;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        margin-top: -6px;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        cursor: pointer;
+        background: #555;
+        border-radius: 2px;
+      }
+
       /* Remove default spinners from inputs */
       input[type="number"]::-webkit-outer-spin-button,
       input[type="number"]::-webkit-inner-spin-button {
@@ -619,7 +642,7 @@
         border: 1px solid #444;
         padding: 8px 12px;
         border-radius: 6px;
-        width: 70px;
+        width: 60px;
         font-weight: bold;
       }
       .btn-add-step {
@@ -704,6 +727,48 @@
         100% {
           box-shadow: 0 0 8px var(--accent);
         }
+      }
+
+      /* Countdown Overlay */
+      .countdown-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        font-size: 10em;
+        font-weight: 900;
+        color: var(--accent);
+        text-shadow: 0 0 30px rgba(241, 196, 15, 0.5);
+      }
+
+      /* Scale Calculator & Importer */
+      .importer-area {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+        box-sizing: border-box;
+        border: 1px solid #333;
+      }
+      #chord-importer-textarea {
+        width: 100%;
+        height: 80px;
+        background: #1e2b38;
+        border: 1px solid #444;
+        border-radius: 6px;
+        color: var(--text);
+        padding: 10px;
+        box-sizing: border-box;
+        font-family: monospace;
+        font-size: 1.1em;
+        margin-bottom: 10px;
       }
     </style>
   </head>
@@ -800,6 +865,8 @@
       </div>
     </nav>
 
+    <div id="countdown-overlay" class="countdown-overlay"></div>
+
     <div class="controls" id="legend"></div>
 
     <div class="viewport">
@@ -811,6 +878,22 @@
           </div>
           <div class="fret-numbers" id="numbers-layer"></div>
         </div>
+      </div>
+
+      <!-- Scale Calculator -->
+      <div class="importer-area">
+        <h2 class="area-title">Scale Calculator</h2>
+        <textarea
+          id="chord-importer-textarea"
+          placeholder="| Dm7 G7 | Cmaj7 | Am7 D7 | Gmaj7 |"
+        ></textarea>
+        <button
+          class="btn-add-step"
+          style="width: 100%"
+          onclick="importProgression()"
+        >
+          Import & Calculate Scales
+        </button>
       </div>
 
       <!-- Progression Player Area -->
@@ -835,13 +918,20 @@
               />
             </div>
             <div class="nav-group">
-              <label for="beats-per-bar-input">Beats/Bar</label>
+              <label for="metro-sound-select">Sound</label>
+              <select id="metro-sound-select" style="width: 110px"></select>
+            </div>
+            <div class="nav-group">
+              <label for="metro-vol">Vol</label>
               <input
-                type="number"
-                id="beats-per-bar-input"
-                value="4"
-                min="1"
-                max="8"
+                type="range"
+                id="metro-vol"
+                min="0"
+                max="1"
+                step="0.1"
+                value="0.5"
+                style="width: 60px; height: 36px"
+                title="Metronome Volume"
               />
             </div>
             <div class="nav-group" style="align-items: center">
@@ -903,6 +993,7 @@
       let audioCtx = null;
       let nextNoteTime = 0.0;
       let stepBeatsRemaining = 0;
+      let currentDenominator = 4;
       let currentBeatInBar = 0;
       let currentProgressionStep = 0;
       let isPlaying = false;
@@ -1016,6 +1107,17 @@
         11: { label: "maj7", color: "#27ae60", short: "maj7" },
       };
 
+      const metronomeSamples = {
+        Beep: { down: null, up: null, type: "osc" },
+        "Wood Block": {
+          down: "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABgAZGF0YQAAAAA=",
+          up: "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABgAZGF0YQAAAAA=",
+          downBuffer: null,
+          upBuffer: null,
+          type: "buffer",
+        },
+      };
+
       function init() {
         const ts = document.getElementById("tuning-select");
         for (let t in tunings) ts.add(new Option(t, t));
@@ -1033,6 +1135,13 @@
                         <div class="swatch" style="background:${intervalColors[int].color}"></div>
                     </div>`;
         });
+
+        const soundSelect = document.getElementById("metro-sound-select");
+        Object.keys(metronomeSamples).forEach((name) =>
+          soundSelect.add(new Option(name, name)),
+        );
+        setupMetronomeSamples();
+
         renderFretboard();
 
         // --- Drag and Drop for Snapshots ---
@@ -1069,6 +1178,26 @@
 
         applyFullScale();
         loadLocalData();
+      }
+
+      async function setupMetronomeSamples() {
+        if (!audioCtx)
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        for (const soundName in metronomeSamples) {
+          const sound = metronomeSamples[soundName];
+          if (sound.type === "buffer") {
+            if (sound.down && !sound.downBuffer) {
+              const response = await fetch(sound.down);
+              const arrayBuffer = await response.arrayBuffer();
+              sound.downBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            }
+            if (sound.up && !sound.upBuffer) {
+              const response = await fetch(sound.up);
+              const arrayBuffer = await response.arrayBuffer();
+              sound.upBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            }
+          }
+        }
       }
 
       function renderFretboard() {
@@ -1384,12 +1513,21 @@
             ${scaleSelectHTML}
             <input type="number" class="prog-duration-input" value="${data ? data.bars : 4}" min="1" title="Duration in bars">
             <span class="bars-label">bars</span>
+            <input type="number" class="prog-beats-input" value="${data && data.beats ? data.beats : 4}" min="1" max="16" title="Beats per bar" style="width:45px; margin-left:5px;">
+            <span class="bars-label" style="margin: 0 -10px 0 -10px;">/</span>
+            <select class="prog-denominator-input" style="width:60px; padding: 8px 4px;">
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="8">8</option>
+            </select>
             <button class="btn-remove-step" onclick="this.closest('.progression-step').remove(); updateProgressionIndices(); saveLocalData();" title="Remove Step">×</button>
         `;
 
         if (data) {
           stepDiv.querySelector("select:nth-of-type(1)").value = data.root;
           stepDiv.querySelector("select:nth-of-type(2)").value = data.scale;
+          stepDiv.querySelector(".prog-denominator-input").value =
+            data.denominator || 4;
         }
 
         stepDiv
@@ -1408,11 +1546,15 @@
         });
       }
 
+      let countdownInterval = null;
+
       function togglePlayProgression() {
         const playBtn = document.getElementById("play-pause-btn");
         if (isPlaying) {
           isPlaying = false;
           if (audioCtx) audioCtx.suspend();
+          if (countdownInterval) clearInterval(countdownInterval);
+          document.getElementById("countdown-overlay").style.display = "none";
           playBtn.innerHTML =
             '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Play Icon
           playBtn.classList.remove("paused");
@@ -1469,8 +1611,9 @@
         const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
 
         while (nextNoteTime < audioCtx.currentTime + lookahead) {
+          const beatDuration = (60.0 / bpm) * (4 / currentDenominator);
           runBeat(nextNoteTime);
-          nextNoteTime += 60.0 / bpm;
+          nextNoteTime += beatDuration;
         }
 
         requestAnimationFrame(scheduler);
@@ -1490,6 +1633,10 @@
             .querySelectorAll(".progression-step.active-step")
             .forEach((el) => el.classList.remove("active-step"));
           const currentStepEl = steps[currentProgressionStep];
+          if (!currentStepEl) {
+            stopProgression();
+            return;
+          }
           currentStepEl.classList.add("active-step");
 
           document.getElementById("root-select").value =
@@ -1503,15 +1650,25 @@
               currentStepEl.querySelector(".prog-duration-input").value,
             ) || 4;
           const beatsPerBar =
-            parseInt(document.getElementById("beats-per-bar-input").value) || 4;
+            parseInt(currentStepEl.querySelector(".prog-beats-input").value) ||
+            4;
+          currentDenominator =
+            parseInt(
+              currentStepEl.querySelector(".prog-denominator-input").value,
+            ) || 4;
           stepBeatsRemaining = durationBars * beatsPerBar;
+
+          // Reset beat counter for new step to ensure downbeat accent
+          currentBeatInBar = 0;
 
           currentProgressionStep++;
         }
 
-        // Play Click
+        // Determine beatsPerBar for current active step to get accent right
+        const activeStep =
+          document.querySelector(".progression-step.active-step") || steps[0];
         const beatsPerBar =
-          parseInt(document.getElementById("beats-per-bar-input").value) || 4;
+          parseInt(activeStep.querySelector(".prog-beats-input").value) || 4;
         const isDownbeat = currentBeatInBar === 0;
 
         if (document.getElementById("metronome-toggle").checked) {
@@ -1523,14 +1680,31 @@
       }
 
       function playClick(time, isDownbeat) {
-        const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        osc.connect(gainNode);
+        const vol = parseFloat(document.getElementById("metro-vol").value);
         gainNode.connect(audioCtx.destination);
-        osc.frequency.value = isDownbeat ? 1000 : 800;
-        gainNode.gain.value = 0.1;
-        osc.start(time);
-        osc.stop(time + 0.05);
+        gainNode.gain.value = vol;
+
+        const soundName = document.getElementById("metro-sound-select").value;
+        const soundSet = metronomeSamples[soundName];
+
+        if (soundSet.type === "osc") {
+          const osc = audioCtx.createOscillator();
+          osc.connect(gainNode);
+          osc.frequency.value = isDownbeat ? 1000 : 800;
+          osc.start(time);
+          osc.stop(time + 0.05);
+        } else {
+          const buffer = isDownbeat ? soundSet.downBuffer : soundSet.upBuffer;
+          if (!buffer) {
+            console.warn("Metronome sample not loaded yet.");
+            return;
+          }
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(gainNode);
+          source.start(time);
+        }
       }
 
       // --- Local Storage ---
@@ -1546,6 +1720,8 @@
             root: step.querySelector("select:nth-of-type(1)").value,
             scale: step.querySelector("select:nth-of-type(2)").value,
             bars: step.querySelector(".prog-duration-input").value,
+            beats: step.querySelector(".prog-beats-input").value,
+            denominator: step.querySelector(".prog-denominator-input").value,
           });
         });
         localStorage.setItem("jazzVizSnapshots", JSON.stringify(snapshots));
@@ -1564,6 +1740,65 @@
 
       function toggleMenu() {
         document.getElementById("navMenu").classList.toggle("active");
+      }
+
+      // --- Scale Calculator ---
+      function importProgression() {
+        const text = document.getElementById("chord-importer-textarea").value;
+        if (!text) return;
+
+        // Clear existing steps
+        document.getElementById("progression-steps").innerHTML = "";
+
+        const chordToScaleMap = {
+          maj7: "Ionio (Maj7)",
+          M7: "Ionio (Maj7)",
+          Δ: "Ionio (Maj7)",
+          m7: "Dorico (m7)",
+          "-7": "Dorico (m7)",
+          7: "Misolidio (7)",
+          m7b5: "Minore Melodica",
+          ø: "Minore Melodica", // Locrian #2 is a common choice, which is from Melodic Minor
+          dim7: "Diminuita (T/S)",
+          "°7": "Diminuita (T/S)",
+          "7alt": "Altered (7alt)",
+          alt: "Altered (7alt)",
+          "maj7#11": "Lidio (Maj7#11)",
+          "7#11": "Lidio Dominante",
+          m: "Minore Naturale (Aeolian)",
+        };
+
+        const chords = text.split(/[|\s\n]+/).filter((c) => c.trim() !== "");
+
+        chords.forEach((chordStr) => {
+          const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/);
+          if (!match) return;
+
+          let root = match[1];
+          // Normalize flats to sharps for consistency with 'notes' array
+          const flatMap = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#" };
+          if (flatMap[root]) root = flatMap[root];
+
+          const quality = match[2].trim();
+          let scaleName = "Misolidio (7)"; // Default for unknown
+
+          // Find best scale match
+          for (const key in chordToScaleMap) {
+            if (quality === key) {
+              scaleName = chordToScaleMap[key];
+              break;
+            }
+          }
+          if (!notes.includes(root)) return; // Skip if root is invalid
+
+          addProgressionStep({
+            root,
+            scale: scaleName,
+            bars: 1,
+            beats: 4,
+            denominator: 4,
+          });
+        });
       }
 
       init();
