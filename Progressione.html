@@ -602,6 +602,11 @@
         align-items: flex-end;
         gap: 10px;
       }
+      .step-management {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+      }
 
       /* Volume Slider */
       input[type="range"] {
@@ -648,6 +653,12 @@
       .btn-add-step {
         background: #27ae60;
         color: white;
+      }
+      .btn-io {
+        background: #34495e;
+        color: white;
+        font-size: 0.9em;
+        padding: 8px 12px;
       }
 
       /* Icon Buttons */
@@ -903,9 +914,28 @@
           <!-- Steps will be added here dynamically -->
         </div>
         <div class="progression-controls">
-          <button class="btn-add-step" onclick="addProgressionStep()">
-            + Add Step
-          </button>
+          <div class="step-management">
+            <button class="btn-add-step" onclick="addProgressionStep()">
+              + Add Step
+            </button>
+            <button class="btn-io" onclick="exportProgressionData()">
+              Export
+            </button>
+            <button
+              class="btn-io"
+              onclick="document.getElementById('progression-importer').click()"
+            >
+              Import
+            </button>
+            <input
+              type="file"
+              id="progression-importer"
+              style="display: none"
+              onchange="importProgressionData(event)"
+              accept="application/json"
+            />
+          </div>
+
           <div class="player-controls">
             <div class="nav-group">
               <label for="bpm-input">BPM</label>
@@ -1740,6 +1770,60 @@
 
       function toggleMenu() {
         document.getElementById("navMenu").classList.toggle("active");
+      }
+
+      // --- Progression Import/Export ---
+      function exportProgressionData() {
+        const progression = [];
+        document.querySelectorAll(".progression-step").forEach((step) => {
+          progression.push({
+            root: step.querySelector("select:nth-of-type(1)").value,
+            scale: step.querySelector("select:nth-of-type(2)").value,
+            bars: step.querySelector(".prog-duration-input").value,
+            beats: step.querySelector(".prog-beats-input").value,
+            denominator: step.querySelector(".prog-denominator-input").value,
+          });
+        });
+
+        if (progression.length === 0) {
+          alert("Progression is empty. Nothing to export.");
+          return;
+        }
+
+        const dataStr = JSON.stringify(progression, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "jazz-viz-progression.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function importProgressionData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (Array.isArray(data)) {
+              document.getElementById("progression-steps").innerHTML = "";
+              data.forEach((step) => addProgressionStep(step));
+              saveLocalData();
+            } else {
+              alert("Invalid file format");
+            }
+          } catch (error) {
+            alert("Error reading file: " + error.message);
+          }
+          event.target.value = ""; // Reset input
+        };
+        reader.readAsText(file);
       }
 
       // --- Scale Calculator ---
