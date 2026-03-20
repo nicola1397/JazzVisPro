@@ -115,7 +115,7 @@
       /* Interval Legend */
       .controls {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         gap: 10px;
         margin: 15px 0;
         background: rgba(255, 255, 255, 0.05);
@@ -142,11 +142,6 @@
         border-radius: 50%;
         border: 2px solid #fff;
       }
-      @media (min-width: 768px) {
-        .controls {
-          grid-template-columns: repeat(6, 1fr);
-        }
-      }
       @media (min-width: 1200px) {
         .controls {
           grid-template-columns: repeat(12, 1fr);
@@ -155,8 +150,9 @@
 
       /* Main Fretboard */
       .viewport {
-        width: 95vw;
-        padding: 10px 0;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 20px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -434,7 +430,7 @@
         cursor: pointer;
       }
 
-      @media (max-width: 768px) {
+      @media (max-width: 1024px) {
         .navbar {
           flex-direction: column;
           align-items: stretch;
