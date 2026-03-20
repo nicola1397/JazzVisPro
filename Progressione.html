@@ -590,11 +590,19 @@
       }
       .player-controls {
         display: flex;
-        align-items: center;
+        align-items: flex-end;
         gap: 10px;
       }
-      .player-controls input {
-        width: 50px;
+
+      .player-controls input[type="number"],
+      .player-controls select {
+        background: #333;
+        color: #eee;
+        border: 1px solid #444;
+        padding: 8px 12px;
+        border-radius: 6px;
+        width: 70px;
+        font-weight: bold;
       }
       .btn-add-step {
         background: #27ae60;
@@ -748,6 +756,14 @@
                 max="8"
               />
             </div>
+            <div class="nav-group">
+              <label for="metronome-toggle">Click</label>
+              <input
+                type="checkbox"
+                id="metronome-toggle"
+                style="margin-top: 10px"
+              />
+            </div>
             <button
               id="play-pause-btn"
               class="btn-play"
@@ -765,6 +781,10 @@
 
     <script>
       let progressionTimerId = null;
+      let audioCtx = null;
+      let nextNoteTime = 0.0;
+      let stepBeatsRemaining = 0;
+      let currentBeatInBar = 0;
       let currentProgressionStep = 0;
       let isPlaying = false;
 
@@ -929,6 +949,7 @@
         });
 
         applyFullScale();
+        loadLocalData();
       }
 
       function renderFretboard() {
@@ -1088,20 +1109,47 @@
         });
       }
 
-      function createSnapshot() {
-        const root = document.getElementById("root-select").value;
-        const scaleName = document.getElementById("scale-select").value;
+      function createSnapshot(data = null) {
+        // If data is passed (loading from storage), use it. Otherwise read UI.
+        const root = data
+          ? data.root
+          : document.getElementById("root-select").value;
+        const scaleName = data
+          ? data.scale
+          : document.getElementById("scale-select").value;
+        const tuningName = data
+          ? data.tuning
+          : document.getElementById("tuning-select").value;
+        const soloArp = data
+          ? data.soloArp
+          : document.getElementById("solo-arpeggio").checked;
+        const hideUnused = data
+          ? data.hideUnused
+          : document.getElementById("hide-unused").checked;
+        const add4 = data
+          ? data.add4
+          : document.getElementById("add-4").checked;
+        const add6 = data
+          ? data.add6
+          : document.getElementById("add-6").checked;
+
         const rootIdx = notes.indexOf(root);
         const scale = scales[scaleName];
-        const tuningName = document.getElementById("tuning-select").value;
         const tuning = tunings[tuningName];
-        const soloArp = document.getElementById("solo-arpeggio").checked;
-        const hideUnused = document.getElementById("hide-unused").checked;
-        const add4 = document.getElementById("add-4").checked;
-        const add6 = document.getElementById("add-6").checked;
+
+        const snapshotData = {
+          root,
+          scale: scaleName,
+          tuning: tuningName,
+          soloArp,
+          hideUnused,
+          add4,
+          add6,
+        };
 
         const card = document.createElement("div");
         card.className = "snapshot-card";
+        card.dataset.snapshot = JSON.stringify(snapshotData);
         card.setAttribute("draggable", "true");
 
         let rows = "";
@@ -1149,12 +1197,16 @@
                         ${soloArp ? "Arpeggio" : "Full Scale"}<br>
                         ${hideUnused ? "Filtro ON" : "Filtro OFF"}
                     </p>
-                    <button class="btn-reset" style="padding:4px 8px; font-size:10px" onclick="this.closest('.snapshot-card').remove()">Elimina</button>
+                    <button class="btn-reset" style="padding:4px 8px; font-size:10px" onclick="this.closest('.snapshot-card').remove(); saveLocalData();">Elimina</button>
                 </div>
                 <div class="mini-fretboard-wrap">
                     <div class="mini-fretboard">${rows}${numRow}</div>
                 </div>`;
-        document.getElementById("snapshot-list").prepend(card);
+
+        if (data) document.getElementById("snapshot-list").appendChild(card);
+        else document.getElementById("snapshot-list").prepend(card);
+
+        if (!data) saveLocalData();
       }
 
       function resetFretboard() {
@@ -1182,9 +1234,16 @@
         ).element;
       }
 
+      // Hook save on drag end
+      document
+        .getElementById("snapshot-list")
+        .addEventListener("dragend", () => {
+          setTimeout(saveLocalData, 100);
+        });
+
       // --- Progression Player Functions ---
 
-      function addProgressionStep() {
+      function addProgressionStep(data = null) {
         const stepsContainer = document.getElementById("progression-steps");
         const stepIndex = stepsContainer.children.length;
         const stepDiv = document.createElement("div");
@@ -1204,11 +1263,22 @@
             <span class="step-label">Step ${stepIndex + 1}</span>
             ${rootSelectHTML}
             ${scaleSelectHTML}
-            <input type="number" class="prog-duration-input" value="4" min="1" title="Duration in bars">
+            <input type="number" class="prog-duration-input" value="${data ? data.bars : 4}" min="1" title="Duration in bars">
             <span class="bars-label">bars</span>
-            <button class="btn-remove-step" onclick="this.closest('.progression-step').remove(); updateProgressionIndices();" title="Remove Step">×</button>
+            <button class="btn-remove-step" onclick="this.closest('.progression-step').remove(); updateProgressionIndices(); saveLocalData();" title="Remove Step">×</button>
         `;
+
+        if (data) {
+          stepDiv.querySelector("select:nth-of-type(1)").value = data.root;
+          stepDiv.querySelector("select:nth-of-type(2)").value = data.scale;
+        }
+
+        stepDiv
+          .querySelectorAll("select, input")
+          .forEach((el) => el.addEventListener("change", saveLocalData));
+
         stepsContainer.appendChild(stepDiv);
+        if (!data) saveLocalData();
       }
 
       function updateProgressionIndices() {
@@ -1223,7 +1293,7 @@
         const playBtn = document.getElementById("play-pause-btn");
         if (isPlaying) {
           isPlaying = false;
-          clearTimeout(progressionTimerId);
+          if (audioCtx) audioCtx.suspend();
           playBtn.textContent = "Play";
           document
             .querySelectorAll(".progression-step.active-step")
@@ -1234,18 +1304,25 @@
             alert("Please add at least one step to the progression.");
             return;
           }
+
+          if (!audioCtx)
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          audioCtx.resume();
+
           isPlaying = true;
           playBtn.textContent = "Pause";
           currentProgressionStep = 0;
-          executeProgressionStep();
+          stepBeatsRemaining = 0;
+          currentBeatInBar = 0;
+          nextNoteTime = audioCtx.currentTime;
+
+          scheduler();
         }
       }
 
       function stopProgression() {
         const playBtn = document.getElementById("play-pause-btn");
         isPlaying = false;
-        if (progressionTimerId) clearTimeout(progressionTimerId);
-        progressionTimerId = null;
         playBtn.textContent = "Play";
         currentProgressionStep = 0;
         document
@@ -1253,36 +1330,104 @@
           .forEach((el) => el.classList.remove("active-step"));
       }
 
-      function executeProgressionStep() {
+      function scheduler() {
         if (!isPlaying) return;
+
+        const lookahead = 0.1;
+        const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
+
+        while (nextNoteTime < audioCtx.currentTime + lookahead) {
+          runBeat(nextNoteTime);
+          nextNoteTime += 60.0 / bpm;
+        }
+
+        requestAnimationFrame(scheduler);
+      }
+
+      function runBeat(time) {
         const steps = Array.from(
           document.querySelectorAll(".progression-step"),
         );
-        if (currentProgressionStep >= steps.length) currentProgressionStep = 0;
-        if (steps.length === 0) {
-          stopProgression();
-          return;
+
+        // Advance Step Logic
+        if (stepBeatsRemaining <= 0) {
+          if (currentProgressionStep >= steps.length)
+            currentProgressionStep = 0;
+
+          document
+            .querySelectorAll(".progression-step.active-step")
+            .forEach((el) => el.classList.remove("active-step"));
+          const currentStepEl = steps[currentProgressionStep];
+          currentStepEl.classList.add("active-step");
+
+          document.getElementById("root-select").value =
+            currentStepEl.querySelector("select:nth-of-type(1)").value;
+          document.getElementById("scale-select").value =
+            currentStepEl.querySelector("select:nth-of-type(2)").value;
+          applyFullScale();
+
+          const durationBars =
+            parseInt(
+              currentStepEl.querySelector(".prog-duration-input").value,
+            ) || 4;
+          const beatsPerBar =
+            parseInt(document.getElementById("beats-per-bar-input").value) || 4;
+          stepBeatsRemaining = durationBars * beatsPerBar;
+
+          currentProgressionStep++;
         }
-        document
-          .querySelectorAll(".progression-step.active-step")
-          .forEach((el) => el.classList.remove("active-step"));
-        const currentStepEl = steps[currentProgressionStep];
-        currentStepEl.classList.add("active-step");
-        document.getElementById("root-select").value =
-          currentStepEl.querySelector("select:nth-of-type(1)").value;
-        document.getElementById("scale-select").value =
-          currentStepEl.querySelector("select:nth-of-type(2)").value;
-        applyFullScale();
-        const durationBars = parseInt(
-          currentStepEl.querySelector(".prog-duration-input").value,
-        );
-        const bpm = parseInt(document.getElementById("bpm-input").value);
-        const beatsPerBar = parseInt(
-          document.getElementById("beats-per-bar-input").value,
-        );
-        const durationMs = (durationBars * beatsPerBar * 60 * 1000) / bpm;
-        currentProgressionStep++;
-        progressionTimerId = setTimeout(executeProgressionStep, durationMs);
+
+        // Play Click
+        const beatsPerBar =
+          parseInt(document.getElementById("beats-per-bar-input").value) || 4;
+        const isDownbeat = currentBeatInBar === 0;
+
+        if (document.getElementById("metronome-toggle").checked) {
+          playClick(time, isDownbeat);
+        }
+
+        stepBeatsRemaining--;
+        currentBeatInBar = (currentBeatInBar + 1) % beatsPerBar;
+      }
+
+      function playClick(time, isDownbeat) {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.frequency.value = isDownbeat ? 1000 : 800;
+        gainNode.gain.value = 0.1;
+        osc.start(time);
+        osc.stop(time + 0.05);
+      }
+
+      // --- Local Storage ---
+      function saveLocalData() {
+        const snapshots = [];
+        document.querySelectorAll(".snapshot-card").forEach((card) => {
+          if (card.dataset.snapshot)
+            snapshots.push(JSON.parse(card.dataset.snapshot));
+        });
+        const progression = [];
+        document.querySelectorAll(".progression-step").forEach((step) => {
+          progression.push({
+            root: step.querySelector("select:nth-of-type(1)").value,
+            scale: step.querySelector("select:nth-of-type(2)").value,
+            bars: step.querySelector(".prog-duration-input").value,
+          });
+        });
+        localStorage.setItem("jazzVizSnapshots", JSON.stringify(snapshots));
+        localStorage.setItem("jazzVizProgression", JSON.stringify(progression));
+      }
+
+      function loadLocalData() {
+        const snaps = JSON.parse(localStorage.getItem("jazzVizSnapshots"));
+        if (snaps && Array.isArray(snaps))
+          snaps.forEach((data) => createSnapshot(data));
+
+        const prog = JSON.parse(localStorage.getItem("jazzVizProgression"));
+        if (prog && Array.isArray(prog))
+          prog.forEach((data) => addProgressionStep(data));
       }
 
       function toggleMenu() {
