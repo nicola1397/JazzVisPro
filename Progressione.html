@@ -81,6 +81,14 @@
         background: #333;
         color: #eee;
         border: 1px solid #444;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23bdc3c7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 14px;
+        padding-right: 30px;
       }
       .btn-snapshot {
         background: #f39c12;
@@ -594,6 +602,16 @@
         gap: 10px;
       }
 
+      /* Remove default spinners from inputs */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+
       .player-controls input[type="number"],
       .player-controls select {
         background: #333;
@@ -608,14 +626,84 @@
         background: #27ae60;
         color: white;
       }
+
+      /* Icon Buttons */
+      .btn-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+        border: none;
+        cursor: pointer;
+        transition:
+          transform 0.1s,
+          background 0.2s;
+      }
+      .btn-icon:active {
+        transform: scale(0.95);
+      }
+      .btn-icon svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
       .btn-play {
         background: #2980b9;
         color: white;
-        width: 80px;
+      }
+      .btn-play.paused {
+        background: #f39c12;
       }
       .btn-stop {
         background: #7f8c8d;
         color: white;
+      }
+
+      /* Metronome Button */
+      .metronome-btn {
+        background: transparent;
+        border: 2px solid #555;
+        color: #666;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 2px; /* Align with inputs */
+      }
+      .metronome-btn svg {
+        width: 22px;
+        height: 22px;
+        fill: currentColor;
+        transform: scale(1.7);
+      }
+
+      .metronome-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow:
+          0 0 10px var(--accent),
+          inset 0 0 5px rgba(241, 196, 15, 0.2);
+        animation: metro-pulse 2s infinite;
+      }
+
+      @keyframes metro-pulse {
+        0% {
+          box-shadow: 0 0 8px var(--accent);
+        }
+        50% {
+          box-shadow: 0 0 16px var(--accent);
+        }
+        100% {
+          box-shadow: 0 0 8px var(--accent);
+        }
       }
     </style>
   </head>
@@ -756,22 +844,53 @@
                 max="8"
               />
             </div>
-            <div class="nav-group">
-              <label for="metronome-toggle">Click</label>
+            <div class="nav-group" style="align-items: center">
               <input
                 type="checkbox"
                 id="metronome-toggle"
-                style="margin-top: 10px"
+                style="display: none"
               />
+              <button
+                class="metronome-btn"
+                id="metronome-btn"
+                onclick="toggleMetronomeUI()"
+                title="Metronome Click"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-metronome"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path
+                    d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13"
+                  />
+                  <path d="M19 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                </svg>
+              </button>
             </div>
             <button
               id="play-pause-btn"
-              class="btn-play"
+              class="btn-icon btn-play"
               onclick="togglePlayProgression()"
+              title="Play/Pause"
             >
-              Play
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
             </button>
-            <button class="btn-stop" onclick="stopProgression()">Stop</button>
+            <button
+              class="btn-icon btn-stop"
+              onclick="stopProgression()"
+              title="Stop"
+            >
+              <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1294,7 +1413,9 @@
         if (isPlaying) {
           isPlaying = false;
           if (audioCtx) audioCtx.suspend();
-          playBtn.textContent = "Play";
+          playBtn.innerHTML =
+            '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Play Icon
+          playBtn.classList.remove("paused");
           document
             .querySelectorAll(".progression-step.active-step")
             .forEach((el) => el.classList.remove("active-step"));
@@ -1310,7 +1431,9 @@
           audioCtx.resume();
 
           isPlaying = true;
-          playBtn.textContent = "Pause";
+          playBtn.innerHTML =
+            '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'; // Pause Icon
+          playBtn.classList.add("paused");
           currentProgressionStep = 0;
           stepBeatsRemaining = 0;
           currentBeatInBar = 0;
@@ -1323,11 +1446,20 @@
       function stopProgression() {
         const playBtn = document.getElementById("play-pause-btn");
         isPlaying = false;
-        playBtn.textContent = "Play";
+        playBtn.innerHTML =
+          '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Play Icon
+        playBtn.classList.remove("paused");
         currentProgressionStep = 0;
         document
           .querySelectorAll(".progression-step.active-step")
           .forEach((el) => el.classList.remove("active-step"));
+      }
+
+      function toggleMetronomeUI() {
+        const chk = document.getElementById("metronome-toggle");
+        const btn = document.getElementById("metronome-btn");
+        chk.checked = !chk.checked;
+        btn.classList.toggle("active", chk.checked);
       }
 
       function scheduler() {
