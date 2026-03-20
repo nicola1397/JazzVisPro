@@ -335,6 +335,12 @@
         border-left: 8px solid var(--accent);
         flex-grow: 1;
         width: 100%;
+        transition: opacity 0.2s ease;
+      }
+
+      .snapshot-card.dragging {
+        opacity: 0.4;
+        background: #4a637e;
       }
 
       .snapshot-meta {
@@ -499,6 +505,110 @@
           width: 100%;
         }
       }
+
+      /* Progression Player Area */
+      .progression-player-area {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 30px 0;
+        box-sizing: border-box;
+        border: 1px solid #333;
+      }
+      .area-title {
+        margin-top: 0;
+        font-size: 1.4em;
+        color: var(--accent);
+        border-bottom: 1px solid #444;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+      }
+      .progression-steps-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .progression-step {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: var(--panel);
+        padding: 10px 15px;
+        border-radius: 8px;
+        flex-wrap: wrap;
+        transition: box-shadow 0.3s ease;
+      }
+      .progression-step.active-step {
+        box-shadow: 0 0 0 3px var(--accent);
+      }
+      .progression-step .step-label {
+        font-size: 0.9em;
+        font-weight: bold;
+        color: #bdc3c7;
+        min-width: 50px;
+      }
+      .progression-step select {
+        flex-grow: 1;
+      }
+      .progression-step .prog-duration-input {
+        width: 60px;
+        padding: 8px 12px;
+        box-sizing: border-box;
+        background: #333;
+        color: #eee;
+        border: 1px solid #444;
+        border-radius: 6px;
+      }
+      .progression-step .bars-label {
+        font-size: 0.8em;
+        color: #bdc3c7;
+      }
+      .btn-remove-step {
+        background: #c0392b;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        margin-left: auto;
+        font-weight: bold;
+        font-size: 1.2em;
+        line-height: 28px;
+        padding: 0;
+      }
+      .progression-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        border-top: 1px solid #333;
+        padding-top: 15px;
+      }
+      .player-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .player-controls input {
+        width: 50px;
+      }
+      .btn-add-step {
+        background: #27ae60;
+        color: white;
+      }
+      .btn-play {
+        background: #2980b9;
+        color: white;
+        width: 80px;
+      }
+      .btn-stop {
+        background: #7f8c8d;
+        color: white;
+      }
     </style>
   </head>
   <body>
@@ -606,10 +716,58 @@
           <div class="fret-numbers" id="numbers-layer"></div>
         </div>
       </div>
+
+      <!-- Progression Player Area -->
+      <div class="progression-player-area">
+        <h2 class="area-title">Play Along Mode</h2>
+        <div id="progression-steps" class="progression-steps-container">
+          <!-- Steps will be added here dynamically -->
+        </div>
+        <div class="progression-controls">
+          <button class="btn-add-step" onclick="addProgressionStep()">
+            + Add Step
+          </button>
+          <div class="player-controls">
+            <div class="nav-group">
+              <label for="bpm-input">BPM</label>
+              <input
+                type="number"
+                id="bpm-input"
+                value="120"
+                min="40"
+                max="300"
+              />
+            </div>
+            <div class="nav-group">
+              <label for="beats-per-bar-input">Beats/Bar</label>
+              <input
+                type="number"
+                id="beats-per-bar-input"
+                value="4"
+                min="1"
+                max="8"
+              />
+            </div>
+            <button
+              id="play-pause-btn"
+              class="btn-play"
+              onclick="togglePlayProgression()"
+            >
+              Play
+            </button>
+            <button class="btn-stop" onclick="stopProgression()">Stop</button>
+          </div>
+        </div>
+      </div>
+
       <div class="snapshot-area" id="snapshot-list"></div>
     </div>
 
     <script>
+      let progressionTimerId = null;
+      let currentProgressionStep = 0;
+      let isPlaying = false;
+
       const notes = [
         "C",
         "C#",
@@ -737,6 +895,39 @@
                     </div>`;
         });
         renderFretboard();
+
+        // --- Drag and Drop for Snapshots ---
+        const snapshotList = document.getElementById("snapshot-list");
+        let draggedItem = null;
+
+        snapshotList.addEventListener("dragstart", (e) => {
+          if (e.target.classList.contains("snapshot-card")) {
+            draggedItem = e.target;
+            setTimeout(() => {
+              e.target.classList.add("dragging");
+            }, 0);
+          }
+        });
+
+        snapshotList.addEventListener("dragend", () => {
+          if (draggedItem) {
+            draggedItem.classList.remove("dragging");
+            draggedItem = null;
+          }
+        });
+
+        snapshotList.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const afterElement = getDragAfterElement(snapshotList, e.clientY);
+          if (draggedItem) {
+            if (afterElement == null) {
+              snapshotList.appendChild(draggedItem);
+            } else {
+              snapshotList.insertBefore(draggedItem, afterElement);
+            }
+          }
+        });
+
         applyFullScale();
       }
 
@@ -911,6 +1102,7 @@
 
         const card = document.createElement("div");
         card.className = "snapshot-card";
+        card.setAttribute("draggable", "true");
 
         let rows = "";
         for (let s = 0; s < 6; s++) {
@@ -969,6 +1161,128 @@
         document.getElementById("hide-unused").checked = false;
         document.getElementById("solo-arpeggio").checked = false;
         applyFullScale();
+      }
+
+      function getDragAfterElement(container, y) {
+        const draggableElements = [
+          ...container.querySelectorAll(".snapshot-card:not(.dragging)"),
+        ];
+
+        return draggableElements.reduce(
+          (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+              return { offset: offset, element: child };
+            } else {
+              return closest;
+            }
+          },
+          { offset: Number.NEGATIVE_INFINITY },
+        ).element;
+      }
+
+      // --- Progression Player Functions ---
+
+      function addProgressionStep() {
+        const stepsContainer = document.getElementById("progression-steps");
+        const stepIndex = stepsContainer.children.length;
+        const stepDiv = document.createElement("div");
+        stepDiv.className = "progression-step";
+        stepDiv.dataset.index = stepIndex;
+
+        const rootSelectHTML = document
+          .getElementById("root-select")
+          .outerHTML.replace('id="root-select"', "")
+          .replace(/onchange=".*?"/g, "");
+        const scaleSelectHTML = document
+          .getElementById("scale-select")
+          .outerHTML.replace('id="scale-select"', "")
+          .replace(/onchange=".*?"/g, "");
+
+        stepDiv.innerHTML = `
+            <span class="step-label">Step ${stepIndex + 1}</span>
+            ${rootSelectHTML}
+            ${scaleSelectHTML}
+            <input type="number" class="prog-duration-input" value="4" min="1" title="Duration in bars">
+            <span class="bars-label">bars</span>
+            <button class="btn-remove-step" onclick="this.closest('.progression-step').remove(); updateProgressionIndices();" title="Remove Step">×</button>
+        `;
+        stepsContainer.appendChild(stepDiv);
+      }
+
+      function updateProgressionIndices() {
+        const stepsContainer = document.getElementById("progression-steps");
+        Array.from(stepsContainer.children).forEach((step, index) => {
+          step.dataset.index = index;
+          step.querySelector(".step-label").textContent = `Step ${index + 1}`;
+        });
+      }
+
+      function togglePlayProgression() {
+        const playBtn = document.getElementById("play-pause-btn");
+        if (isPlaying) {
+          isPlaying = false;
+          clearTimeout(progressionTimerId);
+          playBtn.textContent = "Play";
+          document
+            .querySelectorAll(".progression-step.active-step")
+            .forEach((el) => el.classList.remove("active-step"));
+        } else {
+          const steps = document.querySelectorAll(".progression-step");
+          if (steps.length === 0) {
+            alert("Please add at least one step to the progression.");
+            return;
+          }
+          isPlaying = true;
+          playBtn.textContent = "Pause";
+          currentProgressionStep = 0;
+          executeProgressionStep();
+        }
+      }
+
+      function stopProgression() {
+        const playBtn = document.getElementById("play-pause-btn");
+        isPlaying = false;
+        if (progressionTimerId) clearTimeout(progressionTimerId);
+        progressionTimerId = null;
+        playBtn.textContent = "Play";
+        currentProgressionStep = 0;
+        document
+          .querySelectorAll(".progression-step.active-step")
+          .forEach((el) => el.classList.remove("active-step"));
+      }
+
+      function executeProgressionStep() {
+        if (!isPlaying) return;
+        const steps = Array.from(
+          document.querySelectorAll(".progression-step"),
+        );
+        if (currentProgressionStep >= steps.length) currentProgressionStep = 0;
+        if (steps.length === 0) {
+          stopProgression();
+          return;
+        }
+        document
+          .querySelectorAll(".progression-step.active-step")
+          .forEach((el) => el.classList.remove("active-step"));
+        const currentStepEl = steps[currentProgressionStep];
+        currentStepEl.classList.add("active-step");
+        document.getElementById("root-select").value =
+          currentStepEl.querySelector("select:nth-of-type(1)").value;
+        document.getElementById("scale-select").value =
+          currentStepEl.querySelector("select:nth-of-type(2)").value;
+        applyFullScale();
+        const durationBars = parseInt(
+          currentStepEl.querySelector(".prog-duration-input").value,
+        );
+        const bpm = parseInt(document.getElementById("bpm-input").value);
+        const beatsPerBar = parseInt(
+          document.getElementById("beats-per-bar-input").value,
+        );
+        const durationMs = (durationBars * beatsPerBar * 60 * 1000) / bpm;
+        currentProgressionStep++;
+        progressionTimerId = setTimeout(executeProgressionStep, durationMs);
       }
 
       function toggleMenu() {
