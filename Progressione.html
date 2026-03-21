@@ -661,6 +661,25 @@
         padding: 8px 12px;
       }
 
+      /* Snapshot Header */
+      .snapshot-header-container {
+        width: 100%;
+        max-width: 1200px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 0 20px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+      }
+
+      .progression-step.dragging {
+        opacity: 0.5;
+        background: #34495e;
+      }
+
       /* Icon Buttons */
       .btn-icon {
         width: 38px;
@@ -1022,6 +1041,28 @@
             <button class="btn-add-step" onclick="addProgressionStep()">
               + Add Step
             </button>
+            <button
+              class="btn-io"
+              onclick="transposeProgression(-1)"
+              title="Transpose Down 1 Semitone"
+            >
+              -1
+            </button>
+            <button
+              class="btn-io"
+              onclick="transposeProgression(1)"
+              title="Transpose Up 1 Semitone"
+            >
+              +1
+            </button>
+            <button
+              class="btn-reset"
+              onclick="clearProgression()"
+              title="Clear All Steps"
+            >
+              Clear
+            </button>
+
             <button class="btn-io" onclick="exportProgressionData()">
               Export
             </button>
@@ -1119,6 +1160,14 @@
         </div>
       </div>
 
+      <div class="snapshot-header-container">
+        <h2 class="area-title" style="border: none; margin: 0; padding: 0">
+          Snapshots
+        </h2>
+        <button class="btn-reset" onclick="clearSnapshots()">
+          Clear Snapshots
+        </button>
+      </div>
       <div class="snapshot-area" id="snapshot-list"></div>
     </div>
 
@@ -1300,13 +1349,50 @@
 
         snapshotList.addEventListener("dragover", (e) => {
           e.preventDefault();
-          const afterElement = getDragAfterElement(snapshotList, e.clientY);
+          const afterElement = getDragAfterElement(
+            snapshotList,
+            e.clientY,
+            ".snapshot-card",
+          );
           if (draggedItem) {
             if (afterElement == null) {
               snapshotList.appendChild(draggedItem);
             } else {
               snapshotList.insertBefore(draggedItem, afterElement);
             }
+          }
+        });
+
+        // --- Drag and Drop for Progression Steps ---
+        const stepList = document.getElementById("progression-steps");
+        let draggedStep = null;
+
+        stepList.addEventListener("dragstart", (e) => {
+          if (e.target.classList.contains("progression-step")) {
+            draggedStep = e.target;
+            setTimeout(() => e.target.classList.add("dragging"), 0);
+          }
+        });
+
+        stepList.addEventListener("dragend", () => {
+          if (draggedStep) {
+            draggedStep.classList.remove("dragging");
+            draggedStep = null;
+            updateProgressionIndices();
+            saveLocalData();
+          }
+        });
+
+        stepList.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const afterElement = getDragAfterElement(
+            stepList,
+            e.clientY,
+            ".progression-step",
+          );
+          if (draggedStep) {
+            if (afterElement == null) stepList.appendChild(draggedStep);
+            else stepList.insertBefore(draggedStep, afterElement);
           }
         });
 
@@ -1609,9 +1695,9 @@
         applyFullScale();
       }
 
-      function getDragAfterElement(container, y) {
+      function getDragAfterElement(container, y, selector) {
         const draggableElements = [
-          ...container.querySelectorAll(".snapshot-card:not(.dragging)"),
+          ...container.querySelectorAll(`${selector}:not(.dragging)`),
         ];
 
         return draggableElements.reduce(
@@ -1642,6 +1728,7 @@
         const stepIndex = stepsContainer.children.length;
         const stepDiv = document.createElement("div");
         stepDiv.className = "progression-step";
+        stepDiv.setAttribute("draggable", "true");
         stepDiv.dataset.index = stepIndex;
 
         const rootSelectHTML = document
@@ -1850,6 +1937,37 @@
           source.buffer = buffer;
           source.connect(gainNode);
           source.start(time);
+        }
+      }
+
+      // --- Transpose & Clear ---
+      function transposeProgression(semitones) {
+        const steps = document.querySelectorAll(".progression-step");
+        steps.forEach((step) => {
+          const rootSelect = step.querySelector("select:nth-of-type(1)");
+          const currentRoot = rootSelect.value;
+          let index = notes.indexOf(currentRoot);
+          if (index !== -1) {
+            let newIndex = (index + semitones) % 12;
+            if (newIndex < 0) newIndex += 12;
+            rootSelect.value = notes[newIndex];
+          }
+        });
+        saveLocalData();
+      }
+
+      function clearProgression() {
+        if (confirm("Are you sure you want to clear the progression?")) {
+          document.getElementById("progression-steps").innerHTML = "";
+          stopProgression();
+          saveLocalData();
+        }
+      }
+
+      function clearSnapshots() {
+        if (confirm("Are you sure you want to clear all snapshots?")) {
+          document.getElementById("snapshot-list").innerHTML = "";
+          saveLocalData();
         }
       }
 
