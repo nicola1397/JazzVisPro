@@ -1170,6 +1170,14 @@
           Scale Calculator
           <span class="help-icon" onclick="showHelpModal()">?</span>
         </h2>
+        <div class="nav-group" style="margin-bottom: 10px; width: fit-content">
+          <label for="genre-select">Context</label>
+          <select id="genre-select" style="width: 150px">
+            <option value="jazz">Jazz (Standard)</option>
+            <option value="blues">Blues</option>
+            <option value="pop">Pop / Rock</option>
+          </select>
+        </div>
         <textarea
           id="chord-importer-textarea"
           placeholder="| Dm7 G7 | Cmaj7 | •/• | Am7(b5) D7(b9) | G-7 C7 | Fmaj7 |"
@@ -2741,39 +2749,52 @@
       // --- Scale Calculator ---
       function importProgression() {
         const text = document.getElementById("chord-importer-textarea").value;
+        const genre = document.getElementById("genre-select").value;
         if (!text) return;
 
         // Clear existing steps
         document.getElementById("progression-steps").innerHTML = "";
 
-        // More robust map
-        const chordToScaleMap = {
-          // Order matters: more specific first
-          "7(b9,#5)": "Altered (7alt)",
-          "7(b9)": "Altered (7alt)",
-          "7(#9)": "Altered (7alt)",
-          "7(b5)": "Altered (7alt)",
-          "7(#5)": "Esatonale",
-          "7alt": "Altered (7alt)",
-          alt: "Altered (7alt)",
-          "maj7#11": "Lidio (Maj7#11)",
-          "7#11": "Lidio Dominante",
-          m7b5: "Minore Melodica", // Locrian #2
-          ø7: "Minore Melodica",
-          dim7: "Diminuita (T/S)",
-          "°7": "Diminuita (T/S)",
+        // Base Map (Pop/Standard)
+        let chordToScaleMap = {
           maj7: "Ionio (Maj7)",
           M7: "Ionio (Maj7)",
-          Δ7: "Ionio (Maj7)",
+          Δ: "Ionio (Maj7)",
           m7: "Dorico (m7)",
           "-7": "Dorico (m7)",
-          11: "Misolidio (7)", // F11 is often F7sus4
-          13: "Misolidio (7)",
           7: "Misolidio (7)",
           m: "Minore Naturale (Aeolian)",
-          maj: "Ionio (Maj7)",
-          "": "Ionio (Maj7)", // Default for plain root (e.g., "C")
+          dim7: "Diminuita (T/S)",
+          "°7": "Diminuita (T/S)",
+          sus4: "Misolidio (7)",
+          sus: "Misolidio (7)",
+          "7sus4": "Misolidio (7)",
+          sus2: "Misolidio (7)",
+          "": "Ionio (Maj7)",
         };
+
+        // Context Specific Overrides
+        if (genre === "jazz") {
+          Object.assign(chordToScaleMap, {
+            m7b5: "Minore Melodica",
+            ø: "Minore Melodica",
+            ø7: "Minore Melodica",
+            "7alt": "Altered (7alt)",
+            alt: "Altered (7alt)",
+            "7(b9)": "Altered (7alt)",
+            "7(#9)": "Altered (7alt)",
+            "maj7#11": "Lidio (Maj7#11)",
+            "7#11": "Lidio Dominante",
+            13: "Misolidio (7)",
+            11: "Misolidio (7)",
+          });
+        } else if (genre === "blues") {
+          Object.assign(chordToScaleMap, {
+            7: "Blues",
+            m: "Blues",
+            "7#9": "Blues",
+          });
+        }
 
         // Pre-process to handle repeat signs
         const measures = text
@@ -2795,12 +2816,8 @@
           const barsPerChord = 1.0 / chordsInMeasure.length;
 
           chordsInMeasure.forEach((chordStr) => {
-            // Regex to capture root, quality, and alterations
-            const match = chordStr
-              .trim()
-              .match(
-                /^([A-G][#b]?)(m|min|maj|M|dim|°|-|ø|Δ)?(\d+|alt)?(\(.*\))?/,
-              );
+            // Capture Root + everything else
+            const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/);
             if (!match) return;
 
             let root = match[1];
@@ -2814,40 +2831,45 @@
             if (flatMap[root]) root = flatMap[root];
             if (!notes.includes(root)) return;
 
-            let quality = (match[2] || "") + (match[3] || "");
-            const alterations = match[4] || "";
-
-            // Normalize quality
-            quality = quality
+            let rest = match[2];
+            // Heuristic quality normalization for map lookup
+            let quality = rest
               .replace("min", "m")
               .replace("maj", "M")
               .replace("dim", "°");
-            if (quality.includes("M")) quality = "maj7";
-            if (quality.includes("m") && quality.includes("7")) quality = "m7";
-            if (quality.includes("°") && quality.includes("7")) quality = "°7";
-            if (quality.includes("ø") && quality.includes("7")) quality = "ø7";
 
-            let scaleName = "Misolidio (7)"; // Default
-
-            // Check for alterations first
-            if (
-              alterations.includes("b9") ||
-              alterations.includes("#9") ||
-              alterations.includes("b5") ||
-              alterations.includes("#5")
-            ) {
-              scaleName = "Altered (7alt)";
+            if (quality.includes("sus")) {
+              if (quality.includes("2")) quality = "sus2";
+              else if (quality.includes("7")) quality = "7sus4";
+              else quality = "sus4";
             } else {
-              // Find best scale match from map
-              for (const key in chordToScaleMap) {
-                if (quality === key) {
-                  scaleName = chordToScaleMap[key];
-                  break;
-                }
-              }
+              if (quality.includes("M") || quality.includes("Δ"))
+                quality = "maj7";
+              else if (quality.includes("m") || quality.includes("-")) {
+                if (quality.includes("7") && !quality.includes("b5"))
+                  quality = "m7";
+                else if (quality.includes("b5") || quality.includes("ø"))
+                  quality = "m7b5";
+                else quality = "m";
+              } else if (quality.includes("°")) quality = "dim7";
+              else if (quality.includes("7")) quality = "7";
+              else if (quality === "") quality = "";
             }
 
-            // Calculate chord intervals for playback
+            let scaleName = chordToScaleMap[quality] || "Misolidio (7)";
+
+            // Specific Jazz Alterations Logic
+            if (genre === "jazz") {
+              if (
+                rest.includes("b9") ||
+                rest.includes("#9") ||
+                rest.includes("alt")
+              )
+                scaleName = "Altered (7alt)";
+              if (rest.includes("#11") && !rest.includes("maj"))
+                scaleName = "Lidio Dominante";
+            }
+
             const chordIntervals = parseChordIntervals(chordStr);
 
             addProgressionStep({
@@ -2883,6 +2905,10 @@
           fifth = 6;
         }
         if (rest.match(/^(aug|\+)/)) fifth = 8;
+
+        // Sus handling
+        if (rest.includes("sus2")) third = 2;
+        else if (rest.includes("sus")) third = 5; // 4th
 
         // Determine 7th
         if (rest.includes("maj7") || rest.includes("M7") || rest.includes("Δ"))
