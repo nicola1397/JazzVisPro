@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jazz Viz Pro - Professional Edition</title>
+    <!-- Tone.js for musical chord synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
       :root {
         --bg: #1a1a1a;
@@ -1365,6 +1367,16 @@
               <div class="nav-group" style="align-items: center">
                 <input
                   type="checkbox"
+                  id="loop-selection"
+                  title="Loop Selected Steps"
+                />
+                <label
+                  for="loop-selection"
+                  style="margin: 0 5px; cursor: pointer"
+                  >Loop</label
+                >
+                <input
+                  type="checkbox"
                   id="metronome-toggle"
                   style="display: none"
                 />
@@ -1490,6 +1502,7 @@
       let currentProgressionStep = 0;
       let isPlaying = false;
       let currentChordOscillators = [];
+      let chordSynth = null;
       let tapTimes = [];
       let lastSelectedIndex = -1;
 
@@ -1609,9 +1622,164 @@
       };
 
       const chordSounds = {
-        "Sine Pad": "sine",
-        "Saw Pad": "sawtooth",
-        "Square Pad": "square",
+        "Electric Piano": "epiano",
+        "Warm Pad": "pad",
+        "Bright Synth": "bright",
+      };
+
+      // --- Chord Parsing & Mapping Logic ---
+      const ChordParser = {
+        regex: /^([A-G][#b]?)(.*)/,
+
+        parse(chordStr) {
+          // Handle Slash Chords (e.g. F/G)
+          if (chordStr.includes("/")) {
+            const parts = chordStr.split("/");
+            if (parts.length === 2) {
+              const bass = parts[1].trim();
+              // If bass is a valid note, treat it as root for scale context (often sus)
+              if (notes.includes(bass) || noteNamesFlat.includes(bass)) {
+                return {
+                  root: bass,
+                  rest: "sus",
+                  originalRoot: bass,
+                  isSlash: true,
+                };
+              }
+            }
+          }
+
+          const match = chordStr.trim().match(this.regex);
+          if (!match) return null;
+          let root = match[1];
+          let rest = match[2];
+
+          // Normalize root flats/sharps
+          const flatMap = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#" };
+          if (flatMap[root]) root = flatMap[root];
+
+          return { root, rest, originalRoot: root, isSlash: false };
+        },
+
+        getScale(chordStr, genre) {
+          const parsed = this.parse(chordStr);
+          if (!parsed) return "Ionio (Maj7)";
+          let { rest } = parsed;
+
+          // Heuristic Quality Detection
+          let quality = "maj7"; // Default
+
+          if (rest.includes("sus")) quality = "sus";
+          else if (rest.match(/^(m(?!aj)|-|min)/)) {
+            if (rest.includes("b5") || rest.includes("ø")) quality = "m7b5";
+            else quality = "m7";
+          } else if (rest.match(/^(dim|°)/)) quality = "dim7";
+          else if (
+            rest.match(/^7/) ||
+            rest.match(/^\d/) ||
+            rest.includes("alt")
+          )
+            quality = "7";
+          else if (rest.match(/^(maj|M|Δ)/)) {
+            if (rest.includes("#11")) quality = "maj7#11";
+            else quality = "maj7";
+          }
+
+          // Detailed Alterations for Dominants
+          if (quality === "7") {
+            if (
+              rest.includes("b9") ||
+              rest.includes("#9") ||
+              rest.includes("alt") ||
+              rest.includes("b5") ||
+              rest.includes("#5")
+            )
+              quality = "7alt";
+            else if (rest.includes("#11")) quality = "7#11";
+            else if (rest.includes("b13")) quality = "7b13";
+          }
+
+          // Genre Mapping
+          if (genre === "jazz") {
+            const map = {
+              maj7: "Ionio (Maj7)",
+              "maj7#11": "Lidio (Maj7#11)",
+              m7: "Dorico (m7)",
+              m7b5: "Minore Melodica",
+              7: "Misolidio (7)",
+              "7alt": "Altered (7alt)",
+              "7#11": "Lidio Dominante",
+              "7b13": "Misolidio b13",
+              dim7: "Diminuita (T/S)",
+              sus: "Misolidio (7)",
+            };
+            return map[quality] || "Misolidio (7)";
+          } else if (genre === "blues") {
+            if (quality.includes("7") || quality === "m7") return "Blues";
+            return "Misolidio (7)";
+          } else {
+            // Pop
+            const map = {
+              maj7: "Ionio (Maj7)",
+              m7: "Minore Naturale (Aeolian)",
+              7: "Misolidio (7)",
+              dim7: "Diminuita (T/S)",
+              sus: "Misolidio (7)",
+            };
+            return map[quality] || "Ionio (Maj7)";
+          }
+        },
+
+        getIntervals(chordStr) {
+          const parsed = this.parse(chordStr);
+          if (!parsed) return [0, 4, 7];
+          let { rest } = parsed;
+
+          let intervals = [0];
+          let third = 4,
+            fifth = 7,
+            seventh = null;
+
+          if (rest.match(/^(m(?!aj)|-|min)/)) third = 3;
+          if (rest.match(/^(dim|°)/)) {
+            third = 3;
+            fifth = 6;
+          }
+          if (rest.match(/^(aug|\+)/)) fifth = 8;
+          if (rest.includes("sus2")) third = 2;
+          else if (rest.includes("sus")) third = 5;
+
+          if (rest.match(/^(maj7|M7|Δ)/)) seventh = 11;
+          else if (rest.match(/^(dim7|°7)/)) {
+            third = 3;
+            fifth = 6;
+            seventh = 9;
+          } else if (rest.match(/^(m7b5|ø)/)) {
+            third = 3;
+            fifth = 6;
+            seventh = 10;
+          } else if (rest.match(/7|9|11|13/)) seventh = 10;
+          else if (rest.includes("6")) seventh = 9;
+
+          if (rest.includes("b5") && !rest.includes("m7b5")) fifth = 6;
+          if (rest.includes("#5")) fifth = 8;
+
+          intervals.push(third);
+          intervals.push(fifth);
+          if (seventh !== null) intervals.push(seventh);
+
+          if (rest.includes("b9")) intervals.push(1);
+          else if (rest.includes("#9")) intervals.push(3);
+          else if (rest.match(/[^#b]9/)) intervals.push(2);
+
+          if (rest.includes("#11")) intervals.push(6);
+          else if (rest.match(/[^#]11/)) intervals.push(5);
+
+          if (rest.includes("b13")) intervals.push(8);
+          else if (rest.match(/[^b]13/)) intervals.push(9);
+
+          return [...new Set(intervals)].sort((a, b) => a - b);
+        },
       };
 
       function init() {
@@ -1716,6 +1884,69 @@
 
         applyFullScale();
         loadLocalData();
+      }
+
+      // --- Tone.js Setup ---
+      function setupToneSynth() {
+        if (typeof Tone === "undefined") return;
+        if (chordSynth) return;
+
+        try {
+          const reverb = new Tone.Reverb({
+            decay: 2.5,
+            preDelay: 0.1,
+            wet: 0.3,
+          }).toDestination();
+
+          const filter = new Tone.Filter({
+            frequency: 2000,
+            type: "lowpass",
+            rolloff: -12,
+          }).connect(reverb);
+
+          chordSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: {
+              attack: 0.05,
+              decay: 0.3,
+              sustain: 0.6,
+              release: 1.5,
+            },
+            volume: -10,
+          }).connect(filter);
+
+          // Store references for preset changes
+          chordSynth.filterNode = filter;
+        } catch (e) {
+          console.error("Tone.js setup failed:", e);
+        }
+      }
+
+      function setSynthPreset(presetName) {
+        if (!chordSynth) return;
+
+        // Release any hanging notes when switching sounds
+        chordSynth.releaseAll();
+
+        if (presetName === "Electric Piano") {
+          chordSynth.set({
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.005, decay: 0.3, sustain: 0.4, release: 1.2 },
+          });
+          chordSynth.filterNode.frequency.rampTo(3000, 0.1);
+        } else if (presetName === "Warm Pad") {
+          chordSynth.set({
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.5, decay: 0.5, sustain: 0.8, release: 2.5 },
+          });
+          chordSynth.filterNode.frequency.rampTo(800, 0.1);
+        } else if (presetName === "Bright Synth") {
+          chordSynth.set({
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0.3, release: 1 },
+          });
+          chordSynth.filterNode.frequency.rampTo(5000, 0.1);
+        }
       }
 
       async function setupMetronomeSamples() {
@@ -2205,8 +2436,19 @@
 
       let countdownInterval = null;
 
-      function togglePlayProgression() {
+      async function togglePlayProgression() {
         const playBtns = document.querySelectorAll(".btn-play");
+
+        // Initialize Audio Contexts
+        if (typeof Tone !== "undefined") {
+          try {
+            if (Tone.context.state !== "running") await Tone.start();
+          } catch (e) {
+            console.warn("Could not start Tone.js context", e);
+          }
+        }
+        setupToneSynth();
+
         if (isPlaying) {
           isPlaying = false;
           if (audioCtx) audioCtx.suspend();
@@ -2237,7 +2479,7 @@
               '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
             btn.classList.add("paused");
           });
-          currentProgressionStep = 0;
+          currentProgressionStep = -1; // Start before first step so increment logic selects index 0
           stepBeatsRemaining = 0;
           currentBeatInBar = 0;
           nextNoteTime = audioCtx.currentTime;
@@ -2290,8 +2532,32 @@
 
         // Advance Step Logic
         if (stepBeatsRemaining <= 0) {
-          if (currentProgressionStep >= steps.length)
-            currentProgressionStep = 0;
+          currentProgressionStep++;
+
+          // Loop Logic
+          if (document.getElementById("loop-selection").checked) {
+            const selectedIndices = Array.from(steps)
+              .map((s, i) => (s.classList.contains("selected") ? i : -1))
+              .filter((i) => i !== -1);
+
+            if (selectedIndices.length > 0) {
+              const min = Math.min(...selectedIndices);
+              const max = Math.max(...selectedIndices);
+
+              if (currentProgressionStep > max) {
+                currentProgressionStep = min;
+              } else if (currentProgressionStep < min) {
+                // If we are outside the loop (e.g. start), jump in
+                currentProgressionStep = min;
+              }
+            } else {
+              if (currentProgressionStep >= steps.length)
+                currentProgressionStep = 0;
+            }
+          } else {
+            if (currentProgressionStep >= steps.length)
+              currentProgressionStep = 0;
+          }
 
           document
             .querySelectorAll(".progression-step.active-step")
@@ -2336,7 +2602,7 @@
           // Reset beat counter for new step to ensure downbeat accent
           currentBeatInBar = 0;
 
-          currentProgressionStep++;
+          // Fixed: Removed duplicate increment that was skipping steps
         }
 
         // Determine beatsPerBar for current active step to get accent right
@@ -2479,15 +2745,20 @@
       }
 
       function stopCurrentChord() {
-        const fadeOutTime = 0.05;
-        currentChordOscillators.forEach(({ osc, gain }) => {
-          gain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            audioCtx.currentTime + fadeOutTime,
-          );
-          osc.stop(audioCtx.currentTime + fadeOutTime);
-        });
-        currentChordOscillators = [];
+        if (chordSynth) chordSynth.releaseAll();
+
+        if (currentChordOscillators.length > 0) {
+          const now = audioCtx.currentTime;
+          currentChordOscillators.forEach(({ osc, gain }) => {
+            try {
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            } catch (e) {}
+            try {
+              osc.stop(now + 0.1);
+            } catch (e) {}
+          });
+          currentChordOscillators = [];
+        }
       }
 
       function playChord(rootNoteIndex, scaleIntervals, time) {
@@ -2520,30 +2791,96 @@
 
         if (chordTones.length === 0) return;
 
-        const soundName = document.getElementById("chord-sound-select").value;
-        const soundType = chordSounds[soundName];
         const mainVol = parseFloat(
           document.getElementById("chord-vol-slider").value,
         );
-        const volPerNote = mainVol / chordTones.length;
 
-        chordTones.forEach((interval, i) => {
-          const noteIndex = (rootNoteIndex + interval) % 12;
-          let octave = baseOctave;
-          if (i > 0 && noteIndex < (rootNoteIndex + chordTones[i - 1]) % 12) {
-            octave++;
-          }
-          const freq = noteIndexToFrequency(noteIndex, octave);
+        // Calculate duration logic (shared)
+        const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
+        // 'steps' is already defined at start of function, do not redefine
+        const currentStepEl = steps[currentProgressionStep];
+        const durationBars =
+          parseFloat(
+            currentStepEl.querySelector(".prog-duration-input").value,
+          ) || 4;
+        const durationSeconds = (durationBars * 4 * 60) / bpm;
 
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = soundType;
-          osc.frequency.setValueAtTime(freq, time);
-          gain.gain.setValueAtTime(volPerNote, time);
-          osc.connect(gain).connect(audioCtx.destination);
-          osc.start(time);
-          currentChordOscillators.push({ osc, gain });
-        });
+        // CHECK TONE.JS AVAILABILITY
+        if (
+          chordSynth &&
+          typeof Tone !== "undefined" &&
+          Tone.context.state === "running"
+        ) {
+          // --- TONE.JS PATH ---
+          const soundName = document.getElementById("chord-sound-select").value;
+          setSynthPreset(soundName);
+
+          // Map slider to dB
+          const db = mainVol <= 0 ? -100 : 20 * Math.log10(mainVol * 2);
+          chordSynth.volume.rampTo(db, 0.1);
+
+          const notesToPlay = [];
+          chordTones.forEach((interval, i) => {
+            const noteIndex = (rootNoteIndex + interval) % 12;
+            let octave = baseOctave;
+            if (i > 0 && noteIndex < (rootNoteIndex + chordTones[i - 1]) % 12) {
+              octave++;
+            }
+            notesToPlay.push(
+              Tone.Frequency(noteIndexToFrequency(noteIndex, octave)).toNote(),
+            );
+          });
+
+          chordSynth.triggerAttackRelease(notesToPlay, durationSeconds, time);
+        } else {
+          // --- FALLBACK WEB AUDIO PATH ---
+          const soundName = document.getElementById("chord-sound-select").value;
+          let type = "triangle";
+          if (soundName.includes("Piano")) type = "sine";
+          else if (soundName.includes("Bright")) type = "sawtooth";
+
+          const volPerNote = (mainVol / chordTones.length) * 0.5; // Slight reduction for raw oscillators
+
+          chordTones.forEach((interval, i) => {
+            const noteIndex = (rootNoteIndex + interval) % 12;
+            let octave = baseOctave;
+            if (i > 0 && noteIndex < (rootNoteIndex + chordTones[i - 1]) % 12) {
+              octave++;
+            }
+
+            const freq = noteIndexToFrequency(noteIndex, octave);
+
+            try {
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+
+              osc.type = type;
+              osc.frequency.value = freq;
+
+              // Envelope-ish
+              gain.gain.setValueAtTime(0, time);
+              gain.gain.linearRampToValueAtTime(volPerNote, time + 0.05);
+              gain.gain.setValueAtTime(
+                volPerNote,
+                time + durationSeconds - 0.1,
+              );
+              gain.gain.exponentialRampToValueAtTime(
+                0.001,
+                time + durationSeconds,
+              );
+
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+
+              osc.start(time);
+              osc.stop(time + durationSeconds + 0.1);
+
+              currentChordOscillators.push({ osc, gain });
+            } catch (e) {
+              console.warn("Fallback synth error", e);
+            }
+          });
+        }
       }
 
       // --- Transpose & Clear ---
@@ -2755,47 +3092,6 @@
         // Clear existing steps
         document.getElementById("progression-steps").innerHTML = "";
 
-        // Base Map (Pop/Standard)
-        let chordToScaleMap = {
-          maj7: "Ionio (Maj7)",
-          M7: "Ionio (Maj7)",
-          Δ: "Ionio (Maj7)",
-          m7: "Dorico (m7)",
-          "-7": "Dorico (m7)",
-          7: "Misolidio (7)",
-          m: "Minore Naturale (Aeolian)",
-          dim7: "Diminuita (T/S)",
-          "°7": "Diminuita (T/S)",
-          sus4: "Misolidio (7)",
-          sus: "Misolidio (7)",
-          "7sus4": "Misolidio (7)",
-          sus2: "Misolidio (7)",
-          "": "Ionio (Maj7)",
-        };
-
-        // Context Specific Overrides
-        if (genre === "jazz") {
-          Object.assign(chordToScaleMap, {
-            m7b5: "Minore Melodica",
-            ø: "Minore Melodica",
-            ø7: "Minore Melodica",
-            "7alt": "Altered (7alt)",
-            alt: "Altered (7alt)",
-            "7(b9)": "Altered (7alt)",
-            "7(#9)": "Altered (7alt)",
-            "maj7#11": "Lidio (Maj7#11)",
-            "7#11": "Lidio Dominante",
-            13: "Misolidio (7)",
-            11: "Misolidio (7)",
-          });
-        } else if (genre === "blues") {
-          Object.assign(chordToScaleMap, {
-            7: "Blues",
-            m: "Blues",
-            "7#9": "Blues",
-          });
-        }
-
         // Pre-process to handle repeat signs
         const measures = text
           .split("|")
@@ -2816,61 +3112,14 @@
           const barsPerChord = 1.0 / chordsInMeasure.length;
 
           chordsInMeasure.forEach((chordStr) => {
-            // Capture Root + everything else
-            const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/);
-            if (!match) return;
+            const parsed = ChordParser.parse(chordStr);
+            if (!parsed) return;
 
-            let root = match[1];
-            const flatMap = {
-              Db: "C#",
-              Eb: "D#",
-              Gb: "F#",
-              Ab: "G#",
-              Bb: "A#",
-            };
-            if (flatMap[root]) root = flatMap[root];
+            let root = parsed.root;
             if (!notes.includes(root)) return;
 
-            let rest = match[2];
-            // Heuristic quality normalization for map lookup
-            let quality = rest
-              .replace("min", "m")
-              .replace("maj", "M")
-              .replace("dim", "°");
-
-            if (quality.includes("sus")) {
-              if (quality.includes("2")) quality = "sus2";
-              else if (quality.includes("7")) quality = "7sus4";
-              else quality = "sus4";
-            } else {
-              if (quality.includes("M") || quality.includes("Δ"))
-                quality = "maj7";
-              else if (quality.includes("m") || quality.includes("-")) {
-                if (quality.includes("7") && !quality.includes("b5"))
-                  quality = "m7";
-                else if (quality.includes("b5") || quality.includes("ø"))
-                  quality = "m7b5";
-                else quality = "m";
-              } else if (quality.includes("°")) quality = "dim7";
-              else if (quality.includes("7")) quality = "7";
-              else if (quality === "") quality = "";
-            }
-
-            let scaleName = chordToScaleMap[quality] || "Misolidio (7)";
-
-            // Specific Jazz Alterations Logic
-            if (genre === "jazz") {
-              if (
-                rest.includes("b9") ||
-                rest.includes("#9") ||
-                rest.includes("alt")
-              )
-                scaleName = "Altered (7alt)";
-              if (rest.includes("#11") && !rest.includes("maj"))
-                scaleName = "Lidio Dominante";
-            }
-
-            const chordIntervals = parseChordIntervals(chordStr);
+            const scaleName = ChordParser.getScale(chordStr, genre);
+            const chordIntervals = ChordParser.getIntervals(chordStr);
 
             addProgressionStep({
               root,
@@ -2884,69 +3133,6 @@
             });
           });
         });
-      }
-
-      function parseChordIntervals(chordStr) {
-        // Extract parts: Root + Rest
-        const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/);
-        if (!match) return [0, 4, 7]; // Fallback Major
-
-        let rest = match[2];
-        let intervals = [0]; // Root
-
-        // Determine basic quality
-        let third = 4; // Major default
-        let fifth = 7; // Perfect default
-        let seventh = null;
-
-        if (rest.match(/^(m|min|-)/)) third = 3;
-        if (rest.match(/^(dim|°)/)) {
-          third = 3;
-          fifth = 6;
-        }
-        if (rest.match(/^(aug|\+)/)) fifth = 8;
-
-        // Sus handling
-        if (rest.includes("sus2")) third = 2;
-        else if (rest.includes("sus")) third = 5; // 4th
-
-        // Determine 7th
-        if (rest.includes("maj7") || rest.includes("M7") || rest.includes("Δ"))
-          seventh = 11;
-        else if (rest.includes("dim7") || rest.includes("°7")) {
-          third = 3;
-          fifth = 6;
-          seventh = 9;
-        } else if (rest.includes("m7b5") || rest.includes("ø")) {
-          third = 3;
-          fifth = 6;
-          seventh = 10;
-        } else if (
-          rest.includes("7") ||
-          rest.includes("9") ||
-          rest.includes("11") ||
-          rest.includes("13")
-        )
-          seventh = 10;
-        else if (rest.includes("6")) seventh = 9; // 6th chord
-
-        // Specific alterations
-        if (rest.includes("b5") && !rest.includes("m7b5")) fifth = 6;
-        if (rest.includes("#5")) fifth = 8;
-
-        intervals.push(third);
-        intervals.push(fifth);
-        if (seventh !== null) intervals.push(seventh);
-
-        // Extensions
-        if (rest.includes("b9")) intervals.push(1);
-        else if (rest.includes("9")) intervals.push(2);
-        else if (rest.includes("#9")) intervals.push(3);
-
-        if (rest.includes("#11")) intervals.push(6);
-        if (rest.includes("b13")) intervals.push(8);
-
-        return [...new Set(intervals)].sort((a, b) => a - b);
       }
 
       init();
