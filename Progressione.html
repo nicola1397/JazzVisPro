@@ -1414,6 +1414,13 @@
                   title="Chord Volume"
                 />
               </div>
+    <div class="nav-group">
+      <label>Octave</label>
+      <div style="display: flex; gap: 5px">
+        <button class="btn-io" style="padding: 0 8px; min-width: 30px;" onclick="transposeChordOctave(-1)">-</button>
+        <button class="btn-io" style="padding: 0 8px; min-width: 30px;" onclick="transposeChordOctave(1)">+</button>
+      </div>
+    </div>
             </div>
           </div>
         </div>
@@ -2412,10 +2419,31 @@
             let newIndex = (index + semitones) % 12;
             if (newIndex < 0) newIndex += 12;
             rootSelect.value = notes[newIndex];
+
+          // Update Chord Name Text
+          const chordNameInput = step.querySelector(".prog-chord-name");
+          const chordName = chordNameInput.value;
+          const match = chordName.trim().match(/^([A-G][#b]?)(.*)/);
+          if (match) {
+             chordNameInput.value = notes[newIndex] + match[2];
+          }
           }
         });
         saveLocalData();
       }
+
+    function transposeChordOctave(direction) {
+      const steps = document.querySelectorAll(".progression-step");
+      steps.forEach((step) => {
+        const octInput = step.querySelector(".prog-chord-octave");
+        let val = parseInt(octInput.value) || 4;
+        val += direction;
+        if (val < 1) val = 1;
+        if (val > 7) val = 7;
+        octInput.value = val;
+      });
+      saveLocalData();
+    }
 
       function clearProgression() {
         if (confirm("Are you sure you want to clear the progression?")) {
@@ -2720,6 +2748,34 @@
           rest.includes("7") ||
           rest.includes("9") ||
           rest.includes("11") ||
+          rest.includes("13")
+        )
+          seventh = 10;
+        else if (rest.includes("6")) seventh = 9; // 6th chord
+
+        // Specific alterations
+        if (rest.includes("b5") && !rest.includes("m7b5")) fifth = 6;
+        if (rest.includes("#5")) fifth = 8;
+
+        intervals.push(third);
+        intervals.push(fifth);
+        if (seventh !== null) intervals.push(seventh);
+
+        // Extensions
+        if (rest.includes("b9")) intervals.push(1);
+        else if (rest.includes("9")) intervals.push(2);
+        else if (rest.includes("#9")) intervals.push(3);
+
+        if (rest.includes("#11")) intervals.push(6);
+        if (rest.includes("b13")) intervals.push(8);
+
+        return [...new Set(intervals)].sort((a, b) => a - b);
+      }
+
+      init();
+    </script>
+  </body>
+</html>
           rest.includes("13")
         )
           seventh = 10;
