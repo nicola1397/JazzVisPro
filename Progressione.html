@@ -556,6 +556,11 @@
         flex-wrap: wrap;
         transition: box-shadow 0.3s ease;
         justify-content: flex-start;
+        border: 2px solid transparent; /* Reserve space for border */
+      }
+      .progression-step.selected {
+        border-color: var(--accent);
+        background: #34495e; /* Slightly lighter background */
       }
       .progression-step.active-step {
         box-shadow: 0 0 0 3px var(--accent);
@@ -2008,7 +2013,7 @@
         const rootSelectHTML = document
           .getElementById("root-select")
           .outerHTML.replace('id="root-select"', "")
-          .replace(/onchange=".*?"/g, "");
+          .replace(/onchange=".*?"/g, "").replace('<select', '<select class="prog-root-select"');
         const scaleSelectHTML = document
           .getElementById("scale-select")
           .outerHTML.replace('id="scale-select"', 'class="scale-select"')
@@ -2019,7 +2024,7 @@
             ${rootSelectHTML}
             ${scaleSelectHTML}
             <div class="step-timing">
-                <input type="number" class="prog-duration-input" value="${data ? data.bars : 4}" min="1" title="Duration in bars">
+                <input type="text" inputmode="decimal" class="prog-duration-input" value="${data ? data.bars : 4}" title="Duration in bars" onchange="sanitizeDuration(this)">
                 <span class="bars-label">bars</span>
                 <input type="number" class="prog-beats-input" value="${data && data.beats ? data.beats : 4}" min="1" max="16" title="Beats per bar">
                 <span class="bars-label">/</span>
@@ -2048,13 +2053,69 @@
           stepDiv.querySelector(".prog-chord-octave").value =
             data.chordOctave || 4;
         }
+        
+        // Selection Logic
+        stepDiv.addEventListener('click', (e) => {
+            // Ignore clicks on inputs/selects/buttons to prevent conflict with editing
+            if (['INPUT', 'SELECT', 'BUTTON', 'LABEL'].includes(e.target.tagName)) return;
+            
+            if (e.ctrlKey || e.metaKey) {
+                stepDiv.classList.toggle('selected');
+            } else {
+                document.querySelectorAll('.progression-step.selected').forEach(s => s.classList.remove('selected'));
+                stepDiv.classList.add('selected');
+            }
+        });
 
         stepDiv
           .querySelectorAll("select, input")
-          .forEach((el) => el.addEventListener("change", saveLocalData));
+          .forEach((el) => {
+              el.addEventListener("change", saveLocalData);
+              el.addEventListener("input", (e) => syncStepData(e.target));
+          });
 
         stepsContainer.appendChild(stepDiv);
         if (!data) saveLocalData();
+      }
+
+      function sanitizeDuration(input) {
+          let val = input.value.replace(',', '.');
+          if (isNaN(parseFloat(val))) val = 4;
+          input.value = val;
+          syncStepData(input); // Ensure sanitized value syncs
+          saveLocalData();
+      }
+
+      function syncStepData(sourceEl) {
+          const step = sourceEl.closest('.progression-step');
+          if (!step || !step.classList.contains('selected')) return;
+
+          const selectedSteps = document.querySelectorAll('.progression-step.selected');
+          if (selectedSteps.length <= 1) return;
+
+          // Identify the class of the element being edited
+          let selector = null;
+          if (sourceEl.classList.contains('prog-root-select')) selector = '.prog-root-select';
+          else if (sourceEl.classList.contains('scale-select')) selector = '.scale-select';
+          else if (sourceEl.classList.contains('prog-duration-input')) selector = '.prog-duration-input';
+          else if (sourceEl.classList.contains('prog-beats-input')) selector = '.prog-beats-input';
+          else if (sourceEl.classList.contains('prog-denominator-input')) selector = '.prog-denominator-input';
+          else if (sourceEl.classList.contains('prog-chord-name')) selector = '.prog-chord-name';
+          else if (sourceEl.classList.contains('prog-chord-octave')) selector = '.prog-chord-octave';
+
+          if (selector) {
+              const newVal = sourceEl.value;
+              selectedSteps.forEach(s => {
+                  if (s !== step) {
+                      const targetEl = s.querySelector(selector);
+                      if (targetEl) {
+                          targetEl.value = newVal;
+                          // If it's the duration input, handle visual sanitization if needed, 
+                          // but mostly we just sync value.
+                      }
+                  }
+              });
+          }
       }
 
       function updateProgressionIndices() {
@@ -2183,7 +2244,7 @@
           }
 
           const durationBars =
-            parseInt(
+            parseFloat(
               currentStepEl.querySelector(".prog-duration-input").value,
             ) || 4;
           const beatsPerBar =
