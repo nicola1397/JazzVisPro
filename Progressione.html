@@ -935,6 +935,34 @@
         margin-left: 10px;
         font-size: 0.8em;
       }
+
+      /* Quick Controls */
+      .quick-controls {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        align-items: center;
+        margin: 10px auto 20px auto;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 10px 20px;
+        border-radius: 50px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: fit-content;
+      }
+      .btn-tap {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: transparent;
+        border: 2px solid #7f8c8d;
+        color: #bdc3c7;
+        font-weight: bold;
+        font-size: 0.75em;
+      }
+      .btn-tap:active {
+        background: #bdc3c7;
+        color: #1a1a1a;
+      }
     </style>
   </head>
   <body>
@@ -1043,6 +1071,48 @@
           </div>
           <div class="fret-numbers" id="numbers-layer"></div>
         </div>
+      </div>
+
+      <!-- Quick Playback Controls -->
+      <div class="quick-controls">
+        <button
+          class="btn-tap"
+          class="btn-tap tap-feedback"
+          id="tap-btn"
+          onclick="tapTempo()"
+          title="Tap Tempo"
+        >
+          TAP
+        </button>
+        <button
+          class="btn-icon"
+          onclick="navigateStep(-1)"
+          title="Previous Step"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+          </svg>
+        </button>
+        <button
+          id="quick-play-btn"
+          class="btn-icon btn-play"
+          onclick="togglePlayProgression()"
+          title="Play/Pause"
+        >
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+        </button>
+        <button
+          class="btn-icon btn-stop"
+          onclick="stopProgression()"
+          title="Stop"
+        >
+          <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
+        </button>
+        <button class="btn-icon" onclick="navigateStep(1)" title="Next Step">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+          </svg>
+        </button>
       </div>
 
       <!-- Scale Calculator -->
@@ -1187,6 +1257,13 @@
           <div class="control-section">
             <div class="control-section-header">Playback</div>
             <div class="control-row">
+              <button
+                class="btn-io tap-feedback"
+                onclick="tapTempo()"
+                title="Tap Tempo"
+              >
+                TAP
+              </button>
               <div class="nav-group">
                 <label for="bpm-input">BPM</label>
                 <input
@@ -1286,6 +1363,7 @@
       let currentBeatInBar = 0;
       let currentProgressionStep = 0;
       let isPlaying = false;
+      let tapTimes = [];
 
       const notes = [
         "C",
@@ -1885,15 +1963,17 @@
       let countdownInterval = null;
 
       function togglePlayProgression() {
-        const playBtn = document.getElementById("play-pause-btn");
+        const playBtns = document.querySelectorAll(".btn-play");
         if (isPlaying) {
           isPlaying = false;
           if (audioCtx) audioCtx.suspend();
           if (countdownInterval) clearInterval(countdownInterval);
           document.getElementById("countdown-overlay").style.display = "none";
-          playBtn.innerHTML =
-            '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Play Icon
-          playBtn.classList.remove("paused");
+          playBtns.forEach((btn) => {
+            btn.innerHTML =
+              '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+            btn.classList.remove("paused");
+          });
           document
             .querySelectorAll(".progression-step.active-step")
             .forEach((el) => el.classList.remove("active-step"));
@@ -1909,9 +1989,11 @@
           audioCtx.resume();
 
           isPlaying = true;
-          playBtn.innerHTML =
-            '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'; // Pause Icon
-          playBtn.classList.add("paused");
+          playBtns.forEach((btn) => {
+            btn.innerHTML =
+              '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+            btn.classList.add("paused");
+          });
           currentProgressionStep = 0;
           stepBeatsRemaining = 0;
           currentBeatInBar = 0;
@@ -1922,11 +2004,13 @@
       }
 
       function stopProgression() {
-        const playBtn = document.getElementById("play-pause-btn");
+        const playBtns = document.querySelectorAll(".btn-play");
         isPlaying = false;
-        playBtn.innerHTML =
-          '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Play Icon
-        playBtn.classList.remove("paused");
+        playBtns.forEach((btn) => {
+          btn.innerHTML =
+            '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+          btn.classList.remove("paused");
+        });
         currentProgressionStep = 0;
         document
           .querySelectorAll(".progression-step.active-step")
@@ -2013,6 +2097,92 @@
 
         stepBeatsRemaining--;
         currentBeatInBar = (currentBeatInBar + 1) % beatsPerBar;
+      }
+
+      function navigateStep(direction) {
+        const steps = document.querySelectorAll(".progression-step");
+        if (steps.length === 0) return;
+
+        // Update current step index
+        currentProgressionStep += direction;
+
+        // Wrap around logic
+        if (currentProgressionStep >= steps.length) currentProgressionStep = 0;
+        if (currentProgressionStep < 0)
+          currentProgressionStep = steps.length - 1;
+
+        // Visual update
+        document
+          .querySelectorAll(".progression-step.active-step")
+          .forEach((el) => el.classList.remove("active-step"));
+
+        const currentStepEl = steps[currentProgressionStep];
+        currentStepEl.classList.add("active-step");
+
+        // Update Fretboard/Inputs
+        document.getElementById("root-select").value =
+          currentStepEl.querySelector("select:nth-of-type(1)").value;
+        document.getElementById("scale-select").value =
+          currentStepEl.querySelector("select:nth-of-type(2)").value;
+        applyFullScale();
+
+        // If playing, reset beat counters to jump immediately to the new step
+        if (isPlaying) {
+          const durationBars =
+            parseInt(
+              currentStepEl.querySelector(".prog-duration-input").value,
+            ) || 4;
+          const beatsPerBar =
+            parseInt(currentStepEl.querySelector(".prog-beats-input").value) ||
+            4;
+          currentDenominator =
+            parseInt(
+              currentStepEl.querySelector(".prog-denominator-input").value,
+            ) || 4;
+
+          stepBeatsRemaining = durationBars * beatsPerBar;
+          currentBeatInBar = 0;
+        }
+      }
+
+      function tapTempo() {
+        const now = Date.now();
+        // Reset if pause is too long (2 seconds)
+        if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > 2000) {
+          tapTimes = [];
+        }
+        tapTimes.push(now);
+        if (tapTimes.length > 4) tapTimes.shift(); // Keep last 4 taps
+
+        if (tapTimes.length > 1) {
+          let intervals = [];
+          for (let i = 1; i < tapTimes.length; i++) {
+            intervals.push(tapTimes[i] - tapTimes[i - 1]);
+          }
+          const avgInterval =
+            intervals.reduce((a, b) => a + b, 0) / intervals.length;
+          const bpm = Math.round(60000 / avgInterval);
+
+          if (bpm >= 40 && bpm <= 300) {
+            document.getElementById("bpm-input").value = bpm;
+            // Flash button feedback
+            const btn = document.getElementById("tap-btn");
+            btn.style.backgroundColor = "var(--accent)";
+            btn.style.color = "#111";
+            setTimeout(() => {
+              btn.style.backgroundColor = "";
+              btn.style.color = "";
+            }, 100);
+            document.querySelectorAll(".tap-feedback").forEach((btn) => {
+              btn.style.backgroundColor = "var(--accent)";
+              btn.style.color = "#111";
+              setTimeout(() => {
+                btn.style.backgroundColor = "";
+                btn.style.color = "";
+              }, 100);
+            });
+          }
+        }
       }
 
       function playClick(time, isDownbeat) {
