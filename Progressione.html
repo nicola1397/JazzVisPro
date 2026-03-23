@@ -1242,6 +1242,8 @@
               <button class="btn-add-step" onclick="addProgressionStep()">
                 + Add
               </button>
+              <button class="btn-io" onclick="selectAllSteps()" title="Select All">All</button>
+              <button class="btn-io" onclick="deselectAllSteps()" title="Deselect All">None</button>
               <button
                 class="btn-reset"
                 onclick="clearProgression()"
@@ -1453,6 +1455,7 @@
       let isPlaying = false;
       let currentChordOscillators = [];
       let tapTimes = [];
+      let lastSelectedIndex = -1;
 
       const notes = [
         "C",
@@ -2059,11 +2062,27 @@
             // Ignore clicks on inputs/selects/buttons to prevent conflict with editing
             if (['INPUT', 'SELECT', 'BUTTON', 'LABEL'].includes(e.target.tagName)) return;
             
-            if (e.ctrlKey || e.metaKey) {
+            const currentIndex = parseInt(stepDiv.dataset.index);
+
+            if (e.shiftKey && lastSelectedIndex !== -1) {
+                const steps = document.querySelectorAll('.progression-step');
+                const start = Math.min(lastSelectedIndex, currentIndex);
+                const end = Math.max(lastSelectedIndex, currentIndex);
+                
+                if (!e.ctrlKey && !e.metaKey) {
+                     document.querySelectorAll('.progression-step.selected').forEach(s => s.classList.remove('selected'));
+                }
+
+                for (let i = start; i <= end; i++) {
+                    if(steps[i]) steps[i].classList.add('selected');
+                }
+            } else if (e.ctrlKey || e.metaKey) {
                 stepDiv.classList.toggle('selected');
+                lastSelectedIndex = currentIndex;
             } else {
                 document.querySelectorAll('.progression-step.selected').forEach(s => s.classList.remove('selected'));
                 stepDiv.classList.add('selected');
+                lastSelectedIndex = currentIndex;
             }
         });
 
@@ -2519,6 +2538,15 @@
           document.getElementById("snapshot-list").innerHTML = "";
           saveLocalData();
         }
+      }
+
+      function selectAllSteps() {
+        document.querySelectorAll('.progression-step').forEach(s => s.classList.add('selected'));
+      }
+
+      function deselectAllSteps() {
+        document.querySelectorAll('.progression-step').forEach(s => s.classList.remove('selected'));
+        lastSelectedIndex = -1;
       }
 
       // --- Local Storage ---
