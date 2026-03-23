@@ -609,6 +609,16 @@
         color: #bdc3c7;
         white-space: nowrap;
       }
+      .progression-step .prog-chord-name,
+      .progression-step .prog-chord-octave {
+        height: 36px;
+        padding: 0 8px;
+        background: #333;
+        color: #eee;
+        border: 1px solid #444;
+        border-radius: 6px;
+        font-size: 0.9em;
+      }
       .btn-remove-step {
         background: #c0392b;
         color: white;
@@ -962,6 +972,38 @@
         background: #bdc3c7;
         color: #1a1a1a;
       }
+
+      /* Custom Checkbox */
+      input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #555;
+        border-radius: 4px;
+        background: #333;
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+        vertical-align: middle;
+        margin: 0;
+      }
+      input[type="checkbox"]:checked {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      input[type="checkbox"]:checked::after {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 1px;
+        width: 5px;
+        height: 10px;
+        border: solid #1a1a1a;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
     </style>
   </head>
   <body>
@@ -1075,7 +1117,6 @@
       <!-- Quick Playback Controls -->
       <div class="quick-controls">
         <button
-          class="btn-tap"
           class="btn-tap tap-feedback"
           id="tap-btn"
           onclick="tapTempo()"
@@ -1339,6 +1380,42 @@
               </button>
             </div>
           </div>
+
+          <!-- Group 5: Chord Synth -->
+          <div class="control-section">
+            <div class="control-section-header">Chord Synth</div>
+            <div class="control-row">
+              <div
+                class="nav-group"
+                style="
+                  flex-direction: row;
+                  align-items: center;
+                  gap: 5px;
+                  height: 100%;
+                "
+              >
+                <input type="checkbox" id="play-chords-toggle" />
+                <label for="play-chords-toggle" style="margin: 0">On</label>
+              </div>
+              <div class="nav-group">
+                <label for="chord-sound-select">Sound</label>
+                <select id="chord-sound-select" style="width: 110px"></select>
+              </div>
+              <div class="nav-group">
+                <label for="chord-vol-slider">Vol</label>
+                <input
+                  type="range"
+                  id="chord-vol-slider"
+                  min="0"
+                  max="0.5"
+                  step="0.05"
+                  value="0.1"
+                  style="width: 70px; height: 36px"
+                  title="Chord Volume"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1362,6 +1439,7 @@
       let currentBeatInBar = 0;
       let currentProgressionStep = 0;
       let isPlaying = false;
+      let currentChordOscillators = [];
       let tapTimes = [];
 
       const notes = [
@@ -1479,6 +1557,12 @@
         Log: { type: "osc", freqDown: 600, freqUp: 450, shape: "triangle" },
       };
 
+      const chordSounds = {
+        "Sine Pad": "sine",
+        "Saw Pad": "sawtooth",
+        "Square Pad": "square",
+      };
+
       function init() {
         const ts = document.getElementById("tuning-select");
         for (let t in tunings) ts.add(new Option(t, t));
@@ -1501,6 +1585,11 @@
         Object.keys(metronomeSamples).forEach((name) =>
           soundSelect.add(new Option(name, name)),
         );
+        const chordSoundSelect = document.getElementById("chord-sound-select");
+        Object.keys(chordSounds).forEach((name) =>
+          chordSoundSelect.add(new Option(name, name)),
+        );
+
         setupMetronomeSamples();
 
         renderFretboard();
@@ -1933,6 +2022,12 @@
                     <option value="8">8</option>
                 </select>
             </div>
+            <div class="step-timing" style="gap:5px;">
+                <input type="text" class="prog-chord-name" placeholder="Chord" value="${data && data.chordName ? data.chordName : ""}" style="width:70px; text-align:center;">
+                <label style="font-size:0.8em; color:#bdc3c7;">Oct</label>
+                <input type="number" class="prog-chord-octave" value="${data && data.chordOctave ? data.chordOctave : 4}" min="1" max="7" style="width:40px; text-align:center;">
+            </div>
+            <input type="hidden" class="prog-chord-intervals" value="${data && data.chordIntervals ? data.chordIntervals : ""}">
             <button class="btn-remove-step" onclick="this.closest('.progression-step').remove(); updateProgressionIndices(); saveLocalData();" title="Remove Step">×</button>
         `;
 
@@ -1941,6 +2036,10 @@
           stepDiv.querySelector("select:nth-of-type(2)").value = data.scale;
           stepDiv.querySelector(".prog-denominator-input").value =
             data.denominator || 4;
+          stepDiv.querySelector(".prog-chord-name").value =
+            data.chordName || "";
+          stepDiv.querySelector(".prog-chord-octave").value =
+            data.chordOctave || 4;
         }
 
         stepDiv
@@ -2003,6 +2102,7 @@
       }
 
       function stopProgression() {
+        stopCurrentChord();
         const playBtns = document.querySelectorAll(".btn-play");
         isPlaying = false;
         playBtns.forEach((btn) => {
@@ -2063,6 +2163,17 @@
           document.getElementById("scale-select").value =
             currentStepEl.querySelector("select:nth-of-type(2)").value;
           applyFullScale();
+
+          if (document.getElementById("play-chords-toggle").checked) {
+            const rootIdx = notes.indexOf(
+              currentStepEl.querySelector("select:nth-of-type(1)").value,
+            );
+            const scaleName = currentStepEl.querySelector(
+              "select:nth-of-type(2)",
+            ).value;
+            const scaleIntervals = scales[scaleName];
+            playChord(rootIdx, scaleIntervals, time);
+          }
 
           const durationBars =
             parseInt(
@@ -2215,6 +2326,81 @@
         }
       }
 
+      function noteIndexToFrequency(noteIndex, octave = 4) {
+        const A4 = 9; // A is index 9
+        const A4_FREQ = 440.0;
+        const semitonesFromA4 = noteIndex - A4 + (octave - 4) * 12;
+        return A4_FREQ * Math.pow(2, semitonesFromA4 / 12);
+      }
+
+      function stopCurrentChord() {
+        const fadeOutTime = 0.05;
+        currentChordOscillators.forEach(({ osc, gain }) => {
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            audioCtx.currentTime + fadeOutTime,
+          );
+          osc.stop(audioCtx.currentTime + fadeOutTime);
+        });
+        currentChordOscillators = [];
+      }
+
+      function playChord(rootNoteIndex, scaleIntervals, time) {
+        if (!document.getElementById("play-chords-toggle").checked) {
+          stopCurrentChord();
+          return;
+        }
+        stopCurrentChord();
+
+        let chordTones = [];
+        // Try to get specific chord intervals from step data
+        const steps = document.querySelectorAll(".progression-step");
+        let baseOctave = 4;
+
+        if (steps[currentProgressionStep]) {
+          const stepEl = steps[currentProgressionStep];
+          const intervalsStr = stepEl.querySelector(
+            ".prog-chord-intervals",
+          ).value;
+          if (intervalsStr) chordTones = intervalsStr.split(",").map(Number);
+          baseOctave =
+            parseInt(stepEl.querySelector(".prog-chord-octave").value) || 4;
+        }
+
+        // Fallback to scale masking if no specific intervals
+        if (chordTones.length === 0) {
+          const arpIntervals = [0, 3, 4, 7, 10, 11];
+          chordTones = scaleIntervals.filter((i) => arpIntervals.includes(i));
+        }
+
+        if (chordTones.length === 0) return;
+
+        const soundName = document.getElementById("chord-sound-select").value;
+        const soundType = chordSounds[soundName];
+        const mainVol = parseFloat(
+          document.getElementById("chord-vol-slider").value,
+        );
+        const volPerNote = mainVol / chordTones.length;
+
+        chordTones.forEach((interval, i) => {
+          const noteIndex = (rootNoteIndex + interval) % 12;
+          let octave = baseOctave;
+          if (i > 0 && noteIndex < (rootNoteIndex + chordTones[i - 1]) % 12) {
+            octave++;
+          }
+          const freq = noteIndexToFrequency(noteIndex, octave);
+
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = soundType;
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(volPerNote, time);
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start(time);
+          currentChordOscillators.push({ osc, gain });
+        });
+      }
+
       // --- Transpose & Clear ---
       function transposeProgression(semitones) {
         const steps = document.querySelectorAll(".progression-step");
@@ -2248,6 +2434,10 @@
 
       // --- Local Storage ---
       function saveLocalData() {
+        const bpm = document.getElementById("bpm-input").value;
+        const sourceText = document.getElementById(
+          "chord-importer-textarea",
+        ).value;
         const snapshots = [];
         document.querySelectorAll(".snapshot-card").forEach((card) => {
           if (card.dataset.snapshot)
@@ -2261,20 +2451,37 @@
             bars: step.querySelector(".prog-duration-input").value,
             beats: step.querySelector(".prog-beats-input").value,
             denominator: step.querySelector(".prog-denominator-input").value,
+            chordName: step.querySelector(".prog-chord-name").value,
+            chordOctave: step.querySelector(".prog-chord-octave").value,
+            chordIntervals: step.querySelector(".prog-chord-intervals").value,
           });
         });
-        localStorage.setItem("jazzVizSnapshots", JSON.stringify(snapshots));
-        localStorage.setItem("jazzVizProgression", JSON.stringify(progression));
+
+        const dataToSave = { bpm, sourceText, snapshots, progression };
+        localStorage.setItem("jazzVizData", JSON.stringify(dataToSave));
       }
 
       function loadLocalData() {
-        const snaps = JSON.parse(localStorage.getItem("jazzVizSnapshots"));
-        if (snaps && Array.isArray(snaps))
-          snaps.forEach((data) => createSnapshot(data));
+        const data = JSON.parse(localStorage.getItem("jazzVizData"));
+        if (data && typeof data === "object") {
+          // New format
+          document.getElementById("bpm-input").value = data.bpm || 120;
+          document.getElementById("chord-importer-textarea").value =
+            data.sourceText || "";
+          if (data.snapshots && Array.isArray(data.snapshots))
+            data.snapshots.forEach((d) => createSnapshot(d));
+          if (data.progression && Array.isArray(data.progression))
+            data.progression.forEach((d) => addProgressionStep(d));
+        } else {
+          // Old format for backward compatibility
+          const snaps = JSON.parse(localStorage.getItem("jazzVizSnapshots"));
+          if (snaps && Array.isArray(snaps))
+            snaps.forEach((data) => createSnapshot(data));
 
-        const prog = JSON.parse(localStorage.getItem("jazzVizProgression"));
-        if (prog && Array.isArray(prog))
-          prog.forEach((data) => addProgressionStep(data));
+          const prog = JSON.parse(localStorage.getItem("jazzVizProgression"));
+          if (prog && Array.isArray(prog))
+            prog.forEach((data) => addProgressionStep(data));
+        }
       }
 
       function toggleMenu() {
@@ -2291,23 +2498,31 @@
 
       // --- Progression Import/Export ---
       function exportProgressionData() {
-        const progression = [];
+        const exportData = {
+          bpm: document.getElementById("bpm-input").value,
+          sourceText: document.getElementById("chord-importer-textarea").value,
+          progression: [],
+        };
+
         document.querySelectorAll(".progression-step").forEach((step) => {
-          progression.push({
+          exportData.progression.push({
             root: step.querySelector("select:nth-of-type(1)").value,
             scale: step.querySelector("select:nth-of-type(2)").value,
             bars: step.querySelector(".prog-duration-input").value,
             beats: step.querySelector(".prog-beats-input").value,
             denominator: step.querySelector(".prog-denominator-input").value,
+            chordName: step.querySelector(".prog-chord-name").value,
+            chordOctave: step.querySelector(".prog-chord-octave").value,
+            chordIntervals: step.querySelector(".prog-chord-intervals").value,
           });
         });
 
-        if (progression.length === 0) {
+        if (exportData.progression.length === 0) {
           alert("Progression is empty. Nothing to export.");
           return;
         }
 
-        const dataStr = JSON.stringify(progression, null, 2);
+        const dataStr = JSON.stringify(exportData, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
@@ -2328,7 +2543,16 @@
         reader.onload = function (e) {
           try {
             const data = JSON.parse(e.target.result);
-            if (Array.isArray(data)) {
+            if (data && typeof data === "object" && data.progression) {
+              // New format
+              document.getElementById("bpm-input").value = data.bpm || 120;
+              document.getElementById("chord-importer-textarea").value =
+                data.sourceText || "";
+              document.getElementById("progression-steps").innerHTML = "";
+              data.progression.forEach((step) => addProgressionStep(step));
+              saveLocalData();
+            } else if (Array.isArray(data)) {
+              // Old format
               document.getElementById("progression-steps").innerHTML = "";
               data.forEach((step) => addProgressionStep(step));
               saveLocalData();
@@ -2445,14 +2669,79 @@
             }
           }
 
+          // Calculate chord intervals for playback
+          const chordIntervals = parseChordIntervals(chordStr);
+
           addProgressionStep({
             root,
             scale: scaleName,
             bars: 1,
             beats: 4,
             denominator: 4,
+            chordName: chordStr,
+            chordOctave: 4,
+            chordIntervals: chordIntervals.join(","),
           });
         });
+      }
+
+      function parseChordIntervals(chordStr) {
+        // Extract parts: Root + Rest
+        const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/);
+        if (!match) return [0, 4, 7]; // Fallback Major
+
+        let rest = match[2];
+        let intervals = [0]; // Root
+
+        // Determine basic quality
+        let third = 4; // Major default
+        let fifth = 7; // Perfect default
+        let seventh = null;
+
+        if (rest.match(/^(m|min|-)/)) third = 3;
+        if (rest.match(/^(dim|°)/)) {
+          third = 3;
+          fifth = 6;
+        }
+        if (rest.match(/^(aug|\+)/)) fifth = 8;
+
+        // Determine 7th
+        if (rest.includes("maj7") || rest.includes("M7") || rest.includes("Δ"))
+          seventh = 11;
+        else if (rest.includes("dim7") || rest.includes("°7")) {
+          third = 3;
+          fifth = 6;
+          seventh = 9;
+        } else if (rest.includes("m7b5") || rest.includes("ø")) {
+          third = 3;
+          fifth = 6;
+          seventh = 10;
+        } else if (
+          rest.includes("7") ||
+          rest.includes("9") ||
+          rest.includes("11") ||
+          rest.includes("13")
+        )
+          seventh = 10;
+        else if (rest.includes("6")) seventh = 9; // 6th chord
+
+        // Specific alterations
+        if (rest.includes("b5") && !rest.includes("m7b5")) fifth = 6;
+        if (rest.includes("#5")) fifth = 8;
+
+        intervals.push(third);
+        intervals.push(fifth);
+        if (seventh !== null) intervals.push(seventh);
+
+        // Extensions
+        if (rest.includes("b9")) intervals.push(1);
+        else if (rest.includes("9")) intervals.push(2);
+        else if (rest.includes("#9")) intervals.push(3);
+
+        if (rest.includes("#11")) intervals.push(6);
+        if (rest.includes("b13")) intervals.push(8);
+
+        return [...new Set(intervals)].sort((a, b) => a - b);
       }
 
       init();
