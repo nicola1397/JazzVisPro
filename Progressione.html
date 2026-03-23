@@ -42,6 +42,9 @@
         z-index: 100;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
       }
+      * {
+        box-sizing: border-box;
+      }
       .logo {
         font-weight: 900;
         color: var(--accent);
@@ -71,11 +74,15 @@
       select,
       button {
         font-weight: bold;
-        padding: 8px 12px;
+        height: 36px;
+        padding: 0 12px;
         border-radius: 6px;
         border: none;
         cursor: pointer;
         transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
       select {
         background: #333;
@@ -164,6 +171,8 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        max-width: 1400px;
+        margin: 0 auto;
       }
       .scroll-wrapper {
         width: 100%;
@@ -547,6 +556,7 @@
         border-radius: 8px;
         flex-wrap: wrap;
         transition: box-shadow 0.3s ease;
+        justify-content: flex-start;
       }
       .progression-step.active-step {
         box-shadow: 0 0 0 3px var(--accent);
@@ -555,24 +565,50 @@
         font-size: 0.9em;
         font-weight: bold;
         color: #bdc3c7;
-        min-width: 50px;
+        margin-right: 5px;
+      }
+      /* .progression-step .step-select {
+        flex-grow: 1;
+        min-width: 100px;
       }
       .progression-step select:not(:last-of-type) {
         flex-grow: 1;
+        min-width: 100px;
+      } */
+      .progression-step select {
+        flex-grow: 1;
+        min-width: 100px;
+      }
+
+      .step-timing {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 4px 8px;
+        border-radius: 6px;
+        flex-wrap: wrap;
       }
       .progression-step .prog-duration-input,
       .progression-step .prog-beats-input {
-        width: 60px;
-        padding: 8px 12px;
-        box-sizing: border-box;
+        width: 50px;
+        height: 36px;
+        padding: 0 8px;
         background: #333;
         color: #eee;
         border: 1px solid #444;
         border-radius: 6px;
+        text-align: center;
+      }
+      .progression-step select.prog-denominator-input {
+        height: 36px;
+        width: 50px;
+        padding: 0 0 0 8px;
       }
       .progression-step .bars-label {
         font-size: 0.8em;
         color: #bdc3c7;
+        white-space: nowrap;
       }
       .btn-remove-step {
         background: #c0392b;
@@ -585,33 +621,77 @@
         margin-left: auto;
         font-weight: bold;
         font-size: 1.2em;
-        line-height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         padding: 0;
       }
       .progression-controls {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        justify-content: flex-start;
+        align-items: flex-start;
         flex-wrap: wrap;
         gap: 15px;
         border-top: 1px solid #333;
         padding-top: 15px;
+        align-items: stretch;
       }
-      .player-controls {
+      .control-section {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        flex: 1 1 auto;
+        min-width: 140px;
+        justify-content: flex-start;
+      }
+      .control-section-header {
+        font-size: 0.75em;
+        color: var(--accent);
+        text-transform: uppercase;
+        font-weight: bold;
+        margin-bottom: 2px;
+      }
+      .control-row {
         display: flex;
         align-items: flex-end;
+        flex-wrap: wrap;
         gap: 10px;
+        height: 100%;
       }
-      .step-management {
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
+
+      /* Compact layout for controls inside sections to align height */
+      .control-section .nav-group {
+        flex-direction: row;
+        align-items: center;
+      }
+      .control-section .nav-group label {
+        margin-bottom: 0;
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+
+      .control-section input[type="number"],
+      .control-section select {
+        background: #333;
+        color: #eee;
+        border: 1px solid #444;
+        padding: 0 8px;
+        height: 36px;
+        border-radius: 6px;
+        width: 60px;
+        font-weight: bold;
       }
 
       /* Volume Slider */
       input[type="range"] {
         -webkit-appearance: none;
         background: transparent;
+        height: 36px;
+        margin: 0;
       }
       input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
@@ -620,14 +700,15 @@
         border-radius: 50%;
         background: var(--accent);
         cursor: pointer;
-        margin-top: -6px;
+        margin-top: -7px;
       }
       input[type="range"]::-webkit-slider-runnable-track {
         width: 100%;
-        height: 4px;
+        height: 2px;
         cursor: pointer;
         background: #555;
         border-radius: 2px;
+        align-self: center;
       }
 
       /* Remove default spinners from inputs */
@@ -645,7 +726,8 @@
         background: #333;
         color: #eee;
         border: 1px solid #444;
-        padding: 8px 12px;
+        padding: 0 8px;
+        height: 36px;
         border-radius: 6px;
         width: 60px;
         font-weight: bold;
@@ -658,7 +740,8 @@
         background: #34495e;
         color: white;
         font-size: 0.9em;
-        padding: 8px 12px;
+        padding: 0 12px;
+        height: 36px;
       }
 
       /* Snapshot Header */
@@ -682,8 +765,8 @@
 
       /* Icon Buttons */
       .btn-icon {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         justify-content: center;
@@ -721,21 +804,21 @@
         background: transparent;
         border: 2px solid #555;
         color: #666;
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-bottom: 2px; /* Align with inputs */
+        margin-bottom: 0;
       }
       .metronome-btn svg {
         width: 22px;
         height: 22px;
         fill: currentColor;
-        transform: scale(1.7);
+        transform: scale(2.2);
       }
 
       .metronome-btn.active {
@@ -1037,125 +1120,148 @@
           <!-- Steps will be added here dynamically -->
         </div>
         <div class="progression-controls">
-          <div class="step-management">
-            <button class="btn-add-step" onclick="addProgressionStep()">
-              + Add Step
-            </button>
-            <button
-              class="btn-io"
-              onclick="transposeProgression(-1)"
-              title="Transpose Down 1 Semitone"
-            >
-              -1
-            </button>
-            <button
-              class="btn-io"
-              onclick="transposeProgression(1)"
-              title="Transpose Up 1 Semitone"
-            >
-              +1
-            </button>
-            <button
-              class="btn-reset"
-              onclick="clearProgression()"
-              title="Clear All Steps"
-            >
-              Clear
-            </button>
-
-            <button class="btn-io" onclick="exportProgressionData()">
-              Export
-            </button>
-            <button
-              class="btn-io"
-              onclick="document.getElementById('progression-importer').click()"
-            >
-              Import
-            </button>
-            <input
-              type="file"
-              id="progression-importer"
-              style="display: none"
-              onchange="importProgressionData(event)"
-              accept="application/json"
-            />
-          </div>
-
-          <div class="player-controls">
-            <div class="nav-group">
-              <label for="bpm-input">BPM</label>
-              <input
-                type="number"
-                id="bpm-input"
-                value="120"
-                min="40"
-                max="300"
-              />
-            </div>
-            <div class="nav-group">
-              <label for="metro-sound-select">Sound</label>
-              <select id="metro-sound-select" style="width: 110px"></select>
-            </div>
-            <div class="nav-group">
-              <label for="metro-vol">Vol</label>
-              <input
-                type="range"
-                id="metro-vol"
-                min="0"
-                max="1"
-                step="0.1"
-                value="0.5"
-                style="width: 60px; height: 36px"
-                title="Metronome Volume"
-              />
-            </div>
-            <div class="nav-group" style="align-items: center">
-              <input
-                type="checkbox"
-                id="metronome-toggle"
-                style="display: none"
-              />
+          <!-- Group 1: Steps -->
+          <div class="control-section">
+            <div class="control-section-header">Steps</div>
+            <div class="control-row">
+              <button class="btn-add-step" onclick="addProgressionStep()">
+                + Add
+              </button>
               <button
-                class="metronome-btn"
-                id="metronome-btn"
-                onclick="toggleMetronomeUI()"
-                title="Metronome Click"
+                class="btn-reset"
+                onclick="clearProgression()"
+                title="Clear All Steps"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="icon icon-tabler icons-tabler-outline icon-tabler-metronome"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path
-                    d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13"
-                  />
-                  <path d="M19 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-                </svg>
+                Clear
               </button>
             </div>
-            <button
-              id="play-pause-btn"
-              class="btn-icon btn-play"
-              onclick="togglePlayProgression()"
-              title="Play/Pause"
-            >
-              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-            </button>
-            <button
-              class="btn-icon btn-stop"
-              onclick="stopProgression()"
-              title="Stop"
-            >
-              <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
-            </button>
+          </div>
+
+          <!-- Group 2: Transpose -->
+          <div class="control-section">
+            <div class="control-section-header">Transpose</div>
+            <div class="control-row">
+              <button
+                class="btn-io"
+                onclick="transposeProgression(-1)"
+                title="Transpose Down 1 Semitone"
+              >
+                -1
+              </button>
+              <button
+                class="btn-io"
+                onclick="transposeProgression(1)"
+                title="Transpose Up 1 Semitone"
+              >
+                +1
+              </button>
+            </div>
+          </div>
+
+          <!-- Group 3: Data -->
+          <div class="control-section">
+            <div class="control-section-header">Data</div>
+            <div class="control-row">
+              <button class="btn-io" onclick="exportProgressionData()">
+                Export
+              </button>
+              <button
+                class="btn-io"
+                onclick="
+                  document.getElementById('progression-importer').click()
+                "
+              >
+                Import
+              </button>
+              <input
+                type="file"
+                id="progression-importer"
+                style="display: none"
+                onchange="importProgressionData(event)"
+                accept="application/json"
+              />
+            </div>
+          </div>
+
+          <!-- Group 4: Playback -->
+          <div class="control-section">
+            <div class="control-section-header">Playback</div>
+            <div class="control-row">
+              <div class="nav-group">
+                <label for="bpm-input">BPM</label>
+                <input
+                  type="number"
+                  id="bpm-input"
+                  value="120"
+                  min="40"
+                  max="300"
+                />
+              </div>
+              <div class="nav-group">
+                <label for="metro-sound-select">Sound</label>
+                <select id="metro-sound-select" style="width: 110px"></select>
+              </div>
+              <div class="nav-group">
+                <label for="metro-vol">Vol</label>
+                <input
+                  type="range"
+                  id="metro-vol"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value="0.5"
+                  style="width: 60px; height: 36px"
+                  title="Metronome Volume"
+                />
+              </div>
+              <div class="nav-group" style="align-items: center">
+                <input
+                  type="checkbox"
+                  id="metronome-toggle"
+                  style="display: none"
+                />
+                <button
+                  class="metronome-btn"
+                  id="metronome-btn"
+                  onclick="toggleMetronomeUI()"
+                  title="Metronome Click"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-metronome"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13"
+                    />
+                    <path d="M19 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                  </svg>
+                </button>
+              </div>
+              <button
+                id="play-pause-btn"
+                class="btn-icon btn-play"
+                onclick="togglePlayProgression()"
+                title="Play/Pause"
+              >
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              </button>
+              <button
+                class="btn-icon btn-stop"
+                onclick="stopProgression()"
+                title="Stop"
+              >
+                <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1291,14 +1397,9 @@
       };
 
       const metronomeSamples = {
-        Beep: { down: null, up: null, type: "osc" },
-        "Wood Block": {
-          down: "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABgAZGF0YQAAAAA=",
-          up: "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABgAZGF0YQAAAAA=",
-          downBuffer: null,
-          upBuffer: null,
-          type: "buffer",
-        },
+        Beep: { type: "osc", freqDown: 1000, freqUp: 800, shape: "sine" },
+        Click: { type: "osc", freqDown: 1500, freqUp: 1200, shape: "square" },
+        Log: { type: "osc", freqDown: 600, freqUp: 450, shape: "triangle" },
       };
 
       function init() {
@@ -1737,22 +1838,24 @@
           .replace(/onchange=".*?"/g, "");
         const scaleSelectHTML = document
           .getElementById("scale-select")
-          .outerHTML.replace('id="scale-select"', "")
+          .outerHTML.replace('id="scale-select"', 'class="scale-select"')
           .replace(/onchange=".*?"/g, "");
 
         stepDiv.innerHTML = `
             <span class="step-label">Step ${stepIndex + 1}</span>
             ${rootSelectHTML}
             ${scaleSelectHTML}
-            <input type="number" class="prog-duration-input" value="${data ? data.bars : 4}" min="1" title="Duration in bars">
-            <span class="bars-label">bars</span>
-            <input type="number" class="prog-beats-input" value="${data && data.beats ? data.beats : 4}" min="1" max="16" title="Beats per bar" style="width:45px; margin-left:5px;">
-            <span class="bars-label" style="margin: 0 -10px 0 -10px;">/</span>
-            <select class="prog-denominator-input" style="width:60px; padding: 8px 4px;">
-                <option value="2">2</option>
-                <option value="4">4</option>
-                <option value="8">8</option>
-            </select>
+            <div class="step-timing">
+                <input type="number" class="prog-duration-input" value="${data ? data.bars : 4}" min="1" title="Duration in bars">
+                <span class="bars-label">bars</span>
+                <input type="number" class="prog-beats-input" value="${data && data.beats ? data.beats : 4}" min="1" max="16" title="Beats per bar">
+                <span class="bars-label">/</span>
+                <select class="prog-denominator-input">
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="8">8</option>
+                </select>
+            </div>
             <button class="btn-remove-step" onclick="this.closest('.progression-step').remove(); updateProgressionIndices(); saveLocalData();" title="Remove Step">×</button>
         `;
 
@@ -1924,7 +2027,10 @@
         if (soundSet.type === "osc") {
           const osc = audioCtx.createOscillator();
           osc.connect(gainNode);
-          osc.frequency.value = isDownbeat ? 1000 : 800;
+          osc.type = soundSet.shape || "sine";
+          osc.frequency.value = isDownbeat
+            ? soundSet.freqDown
+            : soundSet.freqUp;
           osc.start(time);
           osc.stop(time + 0.05);
         } else {
