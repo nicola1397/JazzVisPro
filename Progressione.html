@@ -1503,6 +1503,7 @@
       let isPlaying = false;
       let currentChordOscillators = [];
       let chordSynth = null;
+      let pianoSampler = null;
       let tapTimes = [];
       let lastSelectedIndex = -1;
 
@@ -1625,6 +1626,10 @@
         "Electric Piano": "epiano",
         "Warm Pad": "pad",
         "Bright Synth": "bright",
+        Strings: "strings",
+        "Jazz Organ": "organ",
+        "Brass Section": "brass",
+        "Grand Piano": "piano",
       };
 
       // --- Chord Parsing & Mapping Logic ---
@@ -1917,6 +1922,14 @@
 
           // Store references for preset changes
           chordSynth.filterNode = filter;
+
+          pianoSampler = new Tone.Sampler({
+            urls: {
+              A1: "A1.mp3",
+              A2: "A2.mp3",
+            },
+            baseUrl: "https://tonejs.github.io/audio/salamander/",
+          }).connect(reverb);
         } catch (e) {
           console.error("Tone.js setup failed:", e);
         }
@@ -1946,6 +1959,24 @@
             envelope: { attack: 0.01, decay: 0.1, sustain: 0.3, release: 1 },
           });
           chordSynth.filterNode.frequency.rampTo(5000, 0.1);
+        } else if (presetName === "Strings") {
+          chordSynth.set({
+            oscillator: { type: "fatsawtooth", count: 3, spread: 20 },
+            envelope: { attack: 0.4, decay: 0.5, sustain: 0.8, release: 2.0 },
+          });
+          chordSynth.filterNode.frequency.rampTo(2500, 0.1);
+        } else if (presetName === "Jazz Organ") {
+          chordSynth.set({
+            oscillator: { type: "pwm", modulationFrequency: 0.2 },
+            envelope: { attack: 0.02, decay: 0.1, sustain: 1.0, release: 0.1 },
+          });
+          chordSynth.filterNode.frequency.rampTo(4000, 0.1);
+        } else if (presetName === "Brass Section") {
+          chordSynth.set({
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.05, decay: 0.2, sustain: 0.6, release: 0.5 },
+          });
+          chordSynth.filterNode.frequency.rampTo(2000, 0.1);
         }
       }
 
@@ -2746,6 +2777,7 @@
 
       function stopCurrentChord() {
         if (chordSynth) chordSynth.releaseAll();
+        if (pianoSampler) pianoSampler.releaseAll();
 
         if (currentChordOscillators.length > 0) {
           const now = audioCtx.currentTime;
@@ -2813,11 +2845,17 @@
         ) {
           // --- TONE.JS PATH ---
           const soundName = document.getElementById("chord-sound-select").value;
-          setSynthPreset(soundName);
+          let activeSynth = chordSynth;
+
+          if (soundName === "Grand Piano" && pianoSampler) {
+            activeSynth = pianoSampler;
+          } else {
+            setSynthPreset(soundName);
+          }
 
           // Map slider to dB
           const db = mainVol <= 0 ? -100 : 20 * Math.log10(mainVol * 2);
-          chordSynth.volume.rampTo(db, 0.1);
+          activeSynth.volume.rampTo(db, 0.1);
 
           const notesToPlay = [];
           chordTones.forEach((interval, i) => {
@@ -2831,13 +2869,19 @@
             );
           });
 
-          chordSynth.triggerAttackRelease(notesToPlay, durationSeconds, time);
+          activeSynth.triggerAttackRelease(notesToPlay, durationSeconds, time);
         } else {
           // --- FALLBACK WEB AUDIO PATH ---
           const soundName = document.getElementById("chord-sound-select").value;
           let type = "triangle";
           if (soundName.includes("Piano")) type = "sine";
-          else if (soundName.includes("Bright")) type = "sawtooth";
+          else if (
+            soundName.includes("Bright") ||
+            soundName.includes("Brass") ||
+            soundName.includes("Strings")
+          )
+            type = "sawtooth";
+          else if (soundName.includes("Organ")) type = "square";
 
           const volPerNote = (mainVol / chordTones.length) * 0.5; // Slight reduction for raw oscillators
 
