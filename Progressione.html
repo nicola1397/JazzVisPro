@@ -8,11 +8,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
       :root {
-        --bg: #1a1a1a;
-        --panel: #2c3e50;
-        --accent: #f1c40f;
-        --wood: #3d2b1f;
-        --text: #ecf0f1;
+        --bg: #000000;
+        --sidebar: rgba(28, 28, 30, 0.85);
+        --panel: rgba(44, 44, 46, 0.5);
+        --accent: #FFD60A; /* Apple System Yellow */
+        --wood: #1c1c1e;
+        --text: #ffffff;
+        --secondary-text: #8E8E93;
+        --sidebar-width: 280px;
+        --fret-width: 44px;
+        --nut-width: 50px;
+        --control-height: 38px;
       }
 
       body {
@@ -22,44 +28,118 @@
         margin: 0;
         padding: 0;
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        overflow-x: hidden;
+        height: 100vh;
+        overflow: hidden;
       }
 
-      /* Navbar & Panels */
-      .navbar {
+      .app-container {
+        display: flex;
         width: 100%;
+        height: 100%;
+      }
+
+      .sidebar {
+        width: var(--sidebar-width);
+        background: var(--sidebar);
+        backdrop-filter: blur(25px);
+        border-right: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        flex-direction: column;
+        padding: 15px 0;
+        flex-shrink: 0;
+        overflow-y: auto;
+        transition: transform 0.3s ease;
+        z-index: 1000;
+      }
+
+      @media (max-width: 1024px) {
+        .sidebar {
+          position: fixed;
+          height: 100%;
+          transform: translateX(-100%);
+        }
+        .sidebar.active { transform: translateX(0); }
+      }
+
+      @media (max-width: 1024px) {
+        .sidebar {
+          position: fixed;
+          height: 100%;
+          transform: translateX(-100%);
+        }
+        .sidebar.active { transform: translateX(0); }
+      }
+
+      @media (max-width: 1024px) {
+        .sidebar {
+          position: fixed;
+          height: 100%;
+          transform: translateX(-100%);
+        }
+        .sidebar.active { transform: translateX(0); }
+      }
+
+      .sidebar-controls {
+        padding: 20px;
+        border-top: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .navbar {
+        padding: 0 25px;
+        border-bottom: 1px solid #333;
         background: #121212;
-        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        flex-shrink: 0;
+      }
+
+      .logo {
+        padding: 0 25px 20px;
+        font-weight: 900; color: var(--accent);
+        font-weight: 800; color: var(--accent);
+        font-weight: 800; 
+        color: var(--accent);
+        font-size: 1.4em; letter-spacing: -1px;
+      }
+
+      .nav-item {
+        padding: 12px 25px;
+        cursor: pointer;
+        color: #888;
+        font-weight: bold;
+        transition: 0.2s;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-        flex-wrap: wrap;
-        box-sizing: border-box;
-        border-bottom: 2px solid #2c3e50;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        gap: 12px;
       }
-      * {
-        box-sizing: border-box;
-      }
-      .logo {
-        font-weight: 900;
-        color: var(--accent);
-        font-size: 1.5em;
-        letter-spacing: -1px;
-        margin-right: 10px;
-      }
+      .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+      .nav-item.active { color: var(--accent); background: rgba(241, 196, 15, 0.1); border-left: 4px solid var(--accent); }
 
       .nav-controls {
         display: flex;
-        gap: 10px;
+        gap: 20px;
         align-items: center;
-        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .control-row-aligned {
+        display: flex;
+        align-items: flex-end;
+        gap: 15px;
       }
 
       .nav-group {
@@ -68,15 +148,28 @@
       }
       .nav-group label {
         font-size: 0.7em;
-        color: #bdc3c7;
-        margin-bottom: 2px;
+        color: #888;
+        color: var(--secondary-text);
+        text-transform: uppercase;
+        font-weight: bold;
+        font-weight: 700;
+        margin-bottom: 3px;
         margin-left: 2px;
       }
+
+      .view-panel {
+        display: none;
+        padding: 20px 0;
+        width: 100%;
+        max-width: 1108px; /* Matches fretboard width (nut 50 + 24*44 frets + 2px borders) */
+        box-sizing: border-box;
+      }
+      .view-panel.active { display: block; }
 
       select,
       button {
         font-weight: bold;
-        height: 36px;
+        height: var(--control-height);
         padding: 0 12px;
         border-radius: 6px;
         border: none;
@@ -85,11 +178,15 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        width: 100%;
       }
       select {
         background: #333;
         color: #eee;
         border: 1px solid #444;
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.1);
         appearance: none;
         -webkit-appearance: none;
         -moz-appearance: none;
@@ -99,27 +196,17 @@
         background-size: 14px;
         padding-right: 30px;
       }
-      .btn-snapshot {
-        background: #f39c12;
-        color: white;
-        font-size: 0.9em;
-      }
-      .btn-reset {
-        background: #c0392b;
-        color: white;
-        font-size: 0.9em;
-      }
 
       .checkbox-group {
         display: flex;
-        gap: 10px;
-        background: rgba(0, 0, 0, 0.2);
-        padding: 4px 10px;
-        border-radius: 6px;
-        align-self: flex-end;
-        height: 34px;
-        box-sizing: border-box;
-        align-items: center;
+        flex-direction: column;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.05);
       }
       .checkbox-container {
         display: flex;
@@ -129,53 +216,70 @@
         cursor: pointer;
       }
 
+      .btn-snapshot {
+        background: var(--accent);
+        color: #000;
+        font-weight: 800;
+        font-weight: 700;
+        width: auto;
+        height: 32px;
+      }
+      .btn-reset {
+        background: #c0392b;
+        background: #FF453A; /* SF Red */
+        color: white;
+        font-size: 0.9em;
+        width: 100%;
+        width: auto;
+      }
+
       /* Interval Legend */
       .controls {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        display: flex;
+        flex-wrap: wrap;
         gap: 10px;
         margin: 15px 0;
         background: rgba(255, 255, 255, 0.05);
         padding: 10px 20px;
         border-radius: 20px;
-        justify-items: center;
+        justify-content: center;
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
       .color-option {
-        width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
+        cursor: pointer;
+        padding: 5px; border-radius: 8px;
       }
       .color-option .label {
         font-size: 0.7em;
         margin-bottom: 4px;
         color: #bdc3c7;
+        color: var(--secondary-text);
         font-weight: bold;
       }
+      .color-option.selected { background: rgba(255,255,255,0.1); outline: 2px solid var(--accent); transform: scale(1.1); }
       .swatch {
         width: 18px;
         height: 18px;
         border-radius: 50%;
         border: 2px solid #fff;
       }
-      @media (min-width: 1200px) {
-        .controls {
-          grid-template-columns: repeat(12, 1fr);
-        }
-      }
 
       /* Main Fretboard */
       .viewport {
         width: 100%;
         box-sizing: border-box;
-        padding: 10px 20px;
+        padding: 10px 25px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        max-width: 1400px;
+        max-width: 100%;
+        width: 100%;
         margin: 0 auto;
       }
+
       .scroll-wrapper {
         width: 100%;
         overflow-x: auto;
@@ -194,14 +298,17 @@
       .fretboard-container {
         position: relative;
         background: var(--wood);
-        border: 5px solid #111;
+        border: 4px solid #111;
         border-radius: 10px;
+        background: #1c1c1e;
+        border: 1px solid #333;
+        border-radius: 6px;
         box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8);
         margin: 0 auto;
       }
       .string {
         display: flex;
-        height: 36px;
+        height: 38px;
         position: relative;
         align-items: center;
       }
@@ -233,19 +340,18 @@
       }
 
       .fret {
-        width: 45px;
-        min-width: 30px;
+        width: var(--fret-width);
         height: 100%;
         border-right: 2px solid #666;
         display: flex;
         justify-content: center;
         align-items: center;
         position: relative;
+        box-sizing: border-box;
       }
       .fret-0 {
-        border-right: 12px solid #ccc;
-        width: 40px;
-        min-width: 30px;
+        width: var(--nut-width);
+        border-right: 10px solid #bbb;
         position: sticky;
         left: 0;
         z-index: 50;
@@ -253,8 +359,8 @@
       }
 
       .note-circle {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         background: white;
         border: 2px solid #000;
         border-radius: 50%;
@@ -300,18 +406,32 @@
         transform: scale(0.5);
       }
 
+      .note-highlighted {
+        box-shadow: 
+            0 0 0 2px var(--bg),
+            0 0 0 4px white,
+            0 0 15px rgba(255,255,255,0.8);
+        border-color: #fff !important;
+        z-index: 25;
+      }
+      .manual-note {
+        box-shadow: 0 0 15px rgba(255,255,255,0.5);
+      }
+
       /* Fret Markers */
       .fret-marker {
         position: absolute;
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         background: #555;
         border-radius: 50%;
         z-index: 1;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        border: 1px solid #333;
+        border: 1px solid #222;
+        opacity: 0.6;
+        opacity: 0.8;
       }
 
       .fret-numbers {
@@ -320,13 +440,14 @@
         margin-bottom: 30px;
       }
       .num {
-        width: 45px;
+        width: var(--fret-width);
         text-align: center;
-        font-size: 12px;
+        font-size: 11px;
         color: #7f8c8d;
         font-weight: bold;
       }
       .num-0 {
+        width: var(--nut-width);
         position: sticky;
         left: 0;
         z-index: 51;
@@ -340,20 +461,23 @@
         flex-direction: column;
         gap: 20px;
         padding-bottom: 50px;
-        align-items: center;
       }
 
       .snapshot-card {
         background: var(--panel);
+        background: rgba(28,28,30,0.6);
         padding: 15px;
         border-radius: 12px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         gap: 20px;
         border-left: 8px solid var(--accent);
+        border: 1px solid rgba(255,255,255,0.1);
         flex-grow: 1;
         width: 100%;
         transition: opacity 0.2s ease;
+        transition: transform 0.2s ease;
       }
 
       .snapshot-card.dragging {
@@ -373,6 +497,7 @@
       .mini-fretboard-wrap {
         width: 100%;
         background: var(--wood);
+        background: #1c1c1e;
         border-radius: 6px;
         border: 3px solid #111;
         overflow: hidden;
@@ -451,6 +576,7 @@
         font-size: 1.2rem;
         padding: 4px 10px;
         border-radius: 4px;
+        border-radius: 8px;
         cursor: pointer;
       }
 
@@ -462,6 +588,9 @@
         }
         .navbar-header {
           width: 100%;
+        }
+        .nav-toggle {
+          display: block;
         }
         .nav-toggle {
           display: block;
@@ -527,7 +656,7 @@
       /* Progression Player Area */
       .progression-player-area {
         width: 100%;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.02);
         border-radius: 12px;
         padding: 20px;
         margin: 30px 0;
@@ -551,11 +680,10 @@
       .progression-step {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
         background: var(--panel);
         padding: 10px 15px;
         border-radius: 8px;
-        flex-wrap: wrap;
         transition: box-shadow 0.3s ease;
         justify-content: flex-start;
         border: 2px solid transparent; /* Reserve space for border */
@@ -568,22 +696,15 @@
         box-shadow: 0 0 0 3px var(--accent);
       }
       .progression-step .step-label {
-        font-size: 0.9em;
+        font-size: 0.8em;
         font-weight: bold;
         color: #bdc3c7;
         margin-right: 5px;
+        min-width: 50px;
       }
-      /* .progression-step .step-select {
-        flex-grow: 1;
-        min-width: 100px;
-      }
-      .progression-step select:not(:last-of-type) {
-        flex-grow: 1;
-        min-width: 100px;
-      } */
       .progression-step select {
-        flex-grow: 1;
-        min-width: 100px;
+        flex: 1;
+        min-width: 120px;
       }
 
       .step-timing {
@@ -763,7 +884,6 @@
       /* Snapshot Header */
       .snapshot-header-container {
         width: 100%;
-        max-width: 1200px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -1014,506 +1134,183 @@
     </style>
   </head>
   <body>
-    <nav class="navbar">
-      <div class="navbar-header">
+    <div class="app-container">
+      <aside class="sidebar" id="sidebar-menu">
         <div class="logo">JAZZ<span>VIZ</span> PRO</div>
-        <button class="nav-toggle" onclick="toggleMenu()">☰</button>
-      </div>
-
-      <div class="nav-menu" id="navMenu">
-        <div class="nav-controls">
-          <div class="nav-group">
-            <label>Tuning</label>
-            <select
-              id="tuning-select"
-              onchange="
-                renderFretboard();
-                applyFullScale();
-              "
-            ></select>
-          </div>
-          <div class="nav-group">
-            <label>Key</label>
-            <select id="root-select" onchange="applyFullScale()"></select>
-          </div>
-          <div class="nav-group">
-            <label>Scale</label>
-            <select id="scale-select" onchange="applyFullScale()"></select>
-          </div>
-          <div class="nav-group">
-            <label>Notation</label>
-            <select id="notation-select" onchange="applyFullScale()">
-              <option value="interval">Intervals</option>
-              <option value="note">Notes</option>
-            </select>
-          </div>
-          <div class="nav-group">
-            <label>Accidentals</label>
-            <select id="accidental-select" onchange="applyFullScale()">
-              <option value="#">Sharp (#)</option>
-              <option value="b">Flat (b)</option>
-            </select>
-          </div>
-          <div class="nav-group">
-            <label>CAGED</label>
-            <select id="caged-select" onchange="applyFullScale()">
-              <option value="none">None</option>
-              <option value="C">C Shape</option>
-              <option value="A">A Shape</option>
-              <option value="G">G Shape</option>
-              <option value="E">E Shape</option>
-              <option value="D">D Shape</option>
-            </select>
-          </div>
-          <div class="checkbox-group">
-            <div class="checkbox-container">
-              <input
-                type="checkbox"
-                id="hide-unused"
-                onchange="applyFullScale()"
-              />
-              <label for="hide-unused">Filtra</label>
+        <div class="nav-item active" onclick="switchView('explorer')">Explorer</div>
+        <div class="nav-item" onclick="switchView('player')">Player</div>
+        <div class="nav-item" onclick="switchView('calculator')">Calculator</div>
+        <div class="nav-item" onclick="switchView('snapshots')">Snapshots</div>
+        
+        <div class="sidebar-controls">
+            <div class="nav-group"><label>Tuning</label><select id="tuning-select" onchange="renderFretboard(); applyFullScale();"></select></div>
+            <div class="nav-group"><label>Key</label><select id="root-select" onchange="applyFullScale()"></select></div>
+            <div class="nav-group"><label>Scale</label><select id="scale-select" onchange="applyFullScale()"></select></div>
+            <div class="nav-group"><label>CAGED</label>
+                <select id="caged-select" onchange="applyFullScale()">
+                  <option value="none">None</option><option value="C">C Shape</option><option value="A">A Shape</option>
+                  <option value="G">G Shape</option><option value="E">E Shape</option><option value="D">D Shape</option>
+                </select>
             </div>
-            <div class="checkbox-container">
-              <input
-                type="checkbox"
-                id="solo-arpeggio"
-                onchange="applyFullScale()"
-              />
-              <label for="solo-arpeggio" style="color: var(--accent)"
-                >1-3-5-7</label
-              >
+            <div class="checkbox-group">
+                <div class="checkbox-container"><input type="checkbox" id="hide-unused" onchange="applyFullScale()"/><label for="hide-unused">Hide Outside Scale</label></div>
+                <div class="checkbox-container"><input type="checkbox" id="solo-arpeggio" onchange="applyFullScale()"/><label for="solo-arpeggio" style="color: var(--accent)">Arpeggio (1-3-5-7)</label></div>
             </div>
-          </div>
-          <div class="checkbox-group">
-            <div class="checkbox-container">
-              <input type="checkbox" id="add-9" onchange="applyFullScale()" />
-              <label for="add-9">Add 9</label>
+            <div class="checkbox-group">
+                <div class="nav-group"><label>Notation</label><select id="notation-select" onchange="applyFullScale()"><option value="interval">Intervals</option><option value="note">Notes</option></select></div>
+                <div class="nav-group"><label>Accidentals</label><select id="accidental-select" onchange="applyFullScale()"><option value="#">Sharp (#)</option><option value="b">Flat (b)</option></select></div>
             </div>
-            <div class="checkbox-container">
-              <input type="checkbox" id="add-11" onchange="applyFullScale()" />
-              <label for="add-11">Add 11</label>
-            </div>
-            <div class="checkbox-container">
-              <input type="checkbox" id="add-13" onchange="applyFullScale()" />
-              <label for="add-13">Add 13</label>
-            </div>
-          </div>
+            <button class="btn-reset" style="margin-top: 10px; width: 100%;" onclick="resetFretboard()">Reset Display</button>
         </div>
+      </aside>
 
-        <div class="nav-actions">
-          <button class="btn-snapshot" onclick="createSnapshot()">
-            Snapshot
-          </button>
-          <button class="btn-reset" onclick="resetFretboard()">Reset</button>
-        </div>
-      </div>
-    </nav>
+      <main class="main-content">
+        <nav class="navbar">
+          <button class="nav-toggle" onclick="toggleMenu()">☰</button>
+          <h2 id="view-title" style="margin:0; font-size: 1.1em; color: var(--accent)">EXPLORER</h2>
+          <button class="btn-snapshot" onclick="createSnapshot()">SAVE SNAPSHOT</button>
+        </nav>
 
-    <div id="countdown-overlay" class="countdown-overlay"></div>
+        <div id="countdown-overlay" class="countdown-overlay"></div>
 
-    <div class="controls" id="legend"></div>
-
-    <div class="viewport">
-      <div class="scroll-wrapper">
-        <div class="scroll-content">
-          <div class="fretboard-container">
-            <div id="fretboard-layer"></div>
-            <div id="markers-layer"></div>
-          </div>
-          <div class="fret-numbers" id="numbers-layer"></div>
-        </div>
-      </div>
-
-      <!-- Quick Playback Controls -->
-      <div class="quick-controls">
-        <button
-          class="btn-tap tap-feedback"
-          id="tap-btn"
-          onclick="tapTempo()"
-          title="Tap Tempo"
-        >
-          TAP
-        </button>
-        <button
-          class="btn-icon"
-          onclick="navigateStep(-1)"
-          title="Previous Step"
-        >
-          <svg viewBox="0 0 24 24">
-            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-          </svg>
-        </button>
-        <button
-          id="quick-play-btn"
-          class="btn-icon btn-play"
-          onclick="togglePlayProgression()"
-          title="Play/Pause"
-        >
-          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-        </button>
-        <button
-          class="btn-icon btn-stop"
-          onclick="stopProgression()"
-          title="Stop"
-        >
-          <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
-        </button>
-        <button class="btn-icon" onclick="navigateStep(1)" title="Next Step">
-          <svg viewBox="0 0 24 24">
-            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Scale Calculator -->
-      <div class="importer-area">
-        <h2 class="area-title">
-          Scale Calculator
-          <span class="help-icon" onclick="showHelpModal()">?</span>
-        </h2>
-        <div class="nav-group" style="margin-bottom: 10px; width: fit-content">
-          <label for="genre-select">Context</label>
-          <select id="genre-select" style="width: 150px">
-            <option value="jazz">Jazz (Standard)</option>
-            <option value="blues">Blues</option>
-            <option value="pop">Pop / Rock</option>
-          </select>
-        </div>
-        <textarea
-          id="chord-importer-textarea"
-          placeholder="| Dm7 G7 | Cmaj7 | •/• | Am7(b5) D7(b9) | G-7 C7 | Fmaj7 |"
-        ></textarea>
-        <button
-          class="btn-add-step"
-          style="width: 100%"
-          onclick="importProgression()"
-        >
-          Import & Calculate Scales
-        </button>
-        <div
-          id="overall-suggestion"
-          style="
-            margin-top: 15px;
-            display: none;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #444;
-          "
-        >
-          <span style="color: #bdc3c7; font-size: 0.9em"
-            >Suggested Key/Scale:</span
-          >
-          <span
-            id="suggestion-text"
-            style="
-              color: var(--accent);
-              font-weight: bold;
-              margin-left: 10px;
-              font-size: 1.1em;
-            "
-          ></span>
-        </div>
-      </div>
-
-      <!-- Help Modal Structure -->
-      <div id="help-modal" class="modal-overlay" onclick="hideHelpModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-          <h3>Scale Calculator Notation</h3>
-          <p>
-            The calculator parses chord progressions and suggests appropriate
-            scales. It understands the following formats:
-          </p>
-          <ul>
-            <li>
-              <strong>Chords:</strong> Standard notation like
-              <code>Cmaj7</code>, <code>G7</code>, <code>Am7</code>,
-              <code>F#m7b5</code>. Flats (<code>Db</code>) and sharps
-              (<code>C#</code>) are both accepted.
-            </li>
-            <li>
-              <strong>Separators:</strong> Use spaces, newlines, or pipe symbols
-              (<code>|</code>) to separate chords.
-            </li>
-            <li>
-              <strong>Alterations:</strong> Specify alterations in parentheses,
-              e.g., <code>G7(b9, #5)</code>. This will often suggest the Altered
-              Scale.
-            </li>
-            <li>
-              <strong>Repeat Signs:</strong> Use <code>•/•</code> or
-              <code>%</code> to repeat the previous measure's chords.
-            </li>
-            <li>
-              <strong>Minor Chords:</strong> Use <code>m</code>, <code>-</code>,
-              or <code>min</code> for minor. E.g., <code>Dm7</code>,
-              <code>D-7</code>.
-            </li>
-            <li>
-              <strong>Diminished:</strong> Use <code>dim</code> or
-              <code>°</code> for diminished. E.g., <code>Ddim7</code>,
-              <code>D°7</code>.
-            </li>
-          </ul>
-          <button
-            class="btn-reset"
-            style="float: right"
-            onclick="hideHelpModal()"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-
-      <!-- Progression Player Area -->
-      <div class="progression-player-area">
-        <h2 class="area-title">Play Along Mode</h2>
-        <div id="progression-steps" class="progression-steps-container">
-          <!-- Steps will be added here dynamically -->
-        </div>
-        <div class="progression-controls">
-          <!-- Group 1: Steps -->
-          <div class="control-section">
-            <div class="control-section-header">Steps</div>
-            <div class="control-row">
-              <button class="btn-add-step" onclick="addProgressionStep()">
-                + Add
-              </button>
-              <button
-                class="btn-io"
-                onclick="selectAllSteps()"
-                title="Select All"
-              >
-                All
-              </button>
-              <button
-                class="btn-io"
-                onclick="deselectAllSteps()"
-                title="Deselect All"
-              >
-                None
-              </button>
-              <button
-                class="btn-reset"
-                onclick="clearProgression()"
-                title="Clear All Steps"
-              >
-                Clear
-              </button>
+        <div class="viewport">
+            <div class="controls" id="legend"></div>
+            <div style="text-align:center; font-size: 0.8em; color: #666; margin-bottom: 15px;">
+              Click a swatch to highlight all intervals. Click a fret to toggle specific note highlight.
             </div>
-          </div>
-
-          <!-- Group 2: Transpose -->
-          <div class="control-section">
-            <div class="control-section-header">Transpose</div>
-            <div class="control-row">
-              <button
-                class="btn-io"
-                onclick="transposeProgression(-1)"
-                title="Transpose Down 1 Semitone"
-              >
-                -1
-              </button>
-              <button
-                class="btn-io"
-                onclick="transposeProgression(1)"
-                title="Transpose Up 1 Semitone"
-              >
-                +1
-              </button>
+            <div class="scroll-wrapper">
+              <div class="scroll-content">
+                <div class="fretboard-container">
+                  <div id="fretboard-layer"></div>
+                  <div id="markers-layer"></div>
+                </div>
+                <div class="fret-numbers" id="numbers-layer"></div>
+              </div>
             </div>
+
+          <!-- Explorer View (Default) -->
+          <div id="view-explorer" class="view-panel active">
+             <div style="display: flex; flex-direction: column; align-items: center; gap: 25px;">
+                 <div class="control-row-aligned">
+                    <div class="nav-group" style="width: 220px;">
+                        <label>Display Mode</label>
+                        <select id="explorer-mode-select" onchange="setExplorerMode(this.value)">
+                            <option value="normal">Normal Display</option>
+                            <option value="highlight">Interactive Highlights</option>
+                            <option value="custom">Custom Scale Builder</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-group" style="flex-direction: row; height: var(--control-height); align-items: center; box-sizing: border-box; align-self: flex-end; gap: 15px;">
+                        <div class="checkbox-container"><input type="checkbox" id="add-9" onchange="applyFullScale()" /><label for="add-9">Add 9</label></div>
+                        <div class="checkbox-container"><input type="checkbox" id="add-11" onchange="applyFullScale()" /><label for="add-11">Add 11</label></div>
+                        <div class="checkbox-container"><input type="checkbox" id="add-13" onchange="applyFullScale()" /><label for="add-13">Add 13</label></div>
+                    </div>
+                </div>
+
+                 <div id="custom-actions" style="display: none; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                    <button class="btn-io" onclick="exportCustomScale()">Export JSON</button>
+                    <button class="btn-io" onclick="document.getElementById('scale-import-file').click()">Import JSON</button>
+                    <input type="file" id="scale-import-file" style="display:none" onchange="importCustomScale(event)">
+                    <button class="btn-reset" style="width:auto" onclick="clearCustomScale()">Clear All Notes</button>
+                 </div>
+
+                 <div id="mode-description" style="color: #888; font-size: 0.85em; font-style: italic; background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px;">
+                     Normal View: Displays the selected scale and tuning.
+                 </div>
+             </div>
           </div>
 
-          <!-- Group 3: Data -->
-          <div class="control-section">
-            <div class="control-section-header">Data</div>
-            <div class="control-row">
-              <button class="btn-io" onclick="exportProgressionData()">
-                Export
-              </button>
-              <button
-                class="btn-io"
-                onclick="
-                  document.getElementById('progression-importer').click()
-                "
-              >
-                Import
-              </button>
-              <input
-                type="file"
-                id="progression-importer"
-                style="display: none"
-                onchange="importProgressionData(event)"
-                accept="application/json"
-              />
-            </div>
-          </div>
-
-          <!-- Group 4: Playback -->
-          <div class="control-section">
-            <div class="control-section-header">Playback</div>
-            <div class="control-row">
-              <button
-                class="btn-io tap-feedback"
-                onclick="tapTempo()"
-                title="Tap Tempo"
-              >
-                TAP
-              </button>
-              <div class="nav-group">
-                <label for="bpm-input">BPM</label>
-                <input
-                  type="number"
-                  id="bpm-input"
-                  value="120"
-                  min="40"
-                  max="300"
-                />
+          <!-- Progression View -->
+          <div id="view-player" class="view-panel">
+              <!-- Existing Player Area content moved here -->
+              <div class="quick-controls">
+                <button class="btn-tap tap-feedback" id="tap-btn" onclick="tapTempo()">TAP</button>
+                <button class="btn-icon" onclick="navigateStep(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button>
+                <button id="quick-play-btn" class="btn-icon btn-play" onclick="togglePlayProgression()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></button>
+                <button class="btn-icon btn-stop" onclick="stopProgression()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg></button>
+                <button class="btn-icon" onclick="navigateStep(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button>
               </div>
-              <div class="nav-group">
-                <label for="metro-sound-select">Sound</label>
-                <select id="metro-sound-select" style="width: 110px"></select>
-              </div>
-              <div class="nav-group">
-                <label for="metro-vol">Vol</label>
-                <input
-                  type="range"
-                  id="metro-vol"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value="0.5"
-                  style="width: 60px; height: 36px"
-                  title="Metronome Volume"
-                />
-              </div>
-              <div class="nav-group" style="align-items: center">
-                <input
-                  type="checkbox"
-                  id="loop-selection"
-                  title="Loop Selected Steps"
-                />
-                <label
-                  for="loop-selection"
-                  style="margin: 0 5px; cursor: pointer"
-                  >Loop</label
-                >
-                <input
-                  type="checkbox"
-                  id="metronome-toggle"
-                  style="display: none"
-                />
-                <button
-                  class="metronome-btn"
-                  id="metronome-btn"
-                  onclick="toggleMetronomeUI()"
-                  title="Metronome Click"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-metronome"
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path
-                      d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13"
-                    />
-                    <path d="M19 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-                  </svg>
-                </button>
-              </div>
-              <button
-                id="play-pause-btn"
-                class="btn-icon btn-play"
-                onclick="togglePlayProgression()"
-                title="Play/Pause"
-              >
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              </button>
-              <button
-                class="btn-icon btn-stop"
-                onclick="stopProgression()"
-                title="Stop"
-              >
-                <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Group 5: Chord Synth -->
-          <div class="control-section">
-            <div class="control-section-header">Chord Synth</div>
-            <div class="control-row">
-              <div
-                class="nav-group"
-                style="
-                  flex-direction: row;
-                  align-items: center;
-                  gap: 5px;
-                  height: 100%;
-                "
-              >
-                <input type="checkbox" id="play-chords-toggle" />
-                <label for="play-chords-toggle" style="margin: 0">On</label>
-              </div>
-              <div class="nav-group">
-                <label for="chord-sound-select">Sound</label>
-                <select id="chord-sound-select" style="width: 110px"></select>
-              </div>
-              <div class="nav-group">
-                <label for="chord-vol-slider">Vol</label>
-                <input
-                  type="range"
-                  id="chord-vol-slider"
-                  min="0"
-                  max="0.5"
-                  step="0.05"
-                  value="0.1"
-                  style="width: 70px; height: 36px"
-                  title="Chord Volume"
-                />
-              </div>
-              <div class="nav-group">
-                <label>Octave</label>
-                <div style="display: flex; gap: 5px">
-                  <button
-                    class="btn-io"
-                    style="padding: 0 8px; min-width: 30px"
-                    onclick="transposeChordOctave(-1)"
-                  >
-                    -
-                  </button>
-                  <button
-                    class="btn-io"
-                    style="padding: 0 8px; min-width: 30px"
-                    onclick="transposeChordOctave(1)"
-                  >
-                    +
-                  </button>
+              <div class="progression-player-area">
+                <h2 class="area-title">Play Along Mode</h2>
+                <div id="progression-steps" class="progression-steps-container"></div>
+                <div class="progression-controls">
+                    <div class="control-section">
+                        <div class="control-section-header">Steps</div>
+                        <div class="control-row">
+                          <button class="btn-add-step" onclick="addProgressionStep()">+ Add</button>
+                          <button class="btn-reset" onclick="clearProgression()">Clear</button>
+                        </div>
+                    </div>
+                    <div class="control-section">
+                        <div class="control-section-header">Playback</div>
+                        <div class="control-row">
+                          <div class="nav-group"><label>BPM</label><input type="number" id="bpm-input" value="120"></div>
+                          <div class="nav-group"><label>Vol</label><input type="range" id="metro-vol" min="0" max="1" step="0.1" value="0.5"></div>
+                          <div class="nav-group"><label>Click</label><select id="metro-sound-select"></select></div>
+                          <div class="checkbox-container" style="display:none">
+                            <input type="checkbox" id="metronome-toggle">
+                          </div>
+                          <button class="metronome-btn" id="metronome-btn" onclick="toggleMetronomeUI()"><svg viewBox="0 0 24 24"><path d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13" /></svg></button>
+                        </div>
+                    </div>
+                    <div class="control-section">
+                        <div class="control-section-header">Chord Synth</div>
+                        <div class="control-row">
+                            <div class="nav-group"><label>Sound</label><select id="chord-sound-select"></select></div>
+                            <div class="nav-group"><label>Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div>
+                            <div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle">Synth</label></div>
+                            <div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection">Loop</label></div>
+                        </div>
+                    </div>
                 </div>
               </div>
-            </div>
+          </div>
+
+          <!-- Calculator View -->
+          <div id="view-calculator" class="view-panel">
+              <div class="importer-area" style="margin: 0 auto; width: 100%;">
+                <h2 class="area-title">Scale Calculator <span class="help-icon" onclick="showHelpModal()">?</span></h2>
+                <div id="overall-suggestion" style="margin-bottom: 20px; display:none; background: rgba(241, 196, 15, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
+                    <div style="font-size: 0.8em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px;">Analysis Result</div>
+                    <div id="suggestion-text" style="font-size: 1.2em; font-weight: bold;"></div>
+                </div>
+                <div class="nav-group" style="margin-bottom: 15px; width: fit-content">
+                    <label>Context</label>
+                    <select id="genre-select" style="width: 150px">
+                        <option value="jazz">Jazz (Standard)</option>
+                        <option value="blues">Blues</option>
+                        <option value="pop">Pop / Rock</option>
+                    </select>
+                </div>
+                <textarea id="chord-importer-textarea" placeholder="| Dm7 G7 | Cmaj7 | •/• |"></textarea>
+                <button class="btn-add-step" style="width: 100%" onclick="importProgression()">Import & Calculate</button>
+              </div>
+          </div>
+
+          <!-- Snapshots View -->
+          <div id="view-snapshots" class="view-panel">
+              <div class="snapshot-header-container" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin: 0 auto 20px;">
+                <h2 class="area-title" style="border: none; margin: 0;">Snapshots</h2>
+                <button class="btn-reset" style="width: auto; padding: 0 20px;" onclick="clearSnapshots()">Clear All</button>
+              </div>
+              <div class="snapshot-area" id="snapshot-list"></div>
           </div>
         </div>
-      </div>
+      </main>
+    </div> <!-- end app-container -->
 
-      <div class="snapshot-header-container">
-        <h2 class="area-title" style="border: none; margin: 0; padding: 0">
-          Snapshots
-        </h2>
-        <button class="btn-reset" onclick="clearSnapshots()">
-          Clear Snapshots
-        </button>
-      </div>
-      <div class="snapshot-area" id="snapshot-list"></div>
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal-overlay" onclick="hideHelpModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Scale Calculator Notation</h3>
+            <p>The calculator parses chord progressions and suggests appropriate scales.</p>
+            <ul>
+                <li><strong>Chords:</strong> Standard notation like <code>Cmaj7</code>, <code>G7</code>, <code>Am7b5</code>.</li>
+                <li><strong>Separators:</strong> Use spaces or pipe symbols (<code>|</code>).</li>
+                <li><strong>Repeat:</strong> Use <code>%</code> or <code>•/•</code> to repeat the previous measure.</li>
+            </ul>
+            <button class="btn-reset" style="float: right" onclick="hideHelpModal()">Close</button>
+        </div>
     </div>
 
     <script>
@@ -1898,6 +1695,8 @@
               const circle = document.createElement("div");
               circle.className = "note-circle";
               circle.dataset.noteIndex = (tuning[s] + f) % 12;
+              circle.onclick = (e) => app.handleNoteClick(circle);
+
               fret.appendChild(circle);
 
               const singleMarkers = [3, 5, 7, 9, 15, 17, 19, 21];
@@ -1920,6 +1719,8 @@
           const tuning = Theory.TUNINGS[options.tuningName];
           const currentNotes =
             options.accidental === "#" ? Theory.NOTES : Theory.NOTES_FLAT;
+            
+            const explorerMode = options.explorerMode || 'normal';
           const arpIntervals = [0, 3, 4, 7, 10, 11];
 
           // CAGED Logic
@@ -1954,41 +1755,53 @@
             const fIndex = parseInt(
               c.closest(".fret").className.match(/fret-(\d+)/)[1],
             );
+            const posKey = `${sIndex}-${fIndex}`;
+            
+            const isManualHighlight = options.manualNotes.has(posKey);
+            const isIntervalHighlighted = options.highlightedIntervals.has(interval);
+            const isCustomVisible = options.customScaleMap.has(posKey);
 
             c.className = "note-circle"; // Reset
             c.innerText = "";
             c.style.backgroundColor = "";
             c.style.opacity = "";
 
-            if (inScale) {
+            let isVisible = false;
+            let isHighlighted = false;
+
+            if (explorerMode === 'custom') {
+                isVisible = isCustomVisible;
+            } else {
+                isVisible = inScale;
+                if (explorerMode === 'highlight') {
+                    isHighlighted = isManualHighlight || isIntervalHighlighted;
+                }
+            }
+
+            if (isVisible) {
               const color = Theory.INTERVAL_COLORS[interval];
               c.style.backgroundColor = color.color;
-              const text =
-                options.notation === "interval"
-                  ? color.short
-                  : currentNotes[noteIdx];
+              const text = options.notation === "interval" ? color.short : currentNotes[noteIdx];
 
-              if (options.soloArp) {
-                if (inArp) {
+              // Handle Arpeggio Soloing/Ghosting only in non-custom modes
+              if (explorerMode !== 'custom' && options.soloArp && !inArp) {
+                  c.classList.add(options.hideUnused ? "note-hidden" : "note-ghost");
+              } else {
                   c.classList.add("active-note");
                   c.innerText = text;
-                } else {
-                  c.classList.add(
-                    options.hideUnused ? "note-hidden" : "note-ghost",
-                  );
-                }
-              } else {
-                c.classList.add("active-note");
-                c.innerText = text;
               }
 
+              if (isHighlighted) c.classList.add("note-highlighted");
+              
               if (highlightSet.has(`${sIndex}-${fIndex}`)) {
                 c.classList.add("shape-note", "active-note");
                 c.classList.remove("note-ghost", "note-hidden");
                 c.style.opacity = "1";
               }
             } else {
-              c.classList.add("note-hidden");
+                // Even if not in scale, a manual highlight might make it visible in highlight mode
+                // But per requirements, normal display just shows the scale.
+                c.classList.add("note-hidden");
             }
           });
         }
@@ -2454,20 +2267,32 @@
           return { root, rest: match[2] };
         }
 
-        static getScale(chordStr, genre) {
+        static getScale(chordStr, nextChordStr = null, genre = "jazz") {
           const p = this.parse(chordStr);
           if (!p) return "Ionio (Maj7)";
-          const r = p.rest;
+          const r = p.rest || "";
+
+          // Secondary Dominant Recognition
+          if (nextChordStr && (r === "7" || r.includes("7"))) {
+              const nextP = this.parse(nextChordStr);
+              if (nextP) {
+                  const rootIdx = Theory.NOTES.indexOf(p.root);
+                  const nextRootIdx = Theory.NOTES.indexOf(nextP.root);
+                  if ((nextRootIdx - rootIdx + 12) % 12 === 5) { // Resolving 4th up (Perfect 4th)
+                      if (nextP.rest.includes("m") && !nextP.rest.includes("maj")) return "Mixolidio b13";
+                      return "Misolidio (7)";
+                  }
+              }
+          }
+
           if (genre === "blues" && (r.includes("7") || r.includes("m")))
             return "Blues";
-          if (r.includes("m7b5") || r.includes("ø")) return "Minore Melodica"; // Jazz context usually
+          if (r.includes("m7b5") || r.includes("ø")) return "Dorico (m7)";
           if (r.includes("alt")) return "Altered (7alt)";
           if (r.includes("dim")) return "Diminuita (T/S)";
           if (r.includes("m") && !r.includes("maj")) return "Dorico (m7)";
-          if (r.includes("maj7"))
-            return r.includes("#11") ? "Lidio (Maj7#11)" : "Ionio (Maj7)";
-          if (r.includes("7"))
-            return r.includes("b9") ? "Altered (7alt)" : "Misolidio (7)";
+          if (r.includes("maj7")) return r.includes("#11") ? "Lidio (Maj7#11)" : "Ionio (Maj7)";
+          if (r.includes("7")) return r.includes("b9") ? "Altered (7alt)" : "Misolidio (7)";
           return "Ionio (Maj7)";
         }
 
@@ -2510,6 +2335,11 @@
           this.fretboard = new Fretboard();
           this.progression = new ProgressionManager();
           this.playback = new PlaybackEngine(this.audio, this.progression);
+          
+          this.explorerMode = 'normal'; 
+          this.highlightedIntervals = new Set();
+          this.manualNotes = new Set();
+          this.customScaleMap = new Set();
 
           this.init();
         }
@@ -2517,25 +2347,37 @@
         init() {
           // Fill Selects
           const ts = document.getElementById("tuning-select");
-          for (let t in Theory.TUNINGS) ts.add(new Option(t, t));
+          if (ts) for (let t in Theory.TUNINGS) ts.add(new Option(t, t));
           const rs = document.getElementById("root-select");
-          Theory.NOTES.forEach((n) => rs.add(new Option(n, n)));
+          if (rs) Theory.NOTES.forEach((n) => rs.add(new Option(n, n)));
           const ss = document.getElementById("scale-select");
-          for (let s in Theory.SCALES) ss.add(new Option(s, s));
+          if (ss) for (let s in Theory.SCALES) ss.add(new Option(s, s));
 
           // Legend
           const leg = document.getElementById("legend");
-          Object.values(Theory.INTERVAL_COLORS).forEach((c) => {
-            leg.innerHTML += `<div class="color-option"><span class="label">${c.short}</span><div class="swatch" style="background:${c.color}"></div></div>`;
-          });
+          if (leg) {
+            leg.innerHTML = '';
+            Object.entries(Theory.INTERVAL_COLORS).forEach(([idx, c]) => {
+            const opt = document.createElement('div');
+            const intVal = parseInt(idx);
+            opt.className = `color-option`;
+            opt.innerHTML = `<span class="label">${c.short}</span><div class="swatch" style="background:${c.color}"></div>`;
+            opt.onclick = () => {
+                if (this.highlightedIntervals.has(intVal)) this.highlightedIntervals.delete(intVal);
+                else this.highlightedIntervals.add(intVal);
+                opt.classList.toggle('selected');
+                this.fretboard.update(this.getUiSettings());
+            };
+            leg.appendChild(opt);
+          });}
 
           // Audio Selects
           const ms = document.getElementById("metro-sound-select");
-          Object.keys(this.audio.metronomeSamples).forEach((k) =>
+          if (ms) Object.keys(this.audio.metronomeSamples).forEach((k) =>
             ms.add(new Option(k, k)),
           );
           const cs = document.getElementById("chord-sound-select");
-          Object.keys(this.audio.chordSounds).forEach((k) =>
+          if (cs) Object.keys(this.audio.chordSounds).forEach((k) =>
             cs.add(new Option(k, k)),
           );
 
@@ -2543,6 +2385,47 @@
           this.fretboard.render("E Standard");
           this.load();
           this.fretboard.update(this.getUiSettings());
+        }
+
+        handleNoteClick(circle) {
+            const sIndex = parseInt(circle.closest(".string").className.match(/s(\d)/)[1]) - 1;
+            const fIndex = parseInt(circle.closest(".fret").className.match(/fret-(\d+)/)[1]);
+            const key = `${sIndex}-${fIndex}`;
+
+            if (this.manualNotes.has(key)) this.manualNotes.delete(key);
+            else this.manualNotes.add(key);
+            
+            this.fretboard.update(this.getUiSettings());
+        }
+
+        setExplorerMode(mode) {
+            this.explorerMode = mode;
+            const desc = {
+                normal: "Normal View: Displays the selected scale and tuning.",
+                highlight: "Highlight Mode: Click notes or intervals to highlight them across the board.",
+                custom: "Custom Builder: Toggle any fret on the neck to build a unique shape."
+            };
+            const descEl = document.getElementById('mode-description');
+            if (descEl) descEl.innerText = desc[mode] || "";
+            
+            const actionsEl = document.getElementById('custom-actions');
+            if (actionsEl) actionsEl.style.display = (mode === 'custom' ? 'flex' : 'none');
+            
+            this.fretboard.update(this.getUiSettings());
+        }
+
+        switchView(viewId) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById(`view-${viewId}`);
+            if(target) target.classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active');
+                if (n.innerText.toLowerCase().includes(viewId.slice(0,3))) n.classList.add('active');
+            });
+            document.getElementById('view-title').innerText = viewId.toUpperCase();
+            // Auto-close sidebar on mobile after navigation
+            document.getElementById("sidebar-menu").classList.remove("active");
         }
 
         getUiSettings() {
@@ -2558,6 +2441,10 @@
             notation: document.getElementById("notation-select").value,
             accidental: document.getElementById("accidental-select").value,
             cagedShape: document.getElementById("caged-select").value,
+            explorerMode: this.explorerMode,
+            manualNotes: this.manualNotes,
+            highlightedIntervals: this.highlightedIntervals,
+            customScaleMap: this.customScaleMap
           };
         }
 
@@ -2567,6 +2454,7 @@
             sourceText: document.getElementById("chord-importer-textarea").value,
             snapshots: [],
             progression: [],
+            customScale: Array.from(this.customScaleMap)
           };
           // Snapshots
           document.querySelectorAll(".snapshot-card").forEach((c) => {
@@ -2598,6 +2486,8 @@
               data.snapshots.forEach((s) => this.createSnapshot(s));
             if (data.progression)
               data.progression.forEach((s) => this.progression.addStep(s));
+            if (data.customScale)
+              this.customScaleMap = new Set(data.customScale);
           }
         }
 
@@ -2627,7 +2517,7 @@
           const rootIdx = Theory.NOTES.indexOf(storeData.root);
           const scale = Theory.SCALES[storeData.scale];
           let rows = "";
-          for (let s = 0; s < 6; s++) {
+          for (let s = 5; s >= 0; s--) {
             rows += `<div class="mini-string">`;
             for (let f = 0; f <= 24; f++) {
               const int = (((tuning[s] + f) % 12) - rootIdx + 12) % 12;
@@ -2667,6 +2557,7 @@
           if (!txt) return;
           this.progression.clear();
 
+          let allChordsFound = [];
           const measures = txt
             .split("|")
             .map((m) => m.trim())
@@ -2675,12 +2566,14 @@
             const chords = m.split(/\s+/).filter((c) => c);
             if (!chords.length) return;
             const bars = 1.0 / chords.length;
-            chords.forEach((c) => {
+            chords.forEach((c, idx) => {
               if (c === "%" || c === "•/•") return; // Simplified repeat handling
               const p = ChordParser.parse(c);
               if (!p || !Theory.NOTES.includes(p.root)) return;
-              const sc = ChordParser.getScale(c, genre);
+              const nextC = chords[idx+1] || null;
+              const sc = ChordParser.getScale(c, nextC, genre);
               const ints = ChordParser.getIntervals(c);
+              allChordsFound.push(c);
               this.progression.addStep({
                 root: p.root,
                 scale: sc,
@@ -2691,6 +2584,11 @@
               });
             });
           });
+          
+          if(allChordsFound.length > 0) {
+              document.getElementById('overall-suggestion').style.display = 'block';
+              document.getElementById('suggestion-text').innerText = allChordsFound.join(' → ');
+          }
         }
       }
 
@@ -2703,11 +2601,31 @@
       window.resetFretboard = () => {
           document.getElementById('hide-unused').checked = false;
           document.getElementById('solo-arpeggio').checked = false;
+          app.highlightedIntervals.clear();
+          app.manualNotes.clear();
+          document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
           window.applyFullScale();
+      };
+      window.setExplorerMode = (m) => app.setExplorerMode(m);
+      window.clearCustomScale = () => { app.customScaleMap.clear(); window.applyFullScale(); };
+      window.exportCustomScale = () => {
+          const data = JSON.stringify(Array.from(app.customScaleMap));
+          const blob = new Blob([data], {type: 'application/json'});
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob); a.download = 'custom-scale.json'; a.click();
+      };
+      window.importCustomScale = (e) => {
+          const f = e.target.files[0]; if(!f) return;
+          const r = new FileReader();
+          r.onload = (ev) => { app.customScaleMap = new Set(JSON.parse(ev.target.result)); window.applyFullScale(); };
+          r.readAsText(f);
       };
       window.createSnapshot = () => app.createSnapshot();
       window.clearSnapshots = () => { document.getElementById('snapshot-list').innerHTML=''; app.save(); };
+      window.switchView = (v) => app.switchView(v);
+
       window.toggleMenu = () => document.getElementById("navMenu").classList.toggle("active");
+      window.toggleMenu = () => document.getElementById("sidebar-menu").classList.toggle("active");
       window.showHelpModal = () => document.getElementById("help-modal").style.display = "flex";
       window.hideHelpModal = () => document.getElementById("help-modal").style.display = "none";
 
