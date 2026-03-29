@@ -659,7 +659,7 @@
         background: rgba(255, 255, 255, 0.02);
         border-radius: 12px;
         padding: 20px;
-        margin: 30px 0;
+        margin: 20px 0;
         box-sizing: border-box;
         border: 1px solid #333;
       }
@@ -765,26 +765,25 @@
       }
       .progression-controls {
         display: flex;
-        justify-content: flex-start;
-        align-items: flex-start;
         flex-wrap: wrap;
-        gap: 15px;
+        gap: 12px;
         border-top: 1px solid #333;
         padding-top: 15px;
-        align-items: stretch;
+        /* align-items: flex-start; */
       }
       .control-section {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 10px;
         background: rgba(255, 255, 255, 0.05);
         padding: 10px;
         border-radius: 8px;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        flex: 1 1 auto;
-        min-width: 140px;
-        justify-content: flex-start;
+        flex: 1 1 280px;
+        min-width: 0;
       }
+      .control-section.compact { flex: 0 1 auto; min-width: 140px; }
+
       .control-section-header {
         font-size: 0.75em;
         color: var(--accent);
@@ -797,22 +796,14 @@
         align-items: flex-end;
         flex-wrap: wrap;
         gap: 10px;
-        height: 100%;
       }
 
-      /* Compact layout for controls inside sections to align height */
-      .control-section .nav-group {
-        flex-direction: row;
-        align-items: center;
-      }
-      .control-section .nav-group label {
-        margin-bottom: 0;
-        margin-right: 6px;
-        white-space: nowrap;
-      }
+      .control-section .nav-group { flex: 1 1 auto; min-width: 60px; }
+      .control-section .nav-group select { width: 100%; }
+      .control-section .nav-group input[type="number"] { width: 100%; box-sizing: border-box; }
+      .control-section .nav-group input[type="range"] { width: 100%; min-width: 80px; }
 
-      .control-section input[type="number"],
-      .control-section select {
+      .control-section input[type="number"] {
         background: #333;
         color: #eee;
         border: 1px solid #444;
@@ -821,6 +812,14 @@
         border-radius: 6px;
         width: 60px;
         font-weight: bold;
+      }
+
+      @media (max-width: 768px) {
+        .progression-controls { flex-direction: column; align-items: stretch; }
+        .control-section { flex: 1 1 auto; }
+        .control-row { justify-content: space-between; }
+        .control-row > .nav-group { flex: 1 1 40%; }
+        .metronome-btn { margin-left: auto; }
       }
 
       /* Volume Slider */
@@ -1234,11 +1233,11 @@
                 <h2 class="area-title">Play Along Mode</h2>
                 <div id="progression-steps" class="progression-steps-container"></div>
                 <div class="progression-controls">
-                    <div class="control-section">
+                    <div class="control-section compact">
                         <div class="control-section-header">Steps</div>
                         <div class="control-row">
-                          <button class="btn-add-step" onclick="addProgressionStep()">+ Add</button>
-                          <button class="btn-reset" onclick="clearProgression()">Clear</button>
+                          <button class="btn-add-step" style="width: auto; padding: 0 15px;" onclick="addProgressionStep()">+ Add</button>
+                          <button class="btn-reset" style="width: auto; padding: 0 15px;" onclick="clearProgression()">Clear</button>
                         </div>
                     </div>
                     <div class="control-section">
