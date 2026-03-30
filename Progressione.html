@@ -67,7 +67,7 @@
           <div id="view-explorer" class="view-panel active">
              <div style="display: flex; flex-direction: column; align-items: center; gap: 25px;">
                  <div class="control-row-aligned">
-                    <div class="nav-group" style="width: 220px;">
+                    <div class="nav-group explorer-mode-group">
                         <label>Display Mode</label>
                         <select id="explorer-mode-select" onchange="setExplorerMode(this.value)">
                             <option value="normal">Normal Display</option>
@@ -127,6 +127,15 @@
                           <button class="metronome-btn" id="metronome-btn" onclick="toggleMetronomeUI()"><svg viewBox="0 0 24 24"><path d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13" /></svg></button>
                         </div>
                     </div>
+                                        <div class="control-section">
+                        <div class="control-section-header">Chord Synth</div>
+                        <div class="control-row">
+                            <div class="nav-group"><label>Sound</label><select id="chord-sound-select"></select></div>
+                            <div class="nav-group"><label>Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div>
+                            <div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle">Synth</label></div>
+                            <div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection">Loop</label></div>
+                        </div>
+                    </div>
                     <div class="control-section">
                         <div class="control-section-header">Transposition</div>
                         <div class="control-row">
@@ -145,15 +154,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="control-section">
-                        <div class="control-section-header">Chord Synth</div>
-                        <div class="control-row">
-                            <div class="nav-group"><label>Sound</label><select id="chord-sound-select"></select></div>
-                            <div class="nav-group"><label>Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div>
-                            <div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle">Synth</label></div>
-                            <div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection">Loop</label></div>
-                        </div>
-                    </div>
                 </div>
               </div>
           </div>
@@ -166,9 +166,9 @@
                     <div style="font-size: 0.8em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px;">Analysis Result</div>
                     <div id="suggestion-text" style="font-size: 1.2em; font-weight: bold;"></div>
                 </div>
-                <div class="nav-group" style="margin-bottom: 15px; width: fit-content">
+                <div class="nav-group calculator-context-group">
                     <label>Context</label>
-                    <select id="genre-select" style="width: 150px">
+                    <select id="genre-select">
                         <option value="jazz">Jazz (Standard)</option>
                         <option value="blues">Blues</option>
                         <option value="pop">Pop / Rock</option>

@@ -7,7 +7,7 @@
   --wood: #1c1c1e;
   --text: #ffffff;
   --secondary-text: #8E8E93;
-  --sidebar-width: 280px;
+  --sidebar-width: clamp(250px, 20dvw, 300px);
   --fret-width: 44px;
   --nut-width: 50px;
   --control-height: 38px;
@@ -30,7 +30,7 @@ body {
   margin: 0;
   padding: 0;
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -87,6 +87,7 @@ body {
   align-items: center;
   height: 60px;
   flex-shrink: 0;
+  gap: 15px;
 }
 
 .logo {
@@ -140,7 +141,6 @@ body {
   display: none;
   padding: 20px 0;
   width: 100%;
-  max-width: 1108px;
   box-sizing: border-box;
 }
 .view-panel.active { display: block; }
@@ -167,6 +167,18 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Progression Step Input Widths */
+.prog-root-select { width: clamp(60px, 8dvw, 80px) !important; flex-shrink: 0; }
+.scale-select { flex: 1 1 150px; min-width: 120px; }
+.prog-duration-input { width: clamp(40px, 5dvw, 60px); }
+.prog-beats-input { width: clamp(45px, 6dvw, 65px); }
+.prog-denominator-input { width: clamp(55px, 7dvw, 75px); }
+.prog-chord-name { width: clamp(80px, 12dvw, 120px); flex-grow: 1; }
+.prog-chord-octave { width: clamp(40px, 5dvw, 60px); }
+
+.explorer-mode-group { width: clamp(180px, 25dvw, 250px); }
+.calculator-context-group { margin-bottom: 15px; width: clamp(140px, 20dvw, 200px); }
 
 textarea {
   height: 120px;
@@ -244,7 +256,7 @@ select {
   width: auto;
   height: 32px;
 }
-#bpm-input { width: 80px; }
+#bpm-input { width: clamp(70px, 10dvw, 90px); }
 .btn-reset {
   background: #FF453A; /* SF Red */
   color: white;
@@ -490,11 +502,20 @@ select {
 .nav-toggle { display: none; background: transparent; border: 1px solid #444; color: var(--accent); font-size: 1.2rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
 
 @media (max-width: 1024px) {
-  .navbar { flex-direction: column; align-items: stretch; padding: 10px 15px; }
+  .navbar { padding: 0 15px; }
   .nav-toggle { display: block; }
   .snapshot-card { flex-direction: column; align-items: stretch; gap: 10px; }
 }
 
+@media (max-width: 480px) {
+  .navbar { padding: 0 10px; gap: 8px; }
+  .btn-snapshot { 
+    font-size: 0.75em; 
+    padding: 0 8px; 
+    white-space: nowrap; 
+  }
+  #view-title { font-size: 0.9em !important; }
+}
 .help-icon {
   display: inline-flex;
   width: 18px;
@@ -554,6 +575,7 @@ select {
   padding: 10px 15px;
   border-radius: 8px;
   border: 2px solid transparent;
+  flex-wrap: wrap;
 }
 .progression-step.selected { border-color: var(--accent); background: #34495e; }
 .step-label {

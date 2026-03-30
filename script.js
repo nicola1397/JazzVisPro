@@ -267,10 +267,10 @@ class ProgressionManager {
     div.innerHTML = `
       <span class="step-label">${idx + 1}</span>
       <div class="step-timing">
-        <input type="text" class="prog-duration-input" value="${data ? data.bars : 4}" style="width: 40px" title="Bars">
+        <input type="text" class="prog-duration-input" value="${data ? data.bars : 4}" title="Bars">
         <span class="bars-label">bars</span>
-        <input type="number" class="prog-beats-input" value="${data ? data.beats : 4}" style="width: 45px" title="Beats">
-        <select class="prog-denominator-input" style="width: 70px">
+        <input type="number" class="prog-beats-input" value="${data ? data.beats : 4}" title="Beats">
+        <select class="prog-denominator-input">
           <option value="2" ${data && data.denominator == 2 ? 'selected' : ''}>2</option>
           <option value="4" ${!data || data.denominator == 4 ? 'selected' : ''}>4</option>
           <option value="8" ${data && data.denominator == 8 ? 'selected' : ''}>8</option>
@@ -278,8 +278,8 @@ class ProgressionManager {
         </select>
       </div>
       <div class="step-timing">
-        <input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord" style="width: 80px">
-        <input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" style="width: 40px" title="Octave">
+        <input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord">
+        <input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" title="Octave">
       </div>
       <input type="hidden" class="prog-chord-intervals" value="${data ? data.chordIntervals || "" : ""}">
       <button class="btn-remove-step">×</button>
