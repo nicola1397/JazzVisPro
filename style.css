@@ -171,16 +171,11 @@ input[type="number"] {
 }
 
 /* Progression Step Input Widths */
-.prog-root-select { width: clamp(60px, 8dvw, 80px) !important; flex-shrink: 0; }
-.scale-select { flex: 1 1 auto; min-width: 120px; }
-.prog-duration-input { width: clamp(40px, 5dvw, 60px); }
-.prog-beats-input { width: clamp(45px, 6dvw, 65px); }
-.prog-denominator-input { width: clamp(55px, 7dvw, 75px); }
-.prog-chord-name { width: clamp(80px, 12dvw, 120px); flex-grow: 1; }
-.prog-chord-octave { width: clamp(40px, 5dvw, 60px); }
-
-.explorer-mode-group { width: clamp(180px, 25dvw, 250px); }
-.calculator-context-group { margin-bottom: 15px; width: clamp(140px, 20dvw, 200px); }
+.prog-root-select { width: 100% !important; }
+.scale-select { width: 100% !important; }
+.prog-duration-input, .prog-beats-input, .prog-chord-octave, .prog-chord-name { width: 100%; }
+.explorer-mode-group { width: clamp(200px, 30dvw, 300px); }
+.calculator-context-group { margin-bottom: 15px; width: clamp(180px, 25dvw, 250px); }
 
 textarea {
   height: 120px;
@@ -580,35 +575,41 @@ select {
 .progression-step {
   display: flex;
   align-items: center;
-  gap: 12px;
   background: var(--panel);
-  padding: 10px 15px;
+  padding: 8px;
   border-radius: 8px;
   border: 2px solid transparent;
-  flex-wrap: wrap;
 }
 .progression-step.selected { border-color: var(--accent); background: #34495e; }
-.progression-step .nav-group { 
-  min-width: 0; 
-  flex: 0 1 auto; 
-}
-.progression-step .nav-group:has(.scale-select) {
-  flex: 1 1 150px;
-}
 .step-label {
   font-weight: 800;
   font-size: 1.2em;
-  min-width: 25px;
+  min-width: 35px;
   text-align: center;
   color: var(--accent);
 }
-.progression-step select,
-.progression-step input {
-  height: 32px;
-  font-size: 0.9em;
+.btn-remove-step   {
+  background: #FF453A; 
+  color: white; 
+  border-radius: 50%; 
+  width: 28px; 
+  height: 28px; 
+  padding: 0;
+  font-size: 1.2em; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
+  line-height: 1; 
+  border: none;
+  transition: background 0.2s;
+  transform: translate(0px, -17%);
 }
-.btn-remove-step {
-  background: #FF453A; color: white; border-radius: 50%; width: 28px; height: 28px; padding: 0; font-size: 1.2em; margin-left: auto; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.btn-remove-step span {
+    transform: translate(0px, -17%);
+}
+.btn-remove-step:hover {
+  background: #ff6b6b;
 }
 .progression-step.active-step { box-shadow: 0 0 0 3px var(--accent); }
 .step-timing { display: flex; align-items: center; gap: 5px; background: rgba(0, 0, 0, 0.2); padding: 4px 8px; border-radius: 6px; }
@@ -637,19 +638,6 @@ select {
 .control-section .nav-group {
   flex: 1 1 auto;
   min-width: 100px;
-}
-
-.transpose-btn {
-  padding: 0 15px !important;
-  font-size: 1.1em !important;
-  min-width: 45px;
-  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  transition: all 0.2s ease;
-}
-.transpose-btn:hover {
-  background: linear-gradient(180deg, #48484a 0%, #3a3a3c 100%) !important;
-  border-color: var(--accent) !important;
 }
 
 input[type="range"] { -webkit-appearance: none; background: transparent; height: 36px; }

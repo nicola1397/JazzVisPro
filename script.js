@@ -267,27 +267,40 @@ class ProgressionManager {
     const rs = document.getElementById("root-select").cloneNode(true); rs.id = ""; rs.className = "prog-root-select";
     const ss = document.getElementById("scale-select").cloneNode(true); ss.id = ""; ss.className = "scale-select";
     div.innerHTML = `
-      <span class="step-label">${idx + 1}</span>
-      <div class="nav-group"><label>Key</label></div>
-      <div class="nav-group"><label>Scale</label></div>
-      <div class="step-timing">
-        <div class="nav-group"><label>Bars</label><input type="text" class="prog-duration-input" value="${data ? data.bars : 4}" title="Bars"></div>
-        <div class="nav-group"><label>Beats</label><input type="number" class="prog-beats-input" value="${data ? data.beats : 4}" title="Beats"></div>
-        <div class="nav-group"><label>Den</label>
-          <select class="prog-denominator-input">
-            <option value="2" ${data && data.denominator == 2 ? 'selected' : ''}>2</option>
-            <option value="4" ${!data || data.denominator == 4 ? 'selected' : ''}>4</option>
-            <option value="8" ${data && data.denominator == 8 ? 'selected' : ''}>8</option>
-            <option value="16" ${data && data.denominator == 16 ? 'selected' : ''}>16</option>
-          </select>
+      <div class="row g-2 w-100 m-0 align-items-center">
+        <div class="col-6 col-sm-auto order-1 d-flex align-items-center">
+          <span class="step-label">${idx + 1}</span>
+        </div>
+        <div class="col-6 col-sm-auto order-2 order-sm-3 d-flex justify-content-end">
+          <button class="btn-remove-step"><span>×</span></button>
+        </div>
+        <div class="col-12 col-sm order-3 order-sm-2">
+          <div class="row gx-2 gy-2 align-items-center">
+            <div class="col-12 col-sm-2 col-lg-1"><div class="nav-group"><label>Key</label></div></div>
+            <div class="col-12 col-sm-10 col-lg-4"><div class="nav-group"><label>Scale</label></div></div>
+            <div class="col-12 col-sm-7 col-lg-4">
+              <div class="row g-1 bg-black bg-opacity-25 p-1 rounded m-0 w-100">
+                <div class="col-4"><div class="nav-group"><label>Bars</label><input type="text" class="prog-duration-input" value="${data ? data.bars : 4}" title="Bars"></div></div>
+                <div class="col-4"><div class="nav-group"><label>Beats</label><input type="number" class="prog-beats-input" value="${data ? data.beats : 4}" title="Beats"></div></div>
+                <div class="col-4"><div class="nav-group"><label>Den</label>
+                  <select class="prog-denominator-input w-100">
+                    <option value="2" ${data && data.denominator == 2 ? 'selected' : ''}>2</option>
+                    <option value="4" ${!data || data.denominator == 4 ? 'selected' : ''}>4</option>
+                    <option value="8" ${data && data.denominator == 8 ? 'selected' : ''}>8</option>
+                    <option value="16" ${data && data.denominator == 16 ? 'selected' : ''}>16</option>
+                  </select>
+                </div></div>
+              </div>
+            </div>
+            <div class="col-12 col-sm-5 col-lg-3">
+              <div class="row g-1 m-0 w-100">
+                <div class="col-8 p-0 pe-1"><div class="nav-group"><label>Chord</label><input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord"></div></div>
+                <div class="col-4 p-0"><div class="nav-group"><label>Oct</label><input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" title="Octave"></div></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="step-timing">
-        <div class="nav-group"><label>Chord</label><input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord"></div>
-        <div class="nav-group"><label>Oct</label><input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" title="Octave"></div>
-      </div>
-      <input type="hidden" class="prog-chord-intervals" value="${data ? data.chordIntervals || "" : ""}">
-      <button class="btn-remove-step">×</button>
     `;
     const groups = div.querySelectorAll(".nav-group");
     groups[0].appendChild(rs);
