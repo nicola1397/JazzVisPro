@@ -109,6 +109,9 @@
                 <div class="area-header">
                   <h2 class="area-title">Play Along Mode</h2>
                   <div class="area-actions">
+                    <button class="btn-io" onclick="exportProgressionData()">Export JSON</button>
+                    <button class="btn-io" onclick="document.getElementById('prog-import-file').click()">Import JSON</button>
+                    <input type="file" id="prog-import-file" style="display:none" onchange="importProgressionData(event)">
                     <button class="btn-add-step" onclick="addProgressionStep()">+ Add Step</button>
                     <button class="btn-reset" onclick="clearProgression()">Clear All</button>
                   </div>

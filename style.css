@@ -170,7 +170,7 @@ input[type="number"] {
 
 /* Progression Step Input Widths */
 .prog-root-select { width: clamp(60px, 8dvw, 80px) !important; flex-shrink: 0; }
-.scale-select { flex: 1 1 150px; min-width: 120px; }
+.scale-select { flex: 1 1 auto; min-width: 120px; }
 .prog-duration-input { width: clamp(40px, 5dvw, 60px); }
 .prog-beats-input { width: clamp(45px, 6dvw, 65px); }
 .prog-denominator-input { width: clamp(55px, 7dvw, 75px); }
@@ -578,6 +578,13 @@ select {
   flex-wrap: wrap;
 }
 .progression-step.selected { border-color: var(--accent); background: #34495e; }
+.progression-step .nav-group { 
+  min-width: 0; 
+  flex: 0 1 auto; 
+}
+.progression-step .nav-group:has(.scale-select) {
+  flex: 1 1 150px;
+}
 .step-label {
   font-weight: 800;
   font-size: 1.2em;

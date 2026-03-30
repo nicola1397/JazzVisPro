@@ -72,6 +72,7 @@ class AudioEngine {
     this.context = null;
     this.chordSynth = null;
     this.pianoSampler = null;
+    this.currentPreset = null;
     this.currentOscillators = [];
     this.metronomeSamples = {
       Beep: { type: "osc", freqDown: 1000, freqUp: 800, shape: "sine" },
@@ -91,6 +92,7 @@ class AudioEngine {
     } else if (this.context.state === "suspended") {
       this.context.resume();
     }
+    if (typeof Tone !== "undefined") Tone.start();
   }
 
   _setupTone() {
@@ -141,7 +143,6 @@ class AudioEngine {
   }
 
   playChord(tones, rootIdx, time, duration, vol, soundName, baseOctave) {
-    this.stopAll();
     if (!tones.length) return;
     if (this.chordSynth && typeof Tone !== "undefined" && Tone.context.state === "running") {
       let synth = this.chordSynth;
@@ -160,11 +161,12 @@ class AudioEngine {
   }
 
   _setPreset(name) {
-    if (!this.chordSynth) return;
-    const s = this.chordSynth; const f = s.filterNode; s.releaseAll();
+    if (!this.chordSynth || this.currentPreset === name) return;
+    const s = this.chordSynth; const f = s.filterNode;
     if (name === "Electric Piano") { s.set({ oscillator: { type: "sine" }, envelope: { attack: 0.005, decay: 0.3, sustain: 0.4, release: 1.2 } }); f.frequency.rampTo(3000, 0.1); }
     else if (name === "Strings") { s.set({ oscillator: { type: "fatsawtooth", count: 3, spread: 20 }, envelope: { attack: 0.4, decay: 0.5, sustain: 0.8, release: 2.0 } }); f.frequency.rampTo(2500, 0.1); }
     else { s.set({ oscillator: { type: "triangle" }, envelope: { attack: 0.05, decay: 0.3, sustain: 0.6, release: 1.5 } }); f.frequency.rampTo(2000, 0.1); }
+    this.currentPreset = name;
   }
 }
 
@@ -266,25 +268,31 @@ class ProgressionManager {
     const ss = document.getElementById("scale-select").cloneNode(true); ss.id = ""; ss.className = "scale-select";
     div.innerHTML = `
       <span class="step-label">${idx + 1}</span>
+      <div class="nav-group"><label>Key</label></div>
+      <div class="nav-group"><label>Scale</label></div>
       <div class="step-timing">
-        <input type="text" class="prog-duration-input" value="${data ? data.bars : 4}" title="Bars">
-        <span class="bars-label">bars</span>
-        <input type="number" class="prog-beats-input" value="${data ? data.beats : 4}" title="Beats">
-        <select class="prog-denominator-input">
-          <option value="2" ${data && data.denominator == 2 ? 'selected' : ''}>2</option>
-          <option value="4" ${!data || data.denominator == 4 ? 'selected' : ''}>4</option>
-          <option value="8" ${data && data.denominator == 8 ? 'selected' : ''}>8</option>
-          <option value="16" ${data && data.denominator == 16 ? 'selected' : ''}>16</option>
-        </select>
+        <div class="nav-group"><label>Bars</label><input type="text" class="prog-duration-input" value="${data ? data.bars : 4}" title="Bars"></div>
+        <div class="nav-group"><label>Beats</label><input type="number" class="prog-beats-input" value="${data ? data.beats : 4}" title="Beats"></div>
+        <div class="nav-group"><label>Den</label>
+          <select class="prog-denominator-input">
+            <option value="2" ${data && data.denominator == 2 ? 'selected' : ''}>2</option>
+            <option value="4" ${!data || data.denominator == 4 ? 'selected' : ''}>4</option>
+            <option value="8" ${data && data.denominator == 8 ? 'selected' : ''}>8</option>
+            <option value="16" ${data && data.denominator == 16 ? 'selected' : ''}>16</option>
+          </select>
+        </div>
       </div>
       <div class="step-timing">
-        <input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord">
-        <input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" title="Octave">
+        <div class="nav-group"><label>Chord</label><input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord"></div>
+        <div class="nav-group"><label>Oct</label><input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" title="Octave"></div>
       </div>
       <input type="hidden" class="prog-chord-intervals" value="${data ? data.chordIntervals || "" : ""}">
       <button class="btn-remove-step">×</button>
     `;
-    div.insertBefore(ss, div.querySelector(".step-timing")); div.insertBefore(rs, ss);
+    const groups = div.querySelectorAll(".nav-group");
+    groups[0].appendChild(rs);
+    groups[1].appendChild(ss);
+
     div.querySelector(".btn-remove-step").onclick = () => { div.remove(); this.updateIndices(); app.save(); };
     div.onclick = (e) => this._handleClick(e, div);
     this.container.appendChild(div); if (!data) app.save();
@@ -335,11 +343,26 @@ class ProgressionManager {
 class PlaybackEngine {
   constructor(audio, manager) { this.audio = audio; this.manager = manager; this.isPlaying = false; this.currentStepIndex = 0; this.nextNoteTime = 0; this.timerId = null; this.beatsRemaining = 0; this.beatInBar = 0; this.tapTimes = []; }
   toggle() { this.isPlaying ? this.stop() : this.play(); }
-  play() { this.audio.init(); this.isPlaying = true; this.currentStepIndex = -1; this.beatsRemaining = 0; this._scheduler(); }
+  play() {
+    this.audio.init();
+    this.isPlaying = true;
+    this.currentStepIndex = -1;
+    this.beatsRemaining = 0;
+    this.beatInBar = 0;
+    this.nextNoteTime = this.audio.context.currentTime;
+    this._scheduler();
+  }
   stop() { this.isPlaying = false; this.audio.stopAll(); cancelAnimationFrame(this.timerId); document.querySelectorAll(".active-step").forEach((el) => el.classList.remove("active-step")); }
   _scheduler() {
     if (!this.isPlaying) return;
-    while (this.nextNoteTime < this.audio.context.currentTime + 0.1) { this._runBeat(this.nextNoteTime); const bpm = parseInt(document.getElementById("bpm-input").value) || 120; this.nextNoteTime += 60.0 / bpm; }
+    while (this.nextNoteTime < this.audio.context.currentTime + 0.1) {
+      this._runBeat(this.nextNoteTime);
+      const steps = this.manager.getSteps();
+      const step = steps[this.currentStepIndex] || steps[0];
+      const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
+      const den = step ? parseInt(step.querySelector(".prog-denominator-input").value) || 4 : 4;
+      this.nextNoteTime += (60.0 / bpm) * (4 / den);
+    }
     this.timerId = requestAnimationFrame(() => this._scheduler());
   }
   _runBeat(time) {
@@ -347,14 +370,60 @@ class PlaybackEngine {
     if (this.beatsRemaining <= 0) {
       this.currentStepIndex = (this.currentStepIndex + 1) % steps.length;
       const el = steps[this.currentStepIndex]; if (!el) { this.stop(); return; }
+      this.beatInBar = 0;
       document.querySelectorAll(".active-step").forEach((s) => s.classList.remove("active-step")); el.classList.add("active-step");
       document.getElementById("root-select").value = el.querySelector(".prog-root-select").value;
       document.getElementById("scale-select").value = el.querySelector(".scale-select").value;
       app.fretboard.update(app.getUiSettings());
       this.beatsRemaining = parseFloat(el.querySelector(".prog-duration-input").value) * parseInt(el.querySelector(".prog-beats-input").value);
+      if (document.getElementById("play-chords-toggle").checked) this._triggerChord(el, time);
     }
-    if (document.getElementById("metronome-toggle").checked) this.audio.playClick(time, this.beatInBar === 0, 0.5, "Click");
+    if (document.getElementById("metronome-toggle").checked) {
+      const vol = parseFloat(document.getElementById("metro-vol").value);
+      const snd = document.getElementById("metro-sound-select").value;
+      this.audio.playClick(time, this.beatInBar === 0, vol, snd);
+    }
     this.beatsRemaining--;
+    const step = steps[this.currentStepIndex];
+    if (step) {
+      const bpb = parseInt(step.querySelector(".prog-beats-input").value) || 4;
+      this.beatInBar = (this.beatInBar + 1) % bpb;
+    }
+  }
+  _triggerChord(step, time) {
+    const rootSelect = step.querySelector(".prog-root-select").value;
+    const chordName = step.querySelector(".prog-chord-name").value;
+    const intervalStr = step.querySelector(".prog-chord-intervals").value;
+    const oct = parseInt(step.querySelector(".prog-chord-octave").value) || 4;
+    
+    let tones = [];
+    let chordRoot = rootSelect;
+
+    if (chordName) {
+      const cp = ChordParser.parse(chordName);
+      if (cp) {
+        chordRoot = cp.root;
+        tones = ChordParser.getIntervals(chordName);
+      }
+    }
+
+    if (tones.length === 0) {
+      if (intervalStr) {
+        tones = intervalStr.split(",").map(Number);
+      } else {
+        const s = Theory.SCALES[step.querySelector(".scale-select").value] || Theory.SCALES["Ionio (Maj7)"];
+        tones = s.filter((i) => [0, 3, 4, 7, 10, 11].includes(i));
+      }
+    }
+
+    const bars = parseFloat(step.querySelector(".prog-duration-input").value) || 1;
+    const bpb = parseInt(step.querySelector(".prog-beats-input").value) || 4;
+    const bpm = parseInt(document.getElementById("bpm-input").value) || 120;
+    const den = parseInt(step.querySelector(".prog-denominator-input").value) || 4;
+    const dur = (bars * bpb) * (60 / bpm) * (4 / den);
+    const vol = parseFloat(document.getElementById("chord-vol-slider").value);
+    const snd = document.getElementById("chord-sound-select").value;
+    this.audio.playChord(tones, Theory.NOTES.indexOf(chordRoot), time, dur, vol, snd, oct);
   }
   tap() {
     const now = Date.now(); this.tapTimes.push(now); if (this.tapTimes.length > 4) this.tapTimes.shift();
@@ -458,6 +527,34 @@ class JazzVizApp {
     localStorage.setItem("jazzVizData", JSON.stringify(data));
   }
 
+  exportData() {
+    this.save();
+    const data = localStorage.getItem("jazzVizData");
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'jazz-viz-progression.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        localStorage.setItem("jazzVizData", JSON.stringify(data));
+        this.progression.clear();
+        if (data.bpm) document.getElementById("bpm-input").value = data.bpm;
+        if (data.progression) data.progression.forEach(s => this.progression.addStep(s));
+      } catch (err) { alert("File JSON non valido."); }
+    };
+    reader.readAsText(file);
+  }
+
   load() {
     const data = JSON.parse(localStorage.getItem("jazzVizData"));
     if (data && data.progression) data.progression.forEach((s) => this.progression.addStep(s));
@@ -528,6 +625,8 @@ window.stopProgression = () => app.playback.stop();
 window.tapTempo = () => app.playback.tap();
 window.toggleMetronomeUI = () => { const c = document.getElementById("metronome-toggle"); c.checked = !c.checked; document.getElementById("metronome-btn").classList.toggle('active', c.checked); };
 window.importProgression = () => app.importProgression();
+window.exportProgressionData = () => app.exportData();
+window.importProgressionData = (e) => app.importData(e);
 window.createSnapshot = () => app.createSnapshot();
 window.clearSnapshots = () => { document.getElementById('snapshot-list').innerHTML=''; };
 window.clearCustomScale = () => { app.customScaleMap.clear(); window.applyFullScale(); };
