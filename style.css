@@ -121,6 +121,8 @@ body {
 .control-row-aligned {
   display: flex;
   align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 15px;
 }
 
@@ -556,11 +558,19 @@ select {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #444;
+  flex-wrap: wrap;
   margin-bottom: 15px;
   padding-bottom: 10px;
+  gap: 15px;
 }
 .area-title { font-size: 1.4em; color: var(--accent); margin: 0; }
-.area-actions { display: flex; gap: 10px; }
+.area-actions { 
+  display: flex; 
+  gap: 10px; 
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
 .area-actions button {
   height: 32px;
   padding: 0 15px;
@@ -627,6 +637,19 @@ select {
 .control-section .nav-group {
   flex: 1 1 auto;
   min-width: 100px;
+}
+
+.transpose-btn {
+  padding: 0 15px !important;
+  font-size: 1.1em !important;
+  min-width: 45px;
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.2s ease;
+}
+.transpose-btn:hover {
+  background: linear-gradient(180deg, #48484a 0%, #3a3a3c 100%) !important;
+  border-color: var(--accent) !important;
 }
 
 input[type="range"] { -webkit-appearance: none; background: transparent; height: 36px; }
