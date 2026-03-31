@@ -614,31 +614,30 @@ select {
 .progression-step.active-step { box-shadow: 0 0 0 3px var(--accent); }
 .step-timing { display: flex; align-items: center; gap: 5px; background: rgba(0, 0, 0, 0.2); padding: 4px 8px; border-radius: 6px; }
 
-.progression-controls { display: flex; flex-wrap: wrap; gap: 12px; border-top: 1px solid #333; padding-top: 15px; }
+.progression-controls { 
+  border-top: 1px solid #333; 
+  padding-top: 20px; 
+  margin-top: 10px;
+}
+
 .control-section { 
   display: flex; 
   flex-direction: column; 
   gap: 10px; 
   background: rgba(255, 255, 255, 0.05); 
-  padding: 12px; 
+  padding: 15px; 
   border-radius: 8px; 
   border: 1px solid rgba(255, 255, 255, 0.1); 
-  flex: 1 1 220px; 
-  min-width: 0;
 }
 .control-section-header { font-size: 0.75em; color: var(--accent); text-transform: uppercase; font-weight: bold; }
 
-.control-row {
+.btn-group-stretched {
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  flex-grow: 1;
 }
-
-.control-section .nav-group {
-  flex: 1 1 auto;
-  min-width: 100px;
-}
+.btn-group-stretched button { flex: 1; }
 
 input[type="range"] { -webkit-appearance: none; background: transparent; height: 36px; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; margin-top: -7px; }

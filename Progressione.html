@@ -120,54 +120,61 @@
                   </div>
                 </div>
                 <div id="progression-steps" class="progression-steps-container"></div>
-                <div class="progression-controls">
-                    <div class="control-section">
-                        <div class="control-section-header">Playback</div>
-                        <div class="control-row">
-                          <div class="nav-group"><label>BPM</label><input type="number" id="bpm-input" value="120"></div>
-                          <div class="nav-group"><label>Vol</label><input type="range" id="metro-vol" min="0" max="1" step="0.1" value="0.5"></div>
-                          <div class="nav-group"><label>Click</label><select id="metro-sound-select"></select></div>
-                          <div class="checkbox-container" style="display:none">
-                            <input type="checkbox" id="metronome-toggle">
-                          </div>
-                          <button class="metronome-btn" id="metronome-btn" onclick="toggleMetronomeUI()"><svg viewBox="0 0 24 24"><path d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13" /></svg></button>
-                        </div>
-                    </div>
-                                        <div class="control-section">
-                        <div class="control-section-header">Chord Synth</div>
-                        <div class="control-row">
-                            <div class="nav-group"><label>Sound</label><select id="chord-sound-select"></select></div>
-                            <div class="nav-group"><label>Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div>
-                            <div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle">Synth</label></div>
-                            <div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection">Loop</label></div>
-                        </div>
-                    </div>
-                    <div class="control-section">
-                        <div class="control-section-header">Transposition</div>
-                        <div class="control-row">
-                            <div class="nav-group"><label>Progression</label>
-                                <div style="display:flex; gap:6px">
-                                    <button class="btn-io transpose-btn" onclick="transposeProgression(2)">&plus;1</button>
-                                    <button class="btn-io transpose-btn" onclick="transposeProgression(1)">&plus;&frac12;</button>
-                                    <button class="btn-io transpose-btn" onclick="transposeProgression(-1)">&minus;&frac12;</button>
-                                    <button class="btn-io transpose-btn" onclick="transposeProgression(-2)">&minus;1</button>
-                                </div>
-                            </div>
-                            <div class="nav-group"><label>Synth Octave</label>
-                                <div style="display:flex; gap:5px">
-                                    <button class="btn-io transpose-btn" onclick="transposeChordOctave(1)">+1</button>
-                                    <button class="btn-io transpose-btn" onclick="transposeChordOctave(-1)">-1</button>
+                <div class="progression-controls row g-3 m-0 w-100">
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Playback</div>
+                            <div class="row g-2 align-items-end mt-0">
+                                <div class="col-3 col-sm-2 col-md-3 col-xl-auto" style="min-width: 70px;"><div class="nav-group"><label>BPM</label><input type="number" id="bpm-input" value="120"></div></div>
+                                <div class="col-9 col-sm-4 col-md-9 col-xl"><div class="nav-group"><label>Vol</label><input type="range" id="metro-vol" min="0" max="1" step="0.1" value="0.5"></div></div>
+                                <div class="col-9 col-sm-4 col-md-9 col-xl"><div class="nav-group"><label>Click</label><select id="metro-sound-select"></select></div></div>
+                                <div class="col-3 col-sm-2 col-md-3 col-xl-auto d-flex justify-content-end">
+                                    <div class="checkbox-container d-none"><input type="checkbox" id="metronome-toggle"></div>
+                                    <button class="metronome-btn" id="metronome-btn" onclick="toggleMetronomeUI()"><svg viewBox="0 0 24 24"><path d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13" /></svg></button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="control-section">
-                        <div class="control-section-header">Transport</div>
-                        <div class="control-row justify-content-center">
-                            <button class="btn-icon" onclick="navigateStep(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button>
-                            <button class="btn-icon btn-play" onclick="togglePlayProgression()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></button>
-                            <button class="btn-icon btn-stop" onclick="stopProgression()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg></button>
-                            <button class="btn-icon" onclick="navigateStep(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Chord Synth</div>
+                            <div class="row g-2 align-items-end mt-0">
+                                <div class="col-6 col-md-12 col-xl"><div class="nav-group"><label>Sound</label><select id="chord-sound-select"></select></div></div>
+                                <div class="col-6 col-md-12 col-xl"><div class="nav-group"><label>Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div></div>
+                                <div class="col-12 col-xl-auto d-flex gap-2"><div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle">Synth</label></div><div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection">Loop</label></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Transposition</div>
+                            <div class="row g-2 mt-0">
+                                <div class="col-12"><div class="nav-group"><label>Progression</label>
+                                    <div class="btn-group-stretched">
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(2)">&plus;1</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(1)">&plus;&frac12;</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(-1)">&minus;&frac12;</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(-2)">&minus;1</button>
+                                    </div>
+                                </div></div>
+                                <div class="col-12"><div class="nav-group"><label>Synth Octave</label>
+                                    <div class="btn-group-stretched">
+                                        <button class="btn-io transpose-btn" onclick="transposeChordOctave(1)">+1</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeChordOctave(-1)">-1</button>
+                                    </div>
+                                </div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Transport</div>
+                            <div class="row g-2 justify-content-center align-items-center flex-grow-1 mt-0">
+                                <div class="col-auto"><button class="btn-icon" onclick="navigateStep(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button></div>
+                                <div class="col-auto"><button class="btn-icon btn-play" onclick="togglePlayProgression()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></button></div>
+                                <div class="col-auto"><button class="btn-icon btn-stop" onclick="stopProgression()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg></button></div>
+                                <div class="col-auto"><button class="btn-icon" onclick="navigateStep(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button></div>
+                            </div>
                         </div>
                     </div>
                 </div>
