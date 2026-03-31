@@ -143,6 +143,7 @@ class AudioEngine {
   }
 
   playChord(tones, rootIdx, time, duration, vol, soundName, baseOctave) {
+    this.stopAll();
     if (!tones.length) return;
     if (this.chordSynth && typeof Tone !== "undefined" && Tone.context.state === "running") {
       let synth = this.chordSynth;
@@ -157,6 +158,31 @@ class AudioEngine {
         return Tone.Frequency(Theory.noteIndexToFrequency(nIdx, oct)).toNote();
       });
       synth.triggerAttackRelease(notes, duration, time);
+    } else {
+      // Web Audio Fallback
+      const volPer = (vol / tones.length) * 0.5;
+      tones.forEach((interval, i) => {
+        const nIdx = (rootIdx + interval) % 12;
+        let oct = baseOctave;
+        if (i > 0 && nIdx < (rootIdx + tones[i - 1]) % 12) oct++;
+        const freq = Theory.noteIndexToFrequency(nIdx, oct);
+
+        const osc = this.context.createOscillator();
+        const gain = this.context.createGain();
+        osc.type = soundName.includes("Piano") ? "sine" : "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(volPer, time + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.connect(gain);
+        gain.connect(this.context.destination);
+        osc.start(time);
+        osc.stop(time + duration + 0.1);
+        this.currentOscillators.push({
+          osc,
+          gain
+        });
+      });
     }
   }
 
@@ -203,6 +229,7 @@ class Fretboard {
     const tuning = Theory.TUNINGS[options.tuningName];
     const currentNotes = options.accidental === "#" ? Theory.NOTES : Theory.NOTES_FLAT;
     const explorerMode = options.explorerMode || 'normal';
+    const arpIntervals = [0, 3, 4, 7, 10, 11];
 
     const highlightSet = new Set();
     if (options.cagedShape !== "none") {
@@ -218,6 +245,11 @@ class Fretboard {
       const noteIdx = parseInt(c.dataset.noteIndex);
       const interval = (noteIdx - rootIdx + 12) % 12;
       const inScale = scale.includes(interval);
+      const inArp = inScale && (arpIntervals.includes(interval) ||
+        (options.add9 && interval === 2) ||
+        (options.add11 && interval === 5) ||
+        (options.add13 && interval === 9));
+
       const sIndex = parseInt(c.closest(".string").className.match(/s(\d)/)[1]) - 1;
       const fIndex = parseInt(c.closest(".fret").className.match(/fret-(\d+)/)[1]);
       const posKey = `${sIndex}-${fIndex}`;
@@ -232,9 +264,15 @@ class Fretboard {
       if (isVisible) {
         const color = Theory.INTERVAL_COLORS[interval]; c.style.backgroundColor = color.color;
         c.innerText = options.notation === "interval" ? color.short : currentNotes[noteIdx];
-        c.classList.add("active-note");
-        if (isHighlighted) c.classList.add("note-highlighted");
-        if (highlightSet.has(posKey)) c.classList.add("shape-note");
+        
+        if (explorerMode !== 'custom' && options.soloArp && !inArp) {
+          c.classList.add(options.hideUnused ? "note-hidden" : "note-ghost");
+        } else {
+          c.classList.add("active-note");
+          if (isHighlighted) c.classList.add("note-highlighted");
+          if (highlightSet.has(posKey)) c.classList.add("shape-note");
+          c.style.opacity = "1";
+        }
       } else {
         c.classList.add("note-hidden");
       }
@@ -306,14 +344,39 @@ class ProgressionManager {
     groups[0].appendChild(rs);
     groups[1].appendChild(ss);
 
+    div.querySelectorAll("select, input").forEach((el) => {
+      el.onchange = () => { this._syncData(el); app.save(); };
+      el.oninput = (e) => this._syncData(e.target);
+    });
+
     div.querySelector(".btn-remove-step").onclick = () => { div.remove(); this.updateIndices(); app.save(); };
     div.onclick = (e) => this._handleClick(e, div);
     this.container.appendChild(div); if (!data) app.save();
   }
 
+  _syncData(source) {
+    const step = source.closest(".progression-step");
+    if (!step.classList.contains("selected")) return;
+    const val = source.value;
+    const cls = source.className;
+    document.querySelectorAll(`.progression-step.selected .${cls}`).forEach((el) => {
+      if (el !== source) el.value = val;
+    });
+  }
+
   _handleClick(e, div) {
     if (["INPUT", "SELECT", "BUTTON"].includes(e.target.tagName)) return;
     const idx = parseInt(div.dataset.index);
+    if (e.shiftKey && this.lastSelectedIndex !== -1) {
+      const els = this.container.children;
+      const start = Math.min(this.lastSelectedIndex, idx);
+      const end = Math.max(this.lastSelectedIndex, idx);
+      if (!e.ctrlKey) this.deselectAll();
+      for (let i = start; i <= end; i++) els[i].classList.add("selected");
+      return;
+    } else if (e.ctrlKey) {
+      div.classList.toggle("selected"); this.lastSelectedIndex = idx; return;
+    }
     if (!e.ctrlKey) this.deselectAll();
     div.classList.add("selected"); this.lastSelectedIndex = idx;
   }
@@ -326,22 +389,45 @@ class ProgressionManager {
   getSteps() { return Array.from(this.container.children); }
 
   transpose(semitones) {
-    this.getSteps().forEach((step) => {
-      const sel = step.querySelector(".prog-root-select");
-      const idx = Theory.NOTES.indexOf(sel.value);
-      if (idx === -1) return;
-      let newIdx = (idx + semitones) % 12;
-      if (newIdx < 0) newIdx += 12;
-      sel.value = Theory.NOTES[newIdx];
+    const steps = this.getSteps();
+    const selected = steps.filter(s => s.classList.contains("selected"));
+    const targets = selected.length ? selected : steps;
+    const accidental = document.getElementById("accidental-select").value;
+    const notes = accidental === "#" ? Theory.NOTES : Theory.NOTES_FLAT;
+    
+    const getNoteIdx = (n) => {
+      let i = Theory.NOTES.indexOf(n);
+      return i === -1 ? Theory.NOTES_FLAT.indexOf(n) : i;
+    };
+
+    targets.forEach((step) => {
+      const rootSel = step.querySelector(".prog-root-select");
+      const rIdx = getNoteIdx(rootSel.value);
+      if (rIdx !== -1) {
+        let nrIdx = (rIdx + semitones) % 12;
+        if (nrIdx < 0) nrIdx += 12;
+        rootSel.value = notes[nrIdx];
+      }
+
       const inp = step.querySelector(".prog-chord-name");
-      const m = inp.value.trim().match(/^([A-G][#b]?)(.*)/);
-      if (m) inp.value = Theory.NOTES[newIdx] + m[2];
+      const match = inp.value.trim().match(/^([A-G][#b]?)(.*)/);
+      if (match) {
+        const cIdx = getNoteIdx(match[1]);
+        if (cIdx !== -1) {
+          let ncIdx = (cIdx + semitones) % 12;
+          if (ncIdx < 0) ncIdx += 12;
+          inp.value = notes[ncIdx] + match[2];
+        }
+      }
     });
     app.save();
   }
 
   transposeOctave(delta) {
-    this.getSteps().forEach((step) => {
+    const steps = this.getSteps();
+    const selected = steps.filter(s => s.classList.contains("selected"));
+    const targets = selected.length ? selected : steps;
+    targets.forEach((step) => {
       const inp = step.querySelector(".prog-chord-octave");
       let val = parseInt(inp.value) + delta;
       inp.value = Math.max(1, Math.min(7, val));
@@ -349,12 +435,17 @@ class ProgressionManager {
     app.save();
   }
 
-  clear() { this.container.innerHTML = ""; app.save(); }
+  clear(skipSave = false) { this.container.innerHTML = ""; if (!skipSave) app.save(); }
 }
 
 // --- Playback Engine ---
 class PlaybackEngine {
-  constructor(audio, manager) { this.audio = audio; this.manager = manager; this.isPlaying = false; this.currentStepIndex = 0; this.nextNoteTime = 0; this.timerId = null; this.beatsRemaining = 0; this.beatInBar = 0; this.tapTimes = []; }
+  constructor(audio, manager) { 
+    this.audio = audio; this.manager = manager; this.isPlaying = false; 
+    this.currentStepIndex = 0; this.nextNoteTime = 0; this.timerId = null; 
+    this.beatsRemaining = 0; this.beatInBar = 0; this.tapTimes = []; 
+    this.isCountingDown = false; this.countdownRemaining = 0;
+  }
   toggle() { this.isPlaying ? this.stop() : this.play(); }
   play() {
     this.audio.init();
@@ -362,10 +453,20 @@ class PlaybackEngine {
     this.currentStepIndex = -1;
     this.beatsRemaining = 0;
     this.beatInBar = 0;
+    this.isCountingDown = true;
+    this.countdownRemaining = 4;
     this.nextNoteTime = this.audio.context.currentTime;
+
+    const fretboard = document.querySelector(".scroll-wrapper");
+    if (fretboard) fretboard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     this._scheduler();
   }
-  stop() { this.isPlaying = false; this.audio.stopAll(); cancelAnimationFrame(this.timerId); document.querySelectorAll(".active-step").forEach((el) => el.classList.remove("active-step")); }
+  stop() { 
+    this.isPlaying = false; this.audio.stopAll(); cancelAnimationFrame(this.timerId); 
+    document.querySelectorAll(".active-step").forEach((el) => el.classList.remove("active-step"));
+    document.getElementById("countdown-overlay").style.display = "none";
+  }
   _scheduler() {
     if (!this.isPlaying) return;
     while (this.nextNoteTime < this.audio.context.currentTime + 0.1) {
@@ -380,8 +481,41 @@ class PlaybackEngine {
   }
   _runBeat(time) {
     const steps = this.manager.getSteps();
+
+    if (this.isCountingDown) {
+      const overlay = document.getElementById("countdown-overlay");
+      overlay.style.display = "flex";
+      overlay.textContent = this.countdownRemaining;
+      
+      const vol = parseFloat(document.getElementById("metro-vol").value);
+      const snd = document.getElementById("metro-sound-select").value;
+      this.audio.playClick(time, this.countdownRemaining === 4, vol, snd);
+      
+      this.countdownRemaining--;
+      if (this.countdownRemaining === 0) {
+        this.isCountingDown = false;
+        setTimeout(() => { if (!this.isPlaying || this.isCountingDown) return; overlay.style.display = "none"; }, 500);
+      }
+      return;
+    }
+
     if (this.beatsRemaining <= 0) {
-      this.currentStepIndex = (this.currentStepIndex + 1) % steps.length;
+      this.currentStepIndex++;
+      // Looping logic
+      if (document.getElementById("loop-selection").checked) {
+        const selected = steps.map((s, i) => (s.classList.contains("selected") ? i : -1)).filter((i) => i !== -1);
+        if (selected.length) {
+          const min = Math.min(...selected);
+          const max = Math.max(...selected);
+          if (this.currentStepIndex > max) this.currentStepIndex = min;
+          else if (this.currentStepIndex < min) this.currentStepIndex = min;
+        } else if (this.currentStepIndex >= steps.length) {
+          this.currentStepIndex = 0;
+        }
+      } else if (this.currentStepIndex >= steps.length) {
+        this.currentStepIndex = 0;
+      }
+
       const el = steps[this.currentStepIndex]; if (!el) { this.stop(); return; }
       this.beatInBar = 0;
       document.querySelectorAll(".active-step").forEach((s) => s.classList.remove("active-step")); el.classList.add("active-step");
@@ -403,6 +537,27 @@ class PlaybackEngine {
       this.beatInBar = (this.beatInBar + 1) % bpb;
     }
   }
+
+  navigate(dir) {
+    const steps = this.manager.getSteps();
+    if (!steps.length) return;
+    this.currentStepIndex += dir;
+    if (this.currentStepIndex >= steps.length) this.currentStepIndex = 0;
+    if (this.currentStepIndex < 0) this.currentStepIndex = steps.length - 1;
+
+    document.querySelectorAll(".active-step").forEach((el) => el.classList.remove("active-step"));
+    const el = steps[this.currentStepIndex];
+    el.classList.add("active-step");
+
+    document.getElementById("root-select").value = el.querySelector(".prog-root-select").value;
+    document.getElementById("scale-select").value = el.querySelector(".scale-select").value;
+    app.fretboard.update(app.getUiSettings());
+    if (this.isPlaying) {
+      this.beatsRemaining = 0;
+      this.beatInBar = 0;
+    }
+  }
+
   _triggerChord(step, time) {
     const rootSelect = step.querySelector(".prog-root-select").value;
     const chordName = step.querySelector(".prog-chord-name").value;
@@ -451,17 +606,48 @@ class ChordParser {
     let root = match[1]; const map = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#" };
     return { root: map[root] || root, rest: match[2] };
   }
-  static getScale(chordStr) {
+  static getScale(chordStr, nextChordStr = null, genre = "jazz") {
     const p = this.parse(chordStr); if (!p) return "Ionio (Maj7)"; const r = p.rest;
-    if (r.includes("m7b5")) return "Dorico (m7)"; if (r.includes("alt")) return "Altered (7alt)";
-    if (r.includes("m")) return "Dorico (m7)"; if (r.includes("7")) return "Misolidio (7)";
+
+    // Secondary Dominant Recognition
+    if (nextChordStr && (r === "7" || r.includes("7"))) {
+      const nextP = this.parse(nextChordStr);
+      if (nextP) {
+        const rootIdx = Theory.NOTES.indexOf(p.root);
+        const nextRootIdx = Theory.NOTES.indexOf(nextP.root);
+        if ((nextRootIdx - rootIdx + 12) % 12 === 5) {
+          if (nextP.rest.includes("m") && !nextP.rest.includes("maj")) return "Misolidio b13";
+          return "Misolidio (7)";
+        }
+      }
+    }
+
+    if (genre === "blues" && (r.includes("7") || r.includes("m"))) return "Blues";
+    if (r.includes("m7b5") || r.includes("ø")) return "Dorico (m7)";
+    if (r.includes("alt")) return "Altered (7alt)";
+    if (r.includes("dim")) return "Diminuita (T/S)";
+    if (r.includes("m") && !r.includes("maj")) return "Dorico (m7)"; if (r.includes("7")) return "Misolidio (7)";
+    if (r.includes("maj7")) return r.includes("#11") ? "Lidio (Maj7#11)" : "Ionio (Maj7)";
     return "Ionio (Maj7)";
   }
   static getIntervals(chordStr) {
-    const p = this.parse(chordStr); if (!p) return [0, 4, 7]; const r = p.rest;
-    let ints = [0]; let third = r.includes("m") ? 3 : 4; ints.push(third, 7);
-    if (r.includes("7")) ints.push(r.includes("maj") ? 11 : 10);
-    return ints;
+    const p = this.parse(chordStr);
+    if (!p) return [0, 4, 7];
+    const r = p.rest;
+    let ints = [0];
+    let third = r.match(/m(?!aj)|-|min/) ? 3 : 4;
+    let fifth = (r.includes("dim") || r.includes("°") || r.includes("b5")) ? 6 : 7;
+    let seventh = null;
+    if (r.includes("maj7")) seventh = 11;
+    else if (r.includes("7")) seventh = r.includes("dim7") ? 9 : 10;
+    ints.push(third, fifth);
+    if (seventh !== null) ints.push(seventh);
+    if (r.includes("b9")) ints.push(1);
+    if (r.includes("9") && !r.includes("b9") && !r.includes("#9")) ints.push(2);
+    if (r.includes("11") && !r.includes("#11")) ints.push(5);
+    if (r.includes("#11")) ints.push(6);
+    if (r.includes("13")) ints.push(9);
+    return [...new Set(ints)].sort((a, b) => a - b);
   }
 }
 
@@ -523,17 +709,25 @@ class JazzVizApp {
     return {
       root: document.getElementById("root-select").value, scaleName: document.getElementById("scale-select").value, tuningName: document.getElementById("tuning-select").value,
       hideUnused: document.getElementById("hide-unused").checked, soloArp: document.getElementById("solo-arpeggio").checked,
+      add9: document.getElementById("add-9").checked, add11: document.getElementById("add-11").checked, add13: document.getElementById("add-13").checked,
       notation: document.getElementById("notation-select").value, accidental: document.getElementById("accidental-select").value,
       cagedShape: document.getElementById("caged-select").value, explorerMode: this.explorerMode, manualNotes: this.manualNotes, highlightedIntervals: this.highlightedIntervals, customScaleMap: this.customScaleMap
     };
   }
 
   save() {
-    const data = { bpm: document.getElementById("bpm-input").value, progression: [] };
+    const data = { 
+      bpm: document.getElementById("bpm-input").value, 
+      sourceText: document.getElementById("chord-importer-textarea").value,
+      progression: [], 
+      customScale: Array.from(this.customScaleMap),
+      snapshots: []
+    };
+    document.querySelectorAll(".snapshot-card").forEach((c) => { if (c.dataset.snapshot) data.snapshots.push(JSON.parse(c.dataset.snapshot)); });
     this.progression.getSteps().forEach((s) => {
       data.progression.push({ 
         root: s.querySelector(".prog-root-select").value, scale: s.querySelector(".scale-select").value, 
-        bars: s.querySelector(".prog-duration-input").value, beats: s.querySelector(".prog-beats-input").value,
+        bars: s.querySelector(".prog-duration-input").value, beats: parseInt(s.querySelector(".prog-beats-input").value),
         denominator: s.querySelector(".prog-denominator-input").value, chordName: s.querySelector(".prog-chord-name").value,
         chordOctave: s.querySelector(".prog-chord-octave").value, chordIntervals: s.querySelector(".prog-chord-intervals").value
       });
@@ -554,24 +748,47 @@ class JazzVizApp {
   }
 
   importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const file = event.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
+        this.progression.clear(true);
         localStorage.setItem("jazzVizData", JSON.stringify(data));
-        this.progression.clear();
-        if (data.bpm) document.getElementById("bpm-input").value = data.bpm;
-        if (data.progression) data.progression.forEach(s => this.progression.addStep(s));
+        this.load();
+        event.target.value = '';
       } catch (err) { alert("File JSON non valido."); }
     };
     reader.readAsText(file);
   }
 
+  exportCustomScale() {
+    const data = JSON.stringify(Array.from(this.customScaleMap));
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'custom-scale.json'; a.click();
+  }
+
+  importCustomScale(e) {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = (ev) => {
+      try {
+        this.customScaleMap = new Set(JSON.parse(ev.target.result));
+        window.applyFullScale();
+      } catch (err) { alert("Errore nel caricamento della scala."); }
+    };
+    r.readAsText(f);
+  }
+
   load() {
     const data = JSON.parse(localStorage.getItem("jazzVizData"));
-    if (data && data.progression) data.progression.forEach((s) => this.progression.addStep(s));
+    if (!data) return;
+    if (data.bpm) document.getElementById("bpm-input").value = data.bpm;
+    if (data.sourceText) document.getElementById("chord-importer-textarea").value = data.sourceText;
+    if (data.progression) data.progression.forEach((s) => this.progression.addStep(s));
+    if (data.customScale) this.customScaleMap = new Set(data.customScale);
+    if (data.snapshots) data.snapshots.forEach(s => this.createSnapshot(s));
   }
 
   createSnapshot(data = null) {
@@ -582,6 +799,7 @@ class JazzVizApp {
     const tuning = Theory.TUNINGS[settings.tuningName || settings.tuning || "E Standard"];
     const rootIdx = Theory.NOTES.indexOf(settings.root);
     const scale = Theory.SCALES[settings.scaleName || settings.scale || "Ionio (Maj7)"];
+    card.dataset.snapshot = JSON.stringify(settings);
     
     let rows = "";
     for (let s = 5; s >= 0; s--) {
@@ -589,6 +807,11 @@ class JazzVizApp {
       for (let f = 0; f <= 24; f++) {
         const int = (((tuning[s] + f) % 12) - rootIdx + 12) % 12;
         let visible = scale.includes(int);
+        if (settings.soloArp && ![0, 3, 4, 7, 10, 11].includes(int)) {
+          if (!((settings.add9 && int === 2) || (settings.add11 && int === 5) || (settings.add13 && int === 9))) {
+            if (settings.hideUnused) visible = false;
+          }
+        }
         rows += `<div class="mini-fret${f === 0 ? ' mini-fret-0' : ''}">`;
         if (visible) {
           const col = Theory.INTERVAL_COLORS[int].color;
@@ -610,14 +833,34 @@ class JazzVizApp {
   }
 
   importProgression() {
-    const txt = document.getElementById("chord-importer-textarea").value; if (!txt) return;
+    const txt = document.getElementById("chord-importer-textarea").value;
+    const genre = document.getElementById("genre-select").value;
+    if (!txt) return;
     this.progression.clear();
-    txt.split("|").forEach((m) => {
-      m.trim().split(/\s+/).forEach((c) => {
+    let allChordsFound = [];
+    const measures = txt.split("|").map(m => m.trim()).filter(m => m);
+    measures.forEach((m) => {
+      const chords = m.split(/\s+/).filter(c => c);
+      if (!chords.length) return;
+      const bars = 1.0 / chords.length;
+      chords.forEach((c, idx) => {
+        if (c === "%" || c === "•/•") return;
         const p = ChordParser.parse(c); if (!p) return;
-        this.progression.addStep({ root: p.root, scale: ChordParser.getScale(c), bars: 1, beats: 4, chordName: c, chordIntervals: ChordParser.getIntervals(c).join(",") });
+        const nextC = chords[idx + 1] || null;
+        allChordsFound.push(c);
+        this.progression.addStep({ 
+          root: p.root, 
+          scale: ChordParser.getScale(c, nextC, genre), 
+          bars: bars, beats: 4, chordName: c, 
+          chordIntervals: ChordParser.getIntervals(c).join(",") 
+        });
       });
     });
+    if(allChordsFound.length > 0) {
+      document.getElementById('overall-suggestion').style.display = 'block';
+      document.getElementById('suggestion-text').innerText = allChordsFound.join(' → ');
+    }
+    app.save();
   }
 }
 
@@ -636,6 +879,7 @@ window.transposeProgression = (n) => app.progression.transpose(n);
 window.transposeChordOctave = (n) => app.progression.transposeOctave(n);
 window.togglePlayProgression = () => app.playback.toggle();
 window.stopProgression = () => app.playback.stop();
+window.navigateStep = (d) => app.playback.navigate(d);
 window.tapTempo = () => app.playback.tap();
 window.toggleMetronomeUI = () => { const c = document.getElementById("metronome-toggle"); c.checked = !c.checked; document.getElementById("metronome-btn").classList.toggle('active', c.checked); };
 window.importProgression = () => app.importProgression();
@@ -644,3 +888,5 @@ window.importProgressionData = (e) => app.importData(e);
 window.createSnapshot = () => app.createSnapshot();
 window.clearSnapshots = () => { document.getElementById('snapshot-list').innerHTML=''; };
 window.clearCustomScale = () => { app.customScaleMap.clear(); window.applyFullScale(); };
+window.exportCustomScale = () => app.exportCustomScale();
+window.importCustomScale = (e) => app.importCustomScale(e);

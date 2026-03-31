@@ -155,10 +155,19 @@
                             </div>
                             <div class="nav-group"><label>Synth Octave</label>
                                 <div style="display:flex; gap:5px">
-                                    <button class="btn-io transpose-btn" style="padding:0 8px" onclick="transposeChordOctave(1)">+1</button>
-                                    <button class="btn-io transpose-btn" style="padding:0 8px" onclick="transposeChordOctave(-1)">-1</button>
+                                    <button class="btn-io transpose-btn" onclick="transposeChordOctave(1)">+1</button>
+                                    <button class="btn-io transpose-btn" onclick="transposeChordOctave(-1)">-1</button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="control-section">
+                        <div class="control-section-header">Transport</div>
+                        <div class="control-row justify-content-center">
+                            <button class="btn-icon" onclick="navigateStep(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button>
+                            <button class="btn-icon btn-play" onclick="togglePlayProgression()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></button>
+                            <button class="btn-icon btn-stop" onclick="stopProgression()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg></button>
+                            <button class="btn-icon" onclick="navigateStep(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button>
                         </div>
                     </div>
                 </div>
