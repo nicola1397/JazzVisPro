@@ -802,7 +802,7 @@ class JazzVizApp {
     card.dataset.snapshot = JSON.stringify(settings);
     
     let rows = "";
-    for (let s = 5; s >= 0; s--) {
+    for (let s = 0; s < 6; s++) { // Changed loop direction for correct string order (high E at top)
       rows += `<div class="mini-string">`;
       for (let f = 0; f <= 24; f++) {
         const int = (((tuning[s] + f) % 12) - rootIdx + 12) % 12;
