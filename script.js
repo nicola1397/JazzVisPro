@@ -294,7 +294,7 @@ class ProgressionManager {
             </div>
             <div class="col-12 col-sm-5 col-lg-3">
               <div class="row g-1 m-0 w-100">
-                <div class="col-8 p-0 pe-1"><div class="nav-group"><label>Chord</label><input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord"></div></div>
+                <div class="col-8 p-0 pe-1"><div class="nav-group"><label>Chord</label><input type="text" class="prog-chord-name" value="${data ? data.chordName || "" : ""}" placeholder="Chord"><input type="hidden" class="prog-chord-intervals" value="${data ? data.chordIntervals || "" : ""}"></div></div>
                 <div class="col-4 p-0"><div class="nav-group"><label>Oct</label><input type="number" class="prog-chord-octave" value="${data ? data.chordOctave || 4 : 4}" title="Octave"></div></div>
               </div>
             </div>
@@ -516,6 +516,7 @@ class JazzVizApp {
       if (n.innerText.toLowerCase().includes(viewId.slice(0, 4))) n.classList.add('active');
     });
     document.getElementById('view-title').innerText = viewId.toUpperCase();
+    document.getElementById("sidebar-menu").classList.remove("active");
   }
 
   getUiSettings() {
