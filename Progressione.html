@@ -18,6 +18,8 @@
         <div class="nav-item active" onclick="switchView('explorer')">Explorer</div>
         <div class="nav-item" onclick="switchView('player')">Player</div>
         <div class="nav-item" onclick="switchView('calculator')">Calculator</div>
+        <div class="nav-item" onclick="switchView('interval-learner')">Interval Learner</div>
+        <div class="nav-item" onclick="switchView('grade-learner')">Grade Learner</div>
         <div class="nav-item" onclick="switchView('snapshots')">Snapshots</div>
         
         <div class="sidebar-controls">
@@ -53,9 +55,21 @@
 
         <div class="viewport">
             <div class="controls" id="legend"></div>
-            <div style="text-align:center; font-size: 0.8em; color: #666; margin-bottom: 15px;">
+            <div id="explorer-help" style="text-align:center; font-size: 0.8em; color: #666; margin-bottom: 15px;">
               Click a swatch to highlight all intervals. Click a fret to toggle specific note highlight.
             </div>
+
+            <!-- Interval Learner Game Bar (Spostata vicino al manico) -->
+            <div id="interval-learner-bar" style="display: none; width: 100%; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(255, 214, 10, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+                <div id="question-text" class="h3 mb-0" style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Premi "Inizia" per partire</div>
+                <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                    <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.intervalLearner.start()">Inizia / Prossimo</button>
+                    <button class="btn-reset w-auto" style="height: 38px;" onclick="app.intervalLearner.reset()">Reset</button>
+                    <div id="score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
+                </div>
+                <div id="game-status" class="small" style="color: #aaa;">Mettiti alla prova! Trova l'intervallo richiesto.</div>
+            </div>
+
             <div class="scroll-wrapper">
               <div class="scroll-content">
                 <div class="fretboard-container">
@@ -199,6 +213,41 @@
                 </div>
                 <textarea id="chord-importer-textarea" placeholder="| Dm7 G7 | Cmaj7 | •/• |"></textarea>
                 <button class="btn-add-step" style="width: 100%" onclick="importProgression()">Import & Calculate</button>
+              </div>
+          </div>
+
+          <!-- Interval Learner View -->
+          <div id="view-interval-learner" class="view-panel">
+              <div class="importer-area text-center">
+                <h2 class="area-title">Istruzioni Interval Learner</h2>
+                <p class="text-secondary">I controlli del gioco sono ora disponibili sopra il manico della chitarra per facilitare l'interazione.</p>
+                <div class="mt-4 text-secondary small" style="max-width: 500px; margin: 0 auto;">
+                  Verrà indicata una nota di partenza (Root) e un intervallo da trovare. 
+                  Seleziona una nota sul manico. Se è sbagliata, verranno evidenziate le posizioni corrette.
+                </div>
+              </div>
+          </div>
+
+          <!-- Grade Learner View -->
+          <div id="view-grade-learner" class="view-panel">
+              <div class="importer-area text-center">
+                <h2 class="area-title">Grade Learner</h2>
+                
+                <div id="grade-game-bar" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(255, 214, 10, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+                    <div id="grade-question-text" class="h3 mb-0" style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Premi "Inizia" per partire</div>
+                    <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                        <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.gradeLearner.start()">Inizia / Prossimo</button>
+                        <button class="btn-reset w-auto" style="height: 38px;" onclick="app.gradeLearner.reset()">Reset</button>
+                        <div id="grade-score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
+                    </div>
+                    <div id="grade-game-status" class="small" style="color: #aaa;">Mettiti alla prova! Qual è il grado della nota?</div>
+                </div>
+
+                <div class="circle-container" style="position: relative; width: 320px; height: 320px; margin: 40px auto;">
+                    <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%; border: 2px solid rgba(255,255,255,0.05); border-radius: 50%;"></div>
+                </div>
+                
+                <p class="text-secondary small mt-4">Usa il circolo cromatico per identificare i gradi. Se sbagli, la nota corretta verrà evidenziata.</p>
               </div>
           </div>
 

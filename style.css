@@ -665,3 +665,34 @@ input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 2px; b
 input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; border: 2px solid #555; border-radius: 4px; background: #333; cursor: pointer; position: relative; }
 input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
 input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid #1a1a1a; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+/* Grade Learner Circle */
+.note-circle-board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block; /* Assicura che sia un blocco solido */
+}
+
+.circle-note {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  background: #2c2c2e;
+  border: 2px solid #444;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.95em;
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+.circle-note .ita { font-size: 0.65em; opacity: 0.6; margin-top: -2px; text-transform: capitalize; }
+.circle-note:hover { border-color: var(--accent); background: #3a3a3c; transform: translate(-50%, -50%) scale(1.1); z-index: 100; }
+.circle-note.correct { background: #32d74b !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(50, 215, 75, 0.4); z-index: 10; }
+.circle-note.wrong { background: #ff453a !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(255, 69, 58, 0.4); z-index: 10; }

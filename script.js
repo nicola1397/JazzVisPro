@@ -6,6 +6,9 @@ class Theory {
   static get NOTES_FLAT() {
     return ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
   }
+  static get NOTES_ITA() {
+    return ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
+  }
   static get TUNINGS() {
     return {
       "E Standard": [4, 11, 7, 2, 9, 4],
@@ -224,6 +227,11 @@ class Fretboard {
   }
 
   update(options) {
+    // Se siamo nel minigioco, non applichiamo la logica di visibilità delle scale
+    if (options.currentView === 'interval-learner') {
+        return;
+    }
+
     const rootIdx = Theory.NOTES.indexOf(options.root);
     const scale = Theory.SCALES[options.scaleName];
     const tuning = Theory.TUNINGS[options.tuningName];
@@ -651,11 +659,238 @@ class ChordParser {
   }
 }
 
+// --- Interval Learner Engine ---
+class IntervalLearner {
+  constructor(app) {
+    this.app = app;
+    this.active = false;
+    this.root = 0;
+    this.targetInterval = 0;
+    this.score = 0;
+    this.total = 0;
+  }
+
+  reset() {
+    this.score = 0; this.total = 0; this.active = false;
+    document.getElementById('score-display').innerText = "Punteggio: 0 / 0";
+    document.getElementById('question-text').innerText = 'Premi "Inizia Gioco" per partire';
+    document.getElementById('game-status').innerText = "Mettiti alla prova!";
+    if (this.app.currentView === 'interval-learner') {
+        this.updateBoard();
+    } else {
+        this.app.fretboard.update(this.app.getUiSettings());
+    }
+  }
+
+  start() {
+    this.active = true;
+    this.root = Math.floor(Math.random() * 12);
+    this.targetInterval = Math.floor(Math.random() * 11) + 1;
+    const intInfo = Theory.INTERVAL_COLORS[this.targetInterval];
+    const rootName = Theory.NOTES[this.root];
+    document.getElementById('question-text').innerText = `Trova: ${intInfo.label} di ${rootName}`;
+    document.getElementById('game-status').innerText = "Clicca la nota corretta sul manico!";
+
+    // Feedback Audio: Inizializza l'audio e suona la Root come riferimento
+    this.app.audio.init();
+    const sound = "Electric Piano";
+    const vol = 0.2;
+    this.app.audio.playChord([0], this.root, this.app.audio.context.currentTime, 1, vol, sound, 3);
+
+    this.updateBoard();
+  }
+
+  updateBoard() {
+    // Mostra solo la tonica come riferimento
+    this.app.fretboard.el.querySelectorAll(".note-circle").forEach(c => {
+      const nIdx = parseInt(c.dataset.noteIndex);
+      // Resettiamo le classi e forziamo la visibilità logica
+      c.className = "note-circle active-note"; 
+      c.innerText = ""; 
+      c.style.backgroundColor = "";
+      c.style.pointerEvents = "auto"; // Forza la cliccabilità
+      c.style.visibility = "visible"; // Rendi l'elemento rilevabile dal mouse
+
+      if (nIdx === this.root) {
+        c.style.backgroundColor = Theory.INTERVAL_COLORS[0].color;
+        c.innerText = "R";
+        c.style.opacity = "1";
+      } else {
+        // Usiamo un'opacità minima quasi zero invece di 0 assoluto per migliorare la reattività del mouse in alcuni browser
+        c.style.opacity = "0.01"; 
+      }
+    });
+  }
+
+  checkAnswer(circle) {
+    if (!this.active) return;
+    const noteIdx = parseInt(circle.dataset.noteIndex);
+    const clickedInterval = (noteIdx - this.root + 12) % 12;
+    this.total++;
+    this.active = false; // Disabilita click multipli durante il feedback
+
+    const sound = "Electric Piano";
+    const vol = 0.2;
+    const now = this.app.audio.context.currentTime;
+
+    // Trova le coordinate fisiche per il suono
+    const stringEl = circle.closest(".string");
+    const fretEl = circle.closest(".fret");
+    if (!stringEl || !fretEl) return;
+
+    const s = parseInt(stringEl.className.match(/s(\d)/)[1]) - 1;
+    const f = parseInt(fretEl.className.match(/fret-(\d+)/)[1]);
+    
+    const stringBaseOctaves = [4, 3, 3, 3, 2, 2]; // Ottave standard per Mi cantino, Si, Sol, Re, La, Mi basso
+    const tuning = Theory.TUNINGS[this.app.getUiSettings().tuningName] || Theory.TUNINGS["E Standard"];
+    const totalHalfSteps = tuning[s] + f;
+    
+    // Correzione ottava basata sulla nota reale
+    let actualOctave = stringBaseOctaves[s];
+    if (s === 0) actualOctave = 4; // Cantino
+    else if (s <= 3) actualOctave = 3;
+    else actualOctave = 2; // Bassi
+    
+    actualOctave += Math.floor(totalHalfSteps / 12);
+    const actualNoteIdx = totalHalfSteps % 12;
+
+    // Suona la nota che l'utente ha cliccato
+    this.app.audio.playChord([0], actualNoteIdx, now, 0.8, vol, sound, actualOctave);
+
+    if (clickedInterval === this.targetInterval) {
+      this.score++;
+      circle.style.backgroundColor = "#2ecc71"; // Verde successo
+      circle.style.opacity = "1";
+      circle.innerText = Theory.INTERVAL_COLORS[clickedInterval].short;
+      document.getElementById('game-status').innerText = "Corretto! Bravissimo.";
+    } else {
+      circle.style.backgroundColor = "#e74c3c"; // Rosso errore
+      circle.style.opacity = "1";
+      // Mostra cosa ha cliccato l'utente per aiutarlo a capire l'errore
+      circle.innerText = Theory.INTERVAL_COLORS[clickedInterval] ? Theory.INTERVAL_COLORS[clickedInterval].short : "";
+      document.getElementById('game-status').innerText = "Sbagliato! Ecco le posizioni corrette:";
+      this.revealCorrect();
+
+      // Se ha sbagliato, suona la nota corretta dopo un breve intervallo (0.8s) per confronto
+      const targetNote = (this.root + this.targetInterval) % 12;
+      this.app.audio.playChord([0], targetNote, now + 0.8, 1.2, vol, sound, actualOctave);
+    }
+    document.getElementById('score-display').innerText = `Punteggio: ${this.score} / ${this.total}`;
+  }
+
+  revealCorrect() {
+    const targetNote = (this.root + this.targetInterval) % 12;
+    this.app.fretboard.el.querySelectorAll(".note-circle").forEach(c => {
+      if (parseInt(c.dataset.noteIndex) === targetNote) {
+        c.classList.add("note-highlighted");
+        c.style.backgroundColor = Theory.INTERVAL_COLORS[this.targetInterval].color;
+        c.innerText = Theory.INTERVAL_COLORS[this.targetInterval].short;
+        c.style.opacity = "1";
+      }
+    });
+  }
+}
+
+// --- Grade Learner Engine ---
+class GradeLearner {
+  constructor(app) {
+    this.app = app;
+    this.active = false;
+    this.root = 0;
+    this.targetGrade = 0;
+    this.score = 0;
+    this.total = 0;
+  }
+
+  initUI() {
+    const container = document.getElementById('note-circle-ui');
+    if (!container) return;
+    container.innerHTML = '';
+    const radius = 135;
+    const centerX = 160;
+    const centerY = 160;
+
+    for (let i = 0; i < 12; i++) {
+      const angle = (i * 30 - 90) * (Math.PI / 180);
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      const noteBtn = document.createElement('div');
+      noteBtn.className = 'circle-note';
+      noteBtn.style.left = `${x}px`;
+      noteBtn.style.top = `${y}px`;
+      noteBtn.dataset.index = i;
+      noteBtn.innerHTML = `<span>${Theory.NOTES[i]}</span><span class="ita">${Theory.NOTES_ITA[i]}</span>`;
+      noteBtn.onclick = () => this.checkAnswer(i, noteBtn);
+      container.appendChild(noteBtn);
+    }
+  }
+
+  reset() {
+    this.score = 0; this.total = 0; this.active = false;
+    document.getElementById('grade-score-display').innerText = "0 / 0";
+    document.getElementById('grade-question-text').innerText = 'Premi "Inizia" per partire';
+    document.getElementById('grade-game-status').innerText = "Qual è il grado richiesto?";
+    this.clearHighlights();
+  }
+
+  start() {
+    this.active = true;
+    this.clearHighlights();
+    this.root = Math.floor(Math.random() * 12);
+    this.targetGrade = Math.floor(Math.random() * 11) + 1;
+    const intInfo = Theory.INTERVAL_COLORS[this.targetGrade];
+    const rootNameEng = Theory.NOTES[this.root];
+    const rootNameIta = Theory.NOTES_ITA[this.root];
+    document.getElementById('grade-question-text').innerText = `${intInfo.label} di ${rootNameIta} (${rootNameEng})`;
+    document.getElementById('grade-game-status').innerText = "Trova la nota corretta nel circolo!";
+    this.app.audio.init();
+    this.app.audio.playChord([0], this.root, this.app.audio.context.currentTime, 0.5, 0.2, "Electric Piano", 4);
+  }
+
+  checkAnswer(index, element) {
+    if (!this.active) return;
+    this.active = false;
+    this.total++;
+    const correctNote = (this.root + this.targetGrade) % 12;
+    const isCorrect = index === correctNote;
+    const now = this.app.audio.context.currentTime;
+
+    if (isCorrect) {
+      this.score++;
+      element.classList.add('correct');
+      document.getElementById('grade-game-status').innerText = "Bravo! Risposta corretta.";
+      this.app.audio.playChord([0], index, now, 0.8, 0.2, "Electric Piano", 4);
+    } else {
+      element.classList.add('wrong');
+      document.getElementById('grade-game-status').innerText = "Sbagliato! La nota corretta è evidenziata.";
+      this.revealCorrect(correctNote);
+      this.app.audio.playChord([0], index, now, 0.4, 0.2, "Electric Piano", 4);
+      this.app.audio.playChord([0], correctNote, now + 0.5, 0.8, 0.2, "Electric Piano", 4);
+    }
+    document.getElementById('grade-score-display').innerText = `${this.score} / ${this.total}`;
+  }
+
+  revealCorrect(index) {
+    document.querySelectorAll('.circle-note').forEach(n => {
+      if (parseInt(n.dataset.index) === index) n.classList.add('correct');
+    });
+  }
+
+  clearHighlights() {
+    document.querySelectorAll('.circle-note').forEach(n => {
+      n.classList.remove('correct', 'wrong');
+    });
+  }
+}
+
 // --- Main Application ---
 class JazzVizApp {
   constructor() {
     this.audio = new AudioEngine(); this.fretboard = new Fretboard(); this.progression = new ProgressionManager();
     this.playback = new PlaybackEngine(this.audio, this.progression);
+    this.intervalLearner = new IntervalLearner(this);
+    this.gradeLearner = new GradeLearner(this);
+    this.currentView = 'explorer';
     this.explorerMode = 'normal'; this.highlightedIntervals = new Set(); this.manualNotes = new Set(); this.customScaleMap = new Set();
     this.init();
   }
@@ -676,10 +911,15 @@ class JazzVizApp {
     });
     const ms = document.getElementById("metro-sound-select"); Object.keys(this.audio.metronomeSamples).forEach((k) => ms.add(new Option(k, k)));
     const cs = document.getElementById("chord-sound-select"); Object.keys(this.audio.chordSounds).forEach((k) => cs.add(new Option(k, k)));
-    this.fretboard.render("E Standard"); this.load(); this.fretboard.update(this.getUiSettings());
+    this.fretboard.render("E Standard"); 
+    this.load(); this.fretboard.update(this.getUiSettings());
   }
 
   handleNoteClick(circle) {
+    if (this.currentView === 'interval-learner') {
+      this.intervalLearner.checkAnswer(circle);
+      return;
+    }
     const s = parseInt(circle.closest(".string").className.match(/s(\d)/)[1]) - 1;
     const f = parseInt(circle.closest(".fret").className.match(/fret-(\d+)/)[1]);
     const key = `${s}-${f}`;
@@ -695,14 +935,51 @@ class JazzVizApp {
   }
 
   switchView(viewId) {
+    this.currentView = viewId;
     document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`view-${viewId}`).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => {
       n.classList.remove('active');
-      if (n.innerText.toLowerCase().includes(viewId.slice(0, 4))) n.classList.add('active');
+      const label = n.innerText.toLowerCase();
+      if (label.includes(viewId.slice(0, 4)) 
+          || (viewId === 'interval-learner' && label.includes('interval'))
+          || (viewId === 'grade-learner' && label.includes('grade'))) n.classList.add('active');
     });
     document.getElementById('view-title').innerText = viewId.toUpperCase();
+
+    // Gestione visibilità Game Bar e Legenda
+    const gameBar = document.getElementById('interval-learner-bar');
+    const legend = document.getElementById('legend');
+    const explorerHelp = document.getElementById('explorer-help');
+    const fretboardWrapper = document.querySelector('.scroll-wrapper');
+
+    if (viewId === 'interval-learner') {
+      if (gameBar) gameBar.style.display = 'flex';
+      if (legend) legend.style.display = 'none';
+      if (explorerHelp) explorerHelp.style.display = 'none';
+      if (fretboardWrapper) fretboardWrapper.style.display = 'block';
+    } else if (viewId === 'grade-learner') {
+      if (gameBar) gameBar.style.display = 'none';
+      if (legend) legend.style.display = 'none';
+      if (explorerHelp) explorerHelp.style.display = 'none';
+      if (fretboardWrapper) fretboardWrapper.style.display = 'none';
+    } else {
+      if (gameBar) gameBar.style.display = 'none';
+      if (legend) legend.style.display = 'flex';
+      if (explorerHelp) explorerHelp.style.display = 'block';
+      if (fretboardWrapper) fretboardWrapper.style.display = 'block';
+    }
+
     document.getElementById("sidebar-menu").classList.remove("active");
+    if (viewId === 'grade-learner') {
+        this.gradeLearner.initUI(); // Rigenera il cerchio per sicurezza
+        this.gradeLearner.reset();
+    }
+    else if (viewId === 'interval-learner') {
+        this.intervalLearner.updateBoard();
+    } else {
+        this.fretboard.update(this.getUiSettings());
+    }
   }
 
   getUiSettings() {
@@ -712,6 +989,7 @@ class JazzVizApp {
       add9: document.getElementById("add-9").checked, add11: document.getElementById("add-11").checked, add13: document.getElementById("add-13").checked,
       notation: document.getElementById("notation-select").value, accidental: document.getElementById("accidental-select").value,
       cagedShape: document.getElementById("caged-select").value, explorerMode: this.explorerMode, manualNotes: this.manualNotes, highlightedIntervals: this.highlightedIntervals, customScaleMap: this.customScaleMap
+      , currentView: this.currentView
     };
   }
 
@@ -866,7 +1144,13 @@ class JazzVizApp {
 
 const app = new JazzVizApp();
 window.renderFretboard = () => app.fretboard.render(document.getElementById('tuning-select').value);
-window.applyFullScale = () => app.fretboard.update(app.getUiSettings());
+window.applyFullScale = () => {
+    if (app.currentView === 'interval-learner') {
+        app.intervalLearner.updateBoard();
+    } else {
+        app.fretboard.update(app.getUiSettings());
+    }
+};
 window.resetFretboard = () => { app.highlightedIntervals.clear(); app.manualNotes.clear(); window.applyFullScale(); };
 window.setExplorerMode = (m) => app.setExplorerMode(m);
 window.switchView = (v) => app.switchView(v);
