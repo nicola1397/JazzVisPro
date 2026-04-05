@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jazz Viz Pro - Professional Edition</title>
+    <!-- Tone.js for musical chord synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar" id="sidebar-menu">
+        <button class="nav-toggle d-lg-none" onclick="toggleMenu()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: white; font-size: 1.5rem;">✕</button>
+        <div class="logo">JAZZ<span>VIZ</span> PRO</div>
+        <div class="nav-item active" onclick="switchView('explorer')">Explorer</div>
+        <div class="nav-item" onclick="switchView('player')">Player</div>
+        <div class="nav-item" onclick="switchView('calculator')">Calculator</div>
+        <div class="nav-item" onclick="switchView('interval-learner')">Interval Learner</div>
+        <div class="nav-item" onclick="switchView('grade-learner')">Grade Learner</div>
+        <div class="nav-item" onclick="switchView('snapshots')">Snapshots</div>
+        
+        <div class="sidebar-controls">
+            <div class="nav-group"><label>Tuning</label><select id="tuning-select" onchange="renderFretboard(); applyFullScale();"></select></div>
+            <div class="nav-group"><label>Key</label><select id="root-select" onchange="applyFullScale()"></select></div>
+            <div class="nav-group"><label>Scale</label><select id="scale-select" onchange="applyFullScale()"></select></div>
+            <div class="nav-group"><label>CAGED</label>
+                <select id="caged-select" onchange="applyFullScale()">
+                  <option value="none">None</option><option value="C">C Shape</option><option value="A">A Shape</option>
+                  <option value="G">G Shape</option><option value="E">E Shape</option><option value="D">D Shape</option>
+                </select>
+            </div>
+            <div class="checkbox-group">
+                <div class="checkbox-container"><input type="checkbox" id="hide-unused" onchange="applyFullScale()"/><label for="hide-unused">Hide Outside Scale</label></div>
+                <div class="checkbox-container"><input type="checkbox" id="solo-arpeggio" onchange="applyFullScale()"/><label for="solo-arpeggio" style="color: var(--accent)">Arpeggio (1-3-5-7)</label></div>
+            </div>
+            <div class="checkbox-group">
+                <div class="nav-group"><label>Notation</label><select id="notation-select" onchange="applyFullScale()"><option value="interval">Intervals</option><option value="note">Notes</option></select></div>
+                <div class="nav-group"><label>Accidentals</label><select id="accidental-select" onchange="applyFullScale()"><option value="#">Sharp (#)</option><option value="b">Flat (b)</option></select></div>
+            </div>
+            <button class="btn-reset" style="margin-top: 10px; width: 100%;" onclick="resetFretboard()">Reset Display</button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <nav class="navbar">
+          <button class="nav-toggle" onclick="toggleMenu()">☰</button>
+          <h2 id="view-title" style="margin:0; font-size: 1.1em; color: var(--accent)">EXPLORER</h2>
+          <button class="btn-snapshot" onclick="createSnapshot()">SAVE SNAPSHOT</button>
+        </nav>
+
+        <div id="countdown-overlay" class="countdown-overlay"></div>
+
+        <div class="viewport">
+            <div class="controls" id="legend"></div>
+            <div id="explorer-help" style="text-align:center; font-size: 0.8em; color: #666; margin-bottom: 15px;">
+              Click a swatch to highlight all intervals. Click a fret to toggle specific note highlight.
+            </div>
+
+            <!-- Interval Learner Game Bar (Spostata vicino al manico) -->
+            <div id="interval-learner-bar" style="display: none; width: 100%; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(255, 214, 10, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+                <div id="question-text" class="h3 mb-0" style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Premi "Inizia" per partire</div>
+                <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                    <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.intervalLearner.start()">Inizia / Prossimo</button>
+                    <button class="btn-reset w-auto" style="height: 38px;" onclick="app.intervalLearner.reset()">Reset</button>
+                    <div id="score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
+                </div>
+                <div id="game-status" class="small" style="color: #aaa;">Mettiti alla prova! Trova l'intervallo richiesto.</div>
+            </div>
+
+            <div class="scroll-wrapper">
+              <div class="scroll-content">
+                <div class="fretboard-container">
+                  <div id="fretboard-layer"></div>
+                  <div id="markers-layer"></div>
+                </div>
+                <div class="fret-numbers" id="numbers-layer"></div>
+              </div>
+            </div>
+
+          <!-- Explorer View (Default) -->
+          <div id="view-explorer" class="view-panel active">
+             <div style="display: flex; flex-direction: column; align-items: center; gap: 25px;">
+                 <div class="control-row-aligned" style="width: 100%;">
+                    <div class="nav-group explorer-mode-group">
+                        <label>Display Mode</label>
+                        <select id="explorer-mode-select" onchange="setExplorerMode(this.value)">
+                            <option value="normal">Normal Display</option>
+                            <option value="highlight">Interactive Highlights</option>
+                            <option value="custom">Custom Scale Builder</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-group" style="flex-direction: row; height: var(--control-height); align-items: center; box-sizing: border-box; align-self: flex-end; gap: 15px;">
+                        <div class="checkbox-container"><input type="checkbox" id="add-9" onchange="applyFullScale()" /><label for="add-9">Add 9</label></div>
+                        <div class="checkbox-container"><input type="checkbox" id="add-11" onchange="applyFullScale()" /><label for="add-11">Add 11</label></div>
+                        <div class="checkbox-container"><input type="checkbox" id="add-13" onchange="applyFullScale()" /><label for="add-13">Add 13</label></div>
+                    </div>
+                </div>
+
+                 <div id="custom-actions" style="display: none; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                    <button class="btn-io" onclick="exportCustomScale()">Export JSON</button>
+                    <button class="btn-io" onclick="document.getElementById('scale-import-file').click()">Import JSON</button>
+                    <input type="file" id="scale-import-file" style="display:none" onchange="importCustomScale(event)">
+                    <button class="btn-reset" style="width:auto" onclick="clearCustomScale()">Clear All Notes</button>
+                 </div>
+
+                 <div id="mode-description" style="color: #888; font-size: 0.85em; font-style: italic; background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px;">
+                     Normal View: Displays the selected scale and tuning.
+                 </div>
+             </div>
+          </div>
+
+          <!-- Progression View -->
+          <div id="view-player" class="view-panel">
+              <!-- Existing Player Area content moved here -->
+              <div class="quick-controls">
+                <button class="btn-tap tap-feedback" id="tap-btn" onclick="tapTempo()">TAP</button>
+                <button class="btn-icon" onclick="navigateStep(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button>
+                <button id="quick-play-btn" class="btn-icon btn-play" onclick="togglePlayProgression()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></button>
+                <button class="btn-icon btn-stop" onclick="stopProgression()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg></button>
+                <button class="btn-icon" onclick="navigateStep(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button>
+              </div>
+              <div class="progression-player-area">
+                <div class="area-header">
+                  <h2 class="area-title">Play Along Mode</h2>
+                  <div class="area-actions">
+                    <button class="btn-io" onclick="exportProgressionData()">Export JSON</button>
+                    <button class="btn-io" onclick="document.getElementById('prog-import-file').click()">Import JSON</button>
+                    <input type="file" id="prog-import-file" style="display:none" onchange="importProgressionData(event)">
+                    <button class="btn-add-step" onclick="addProgressionStep()">+ Add Step</button>
+                    <button class="btn-reset" onclick="clearProgression()">Clear All</button>
+                  </div>
+                </div>
+                <div id="progression-steps" class="progression-steps-container"></div>
+                <div class="progression-controls row g-3 m-0 w-100">
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Playback</div>
+                            <div class="row g-2 align-items-end mt-0">
+                                <div class="col-3 col-sm-2 col-md-3 col-xl-auto" style="min-width: 70px;"><div class="nav-group"><label>BPM</label><input type="number" id="bpm-input" value="120"></div></div>
+                                <div class="col-9 col-sm-4 col-md-9 col-xl"><div class="nav-group"><label>Vol</label><input type="range" id="metro-vol" min="0" max="1" step="0.1" value="0.5"></div></div>
+                                <div class="col-9 col-sm-4 col-md-9 col-xl"><div class="nav-group"><label>Click</label><select id="metro-sound-select"></select></div></div>
+                                <div class="col-3 col-sm-2 col-md-3 col-xl-auto d-flex justify-content-end">
+                                    <div class="checkbox-container d-none"><input type="checkbox" id="metronome-toggle"></div>
+                                    <button class="metronome-btn" id="metronome-btn" onclick="toggleMetronomeUI()"><svg viewBox="0 0 24 24"><path d="M14.153 8.188l-.72 -3.236a2.493 2.493 0 0 0 -4.867 0l-3.025 13.614a2 2 0 0 0 1.952 2.434h7.014a2 2 0 0 0 1.952 -2.434l-.524 -2.357m-4.935 1.791l9 -13" /></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Chord Synth</div>
+                            <div class="row g-2 align-items-end mt-0">
+                                <div class="col-6 col-md-12 col-xl"><div class="nav-group"><label>Sound</label><select id="chord-sound-select"></select></div></div>
+                                <div class="col-6 col-md-12 col-xl"><div class="nav-group"><label>Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div></div>
+                                <div class="col-12 col-xl-auto d-flex gap-2"><div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle">Synth</label></div><div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection">Loop</label></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Transposition</div>
+                            <div class="row g-2 mt-0">
+                                <div class="col-12"><div class="nav-group"><label>Progression</label>
+                                    <div class="btn-group-stretched">
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(2)">&plus;1</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(1)">&plus;&frac12;</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(-1)">&minus;&frac12;</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeProgression(-2)">&minus;1</button>
+                                    </div>
+                                </div></div>
+                                <div class="col-12"><div class="nav-group"><label>Synth Octave</label>
+                                    <div class="btn-group-stretched">
+                                        <button class="btn-io transpose-btn" onclick="transposeChordOctave(1)">+1</button>
+                                        <button class="btn-io transpose-btn" onclick="transposeChordOctave(-1)">-1</button>
+                                    </div>
+                                </div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="control-section h-100">
+                            <div class="control-section-header">Transport</div>
+                            <div class="row g-2 justify-content-center align-items-center flex-grow-1 mt-0">
+                                <div class="col-auto"><button class="btn-icon" onclick="navigateStep(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button></div>
+                                <div class="col-auto"><button class="btn-icon btn-play" onclick="togglePlayProgression()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></button></div>
+                                <div class="col-auto"><button class="btn-icon btn-stop" onclick="stopProgression()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg></button></div>
+                                <div class="col-auto"><button class="btn-icon" onclick="navigateStep(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+          </div>
+
+          <!-- Calculator View -->
+          <div id="view-calculator" class="view-panel">
+              <div class="importer-area" style="margin: 0 auto; width: 100%;">
+                <h2 class="area-title">Scale Calculator <span class="help-icon" onclick="showHelpModal()">?</span></h2>
+                <div id="overall-suggestion" style="margin-bottom: 20px; display:none; background: rgba(241, 196, 15, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
+                    <div style="font-size: 0.8em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px;">Analysis Result</div>
+                    <div id="suggestion-text" style="font-size: 1.2em; font-weight: bold;"></div>
+                </div>
+                <div class="nav-group calculator-context-group">
+                    <label>Context</label>
+                    <select id="genre-select">
+                        <option value="jazz">Jazz (Standard)</option>
+                        <option value="blues">Blues</option>
+                        <option value="pop">Pop / Rock</option>
+                    </select>
+                </div>
+                <textarea id="chord-importer-textarea" placeholder="| Dm7 G7 | Cmaj7 | •/• |"></textarea>
+                <button class="btn-add-step" style="width: 100%" onclick="importProgression()">Import & Calculate</button>
+              </div>
+          </div>
+
+          <!-- Interval Learner View -->
+          <div id="view-interval-learner" class="view-panel">
+              <div class="importer-area text-center">
+                <h2 class="area-title">Istruzioni Interval Learner</h2>
+                <p class="text-secondary">I controlli del gioco sono ora disponibili sopra il manico della chitarra per facilitare l'interazione.</p>
+                <div class="mt-4 text-secondary small" style="max-width: 500px; margin: 0 auto;">
+                  Verrà indicata una nota di partenza (Root) e un intervallo da trovare. 
+                  Seleziona una nota sul manico. Se è sbagliata, verranno evidenziate le posizioni corrette.
+                </div>
+              </div>
+          </div>
+
+          <!-- Grade Learner View -->
+          <div id="view-grade-learner" class="view-panel">
+              <div class="importer-area text-center">
+                <h2 class="area-title">Grade Learner</h2>
+                
+                <div id="grade-game-bar" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(255, 214, 10, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+                    <div id="grade-question-text" class="h3 mb-0" style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Premi "Inizia" per partire</div>
+                    <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                        <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.gradeLearner.start()">Inizia / Prossimo</button>
+                        <button class="btn-reset w-auto" style="height: 38px;" onclick="app.gradeLearner.reset()">Reset</button>
+                        <div id="grade-score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
+                    </div>
+                    <div id="grade-game-status" class="small" style="color: #aaa;">Mettiti alla prova! Qual è il grado della nota?</div>
+                </div>
+
+                <div class="circle-container" style="position: relative; width: 320px; height: 320px; margin: 40px auto;">
+                    <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%; border: 2px solid rgba(255,255,255,0.05); border-radius: 50%;"></div>
+                </div>
+                
+                <p class="text-secondary small mt-4">Usa il circolo cromatico per identificare i gradi. Se sbagli, la nota corretta verrà evidenziata.</p>
+              </div>
+          </div>
+
+          <!-- Snapshots View -->
+          <div id="view-snapshots" class="view-panel">
+              <div class="snapshot-header-container" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin: 0 auto 20px;">
+                <h2 class="area-title" style="border: none; margin: 0;">Snapshots</h2>
+                <button class="btn-reset" style="width: auto; padding: 0 20px;" onclick="clearSnapshots()">Clear All</button>
+              </div>
+              <div class="snapshot-area" id="snapshot-list"></div>
+          </div>
+        </div>
+      </main>
+    </div> <!-- end app-container -->
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal-overlay" onclick="hideHelpModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Scale Calculator Notation</h3>
+            <p>The calculator parses chord progressions and suggests appropriate scales.</p>
+            <ul>
+                <li><strong>Chords:</strong> Standard notation like <code>Cmaj7</code>, <code>G7</code>, <code>Am7b5</code>.</li>
+                <li><strong>Separators:</strong> Use spaces or pipe symbols (<code>|</code>).</li>
+                <li><strong>Repeat:</strong> Use <code>%</code> or <code>•/•</code> to repeat the previous measure.</li>
+            </ul>
+            <button class="btn-reset" style="float: right" onclick="hideHelpModal()">Close</button>
+        </div>
+    </div>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
