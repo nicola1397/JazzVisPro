@@ -217,6 +217,8 @@ class Fretboard {
         const fret = document.createElement("div"); fret.className = `fret fret-${f}`;
         const circle = document.createElement("div"); circle.className = "note-circle";
         circle.dataset.noteIndex = (tuning[s] + f) % 12;
+        circle.dataset.stringIndex = s;
+        circle.dataset.fretIndex = f;
         circle.onclick = () => app.handleNoteClick(circle);
         fret.appendChild(circle);
         if (s === 3 && [3, 5, 7, 9, 15, 17, 19, 21].includes(f)) {
@@ -263,8 +265,8 @@ class Fretboard {
         (options.add11 && interval === 5) ||
         (options.add13 && interval === 9));
 
-      const sIndex = parseInt(c.closest(".string").className.match(/s(\d)/)[1]) - 1;
-      const fIndex = parseInt(c.closest(".fret").className.match(/fret-(\d+)/)[1]);
+      const sIndex = parseInt(c.dataset.stringIndex);
+      const fIndex = parseInt(c.dataset.fretIndex);
       const posKey = `${sIndex}-${fIndex}`;
       const isManualHighlight = options.manualNotes.has(posKey);
       const isIntervalHighlighted = options.highlightedIntervals.has(interval);
@@ -358,6 +360,8 @@ class ProgressionManager {
     const groups = div.querySelectorAll(".nav-group");
     groups[0].appendChild(rs);
     groups[1].appendChild(ss);
+    if (data && data.root) rs.value = data.root;
+    if (data && data.scale) ss.value = data.scale;
 
     div.querySelectorAll("select, input").forEach((el) => {
       el.onchange = () => { this._syncData(el); app.save(); };
@@ -623,26 +627,29 @@ class ChordParser {
   }
   static getScale(chordStr, nextChordStr = null, genre = "jazz") {
     const p = this.parse(chordStr); if (!p) return "Ionio (Maj7)"; const r = p.rest;
-
-    // Secondary Dominant Recognition
-    if (nextChordStr && (r === "7" || r.includes("7"))) {
+    // Check most-specific types first to avoid prefix collisions
+    if (r.includes("m7b5") || r.includes("ø")) return "Locrio";
+    if (r.includes("mMaj")) return "Minore Melodica";
+    if (r.includes("alt")) return "Altered (7alt)";
+    if (r.includes("dim")) return "Diminuita (T/S)";
+    const isMaj7 = r.includes("maj7") || r.includes("Maj7");
+    const isMinor = !isMaj7 && (r.match(/m(?!aj)/i) !== null || r.includes("min"));
+    const isDom7  = !isMinor && !isMaj7 && r.includes("7");
+    if (nextChordStr && isDom7) {
       const nextP = this.parse(nextChordStr);
       if (nextP) {
-        const rootIdx = Theory.NOTES.indexOf(p.root);
-        const nextRootIdx = Theory.NOTES.indexOf(nextP.root);
-        if ((nextRootIdx - rootIdx + 12) % 12 === 5) {
-          if (nextP.rest.includes("m") && !nextP.rest.includes("maj")) return "Misolidio b13";
-          return "Misolidio (7)";
+        const ri = Theory.NOTES.indexOf(p.root);
+        const ni = Theory.NOTES.indexOf(nextP.root);
+        if (ri !== -1 && ni !== -1 && (ni - ri + 12) % 12 === 5) {
+          return (nextP.rest.includes("m") && !nextP.rest.includes("maj") && !nextP.rest.includes("Maj"))
+            ? "Misolidio b13" : "Misolidio (7)";
         }
       }
     }
-
-    if (genre === "blues" && (r.includes("7") || r.includes("m"))) return "Blues";
-    if (r.includes("m7b5") || r.includes("ø")) return "Dorico (m7)";
-    if (r.includes("alt")) return "Altered (7alt)";
-    if (r.includes("dim")) return "Diminuita (T/S)";
-    if (r.includes("m") && !r.includes("maj")) return "Dorico (m7)"; if (r.includes("7")) return "Misolidio (7)";
-    if (r.includes("maj7")) return r.includes("#11") ? "Lidio (Maj7#11)" : "Ionio (Maj7)";
+    if (genre === "blues" && (isDom7 || isMinor)) return "Blues";
+    if (isMaj7) return r.includes("#11") ? "Lidio (Maj7#11)" : "Ionio (Maj7)";
+    if (isMinor) return "Dorico (m7)";
+    if (isDom7) return "Misolidio (7)";
     return "Ionio (Maj7)";
   }
   static getIntervals(chordStr) {
@@ -653,7 +660,7 @@ class ChordParser {
     let third = r.match(/m(?!aj)|-|min/) ? 3 : 4;
     let fifth = (r.includes("dim") || r.includes("°") || r.includes("b5")) ? 6 : 7;
     let seventh = null;
-    if (r.includes("maj7")) seventh = 11;
+    if (r.includes("mMaj") || r.includes("maj7")) seventh = 11;
     else if (r.includes("7")) seventh = r.includes("dim7") ? 9 : 10;
     ints.push(third, fifth);
     if (seventh !== null) ints.push(seventh);
@@ -797,6 +804,12 @@ class IntervalLearner {
       }
     });
   }
+
+  replay() {
+    if (this.root === undefined) return;
+    this.app.audio.init();
+    this.app.audio.playChord([0], this.root, this.app.audio.context.currentTime, 1, 0.2, "Electric Piano", 3);
+  }
 }
 
 // --- Grade Learner Engine ---
@@ -844,24 +857,49 @@ class GradeLearner {
   start() {
     this.active = true;
     this.clearHighlights();
-    
+
     const settings = this.app.getUiSettings();
-    const scale = Theory.SCALES[settings.scaleName];
     this.root = Theory.NOTES.indexOf(settings.root);
-    
-    // Scegliamo un grado casuale all'interno della scala selezionata
-    const degreeIdx = Math.floor(Math.random() * scale.length);
-    this.targetGrade = scale[degreeIdx];
-    
-    const _rootName = window.currentLang === 'en' ? Theory.NOTES[this.root] : Theory.NOTES_ITA[this.root];
-    document.getElementById('grade-question-text').innerText = window.currentLang === 'en'
-      ? `Degree ${degreeIdx + 1} of ${_rootName} ${settings.scaleName}`
-      : `${degreeIdx + 1}° grado di ${_rootName} ${settings.scaleName}`;
-    document.getElementById('grade-game-status').innerText = window.currentLang === 'en'
-      ? `Find the note at degree ${degreeIdx + 1} of the scale.`
-      : `Trova la nota corrispondente al ${degreeIdx + 1}° grado della scala.`;
+    const freeMode = document.getElementById('gl-free-mode')?.checked;
+
+    if (freeMode) {
+      // Modalità libera: root e scala casuali
+      this.root = Math.floor(Math.random() * 12);
+      const scaleNames = Object.keys(Theory.SCALES);
+      const randomScaleName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
+      const scale = Theory.SCALES[randomScaleName];
+      const degreeIdx = Math.floor(Math.random() * scale.length);
+      this.targetGrade = scale[degreeIdx];
+      const rootName = window.currentLang === 'en' ? Theory.NOTES[this.root] : Theory.NOTES_ITA[this.root];
+      document.getElementById('grade-question-text').innerText = window.currentLang === 'en'
+        ? `Degree ${degreeIdx + 1} of ${rootName} ${randomScaleName}`
+        : `${degreeIdx + 1}° grado di ${rootName} ${randomScaleName}`;
+      document.getElementById('grade-game-status').innerText = window.currentLang === 'en'
+        ? `Find degree ${degreeIdx + 1} of the scale.`
+        : `Trova il ${degreeIdx + 1}° grado della scala.`;
+    } else {
+      const scale = Theory.SCALES[settings.scaleName];
+      const degreeIdx = Math.floor(Math.random() * scale.length);
+      this.targetGrade = scale[degreeIdx];
+      const _rootName = window.currentLang === 'en' ? Theory.NOTES[this.root] : Theory.NOTES_ITA[this.root];
+      document.getElementById('grade-question-text').innerText = window.currentLang === 'en'
+        ? `Degree ${degreeIdx + 1} of ${_rootName} ${settings.scaleName}`
+        : `${degreeIdx + 1}° grado di ${_rootName} ${settings.scaleName}`;
+      document.getElementById('grade-game-status').innerText = window.currentLang === 'en'
+        ? `Find the note at degree ${degreeIdx + 1} of the scale.`
+        : `Trova la nota corrispondente al ${degreeIdx + 1}° grado della scala.`;
+    }
+
     this.app.audio.init();
-    this.app.audio.playChord([0], this.root, this.app.audio.context.currentTime, 0.5, 0.2, "Electric Piano", 4);
+    const playNote = this.root;
+    this.app.audio.playChord([0], playNote, this.app.audio.context.currentTime, 0.8, 0.2, "Electric Piano", 4);
+    this._lastPlayNote = playNote;
+  }
+
+  replay() {
+    if (this._lastPlayNote === undefined) return;
+    this.app.audio.init();
+    this.app.audio.playChord([0], this._lastPlayNote, this.app.audio.context.currentTime, 0.8, 0.2, "Electric Piano", 4);
   }
 
   checkAnswer(index, element) {
@@ -970,6 +1008,7 @@ class NoteFinder {
       circle.style.color = "rgba(0,0,0,0.8)";
       circle.innerText = notes[noteIdx];
       document.getElementById('note-finder-status').innerText = T('nf.correct');
+      this.revealCorrect(notes); // mostra tutte le posizioni corrette anche in caso di risposta esatta
     } else {
       circle.style.backgroundColor = "#e74c3c";
       circle.style.opacity = "1";
@@ -979,6 +1018,12 @@ class NoteFinder {
       this.revealCorrect(notes);
     }
     document.getElementById('note-finder-score').innerText = `${this.score} / ${this.total}`;
+  }
+
+  replay() {
+    if (this.targetNote === undefined || this.targetNote === null) return;
+    this.app.audio.init();
+    this.app.audio.playChord([0], this.targetNote, this.app.audio.context.currentTime, 0.8, 0.2, "Electric Piano", 4);
   }
 
   revealCorrect(notes) {
@@ -1053,6 +1098,17 @@ class ChordVoicingExplorer {
 
     const scaleEl = document.getElementById('cv-scale-rec');
     if (scaleEl) scaleEl.textContent = chord.scale;
+
+    // Chord diagrams (diteggiatura)
+    const diagEl = document.getElementById('cv-chord-diagrams');
+    if (diagEl) {
+      const diagrams = getChordDiagrams(rootIdx, chordType);
+      diagEl.innerHTML = diagrams.map(d => `
+        <div class="chord-diagram-wrap">
+          ${renderChordDiagramSVG(d.frets, d.fingers, d.baseFret, '')}
+          <div class="chord-diagram-label">${d.label}</div>
+        </div>`).join('');
+    }
   }
 
   load() {
@@ -1124,11 +1180,19 @@ class EarTrainer {
     this.currentRoot = Math.floor(Math.random() * 12);
     this.currentChord = types[Math.floor(Math.random() * types.length)];
     const tones = this.INTERVALS[this.currentChord] || [0,4,7,10];
+    this._lastTones = tones;
+    this._lastRoot = this.currentRoot;
     document.getElementById('et-question').textContent = '?';
     document.getElementById('et-root-hint').textContent = window.currentLang === 'it' ? '(Ascolta con attenzione...)' : '(Listen carefully...)';
     document.querySelectorAll('.et-choice-btn').forEach(b => { b.classList.remove('correct','wrong'); b.disabled = false; });
     this.app.audio.playChord(tones, this.currentRoot, this.app.audio.context.currentTime + 0.05, 1.5, 0.25, "Electric Piano", 4);
     document.getElementById('et-status').textContent = T('et.listening');
+  }
+
+  replay() {
+    if (!this._lastTones) return;
+    this.app.audio.init();
+    this.app.audio.playChord(this._lastTones, this._lastRoot, this.app.audio.context.currentTime + 0.05, 1.5, 0.25, "Electric Piano", 4);
   }
 
   answer(guessedType) {
@@ -1150,6 +1214,113 @@ class EarTrainer {
     const tones = this.INTERVALS[this.currentChord] || [0,4,7,10];
     this.app.audio.playChord(tones, this.currentRoot, this.app.audio.context.currentTime + 0.05, 1.0, 0.25, "Electric Piano", 4);
     this.currentChord = null;
+  }
+}
+
+// --- Mode F: Interval Ear Training ---
+class IntervalEarTrainer {
+  constructor(app) {
+    this.app = app;
+    this.score = 0; this.total = 0; this.streak = 0;
+    this.currentRoot = 0; this.currentInterval = null;
+    this.difficulty = 'easy'; this.answered = false;
+    this.POOLS = {
+      easy:   [0, 4, 5, 7, 12],
+      medium: [0, 2, 3, 4, 5, 7, 9, 12],
+      hard:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    };
+    this.NAMES_IT = {
+      0:'Unisono (P1)', 1:'Semitono (m2)', 2:'Tono (M2)', 3:'Terza min (m3)',
+      4:'Terza Mag (M3)', 5:'Quarta (P4)', 6:'Tritono (TT)', 7:'Quinta (P5)',
+      8:'Sesta min (m6)', 9:'Sesta Mag (M6)', 10:'Settima min (m7)', 11:'Settima Mag (M7)',
+      12:'Ottava (P8)'
+    };
+    this.NAMES_EN = {
+      0:'Unison (P1)', 1:'Minor 2nd (m2)', 2:'Major 2nd (M2)', 3:'Minor 3rd (m3)',
+      4:'Major 3rd (M3)', 5:'Perfect 4th (P4)', 6:'Tritone (TT)', 7:'Perfect 5th (P5)',
+      8:'Minor 6th (m6)', 9:'Major 6th (M6)', 10:'Minor 7th (m7)', 11:'Major 7th (M7)',
+      12:'Octave (P8)'
+    };
+  }
+
+  name(semi) {
+    return (window.currentLang === 'en' ? this.NAMES_EN : this.NAMES_IT)[semi] || `${semi} st`;
+  }
+
+  setDifficulty(d) {
+    this.difficulty = d;
+    document.querySelectorAll('.iet-diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
+    this.reset();
+  }
+
+  reset() {
+    this.score = 0; this.total = 0; this.streak = 0;
+    this.currentInterval = null; this.answered = false;
+    const el = (id) => document.getElementById(id);
+    if (el('iet-score'))    el('iet-score').textContent    = '0 / 0';
+    if (el('iet-streak'))   el('iet-streak').textContent   = '🔥 0';
+    if (el('iet-status'))   el('iet-status').textContent   = T('iet.ready');
+    if (el('iet-question')) el('iet-question').textContent = '?';
+    this.renderChoices();
+  }
+
+  renderChoices() {
+    const grid = document.getElementById('iet-choices');
+    if (!grid) return;
+    grid.innerHTML = '';
+    this.POOLS[this.difficulty].forEach(semi => {
+      const btn = document.createElement('button');
+      btn.className = 'et-choice-btn iet-choice-btn';
+      btn.textContent = this.name(semi);
+      btn.dataset.semi = semi;
+      btn.onclick = () => this.guess(semi);
+      grid.appendChild(btn);
+    });
+  }
+
+  play() {
+    const pool = this.POOLS[this.difficulty];
+    this.currentRoot     = Math.floor(Math.random() * 12);
+    this.currentInterval = pool[Math.floor(Math.random() * pool.length)];
+    this.answered = false;
+    document.querySelectorAll('.iet-choice-btn').forEach(b => { b.disabled = false; b.classList.remove('correct','wrong'); });
+    document.getElementById('iet-question').textContent = '?';
+    document.getElementById('iet-status').textContent   = T('iet.listening');
+    this._playSeq();
+  }
+
+  _playSeq() {
+    const root  = this.currentRoot;
+    const semi  = this.currentInterval;
+    const top   = (root + semi) % 12;
+    const audio = this.app.audio;
+    setTimeout(() => audio.playChord([0], root, audio.context.currentTime + 0.02, 0.8, 0.25, 'Electric Piano', 4), 0);
+    setTimeout(() => audio.playChord([0], top,  audio.context.currentTime + 0.02, 0.8, 0.25, 'Electric Piano', 4), 800);
+    setTimeout(() => audio.playChord([0, semi], root, audio.context.currentTime + 0.02, 0.8, 0.4, 'Electric Piano', 4), 1700);
+  }
+
+  replay() {
+    if (this.currentInterval === null) { this.play(); return; }
+    this._playSeq();
+  }
+
+  guess(semi) {
+    if (this.answered) return;
+    this.answered = true;
+    this.total++;
+    const correct = semi === this.currentInterval;
+    if (correct) { this.score++; this.streak++; document.getElementById('iet-status').textContent = T('iet.correct'); }
+    else { this.streak = 0; document.getElementById('iet-status').textContent = `${T('iet.wrong')} ${this.name(this.currentInterval)}`; }
+    document.getElementById('iet-score').textContent    = `${this.score} / ${this.total}`;
+    document.getElementById('iet-streak').textContent   = `🔥 ${this.streak}`;
+    document.getElementById('iet-question').textContent = this.name(this.currentInterval);
+    document.querySelectorAll('.iet-choice-btn').forEach(b => {
+      const s = parseInt(b.dataset.semi);
+      if (s === this.currentInterval) b.classList.add('correct');
+      else if (s === semi && !correct) b.classList.add('wrong');
+      b.disabled = true;
+    });
+    setTimeout(() => this._playSeq(), 400);
   }
 }
 
@@ -1243,6 +1414,9 @@ class LickBuilder {
   constructor(app) {
     this.app = app;
     this.sequence = [];
+    // durata per nota in multipli del beat: 0.25=16°, 0.5=8°, 1=4°, 2=2°
+    this.DURATIONS = [0.25, 0.5, 1, 2];
+    this.DUR_LABELS = { 0.25: '♬16°', 0.5: '♪8°', 1: '♩4°', 2: '𝅗𝅥 2°' };
   }
 
   addNote(circle) {
@@ -1250,12 +1424,26 @@ class LickBuilder {
     const s = parseInt(circle.closest('.string').className.match(/s(\d)/)[1]) - 1;
     const f = parseInt(circle.closest('.fret').className.match(/fret-(\d+)/)[1]);
     const notes = document.getElementById('accidental-select').value === '#' ? Theory.NOTES : Theory.NOTES_FLAT;
-    this.sequence.push({ noteIdx, noteName: notes[noteIdx], s, f });
+    const defaultSubdiv = parseFloat(document.getElementById('lb-subdiv').value) || 1;
+    this.sequence.push({ noteIdx, noteName: notes[noteIdx], s, f, dur: defaultSubdiv });
     this.renderSequence();
     this.app.audio.init();
     const tuning = Theory.TUNINGS[this.app.getUiSettings().tuningName] || Theory.TUNINGS["E Standard"];
     const oct = [4,3,3,3,2,2][s] + Math.floor((tuning[s] + f) / 12);
     this.app.audio.playChord([0], noteIdx, this.app.audio.context.currentTime + 0.02, 0.3, 0.15, "Electric Piano", oct);
+  }
+
+  cycleDuration(idx) {
+    if (idx < 0 || idx >= this.sequence.length) return;
+    const note = this.sequence[idx];
+    const durIdx = this.DURATIONS.indexOf(note.dur);
+    note.dur = this.DURATIONS[(durIdx + 1) % this.DURATIONS.length];
+    this.renderSequence();
+  }
+
+  removeNote(idx) {
+    this.sequence.splice(idx, 1);
+    this.renderSequence();
   }
 
   undo() { this.sequence.pop(); this.renderSequence(); }
@@ -1268,9 +1456,21 @@ class LickBuilder {
     const hint = document.getElementById('lb-empty-hint');
     if (hint) hint.style.display = this.sequence.length ? 'none' : 'inline';
     container.querySelectorAll('.lb-note-pill').forEach(el => el.remove());
-    this.sequence.forEach(note => {
-      const pill = document.createElement('div'); pill.className = 'lb-note-pill';
-      pill.innerHTML = `<span>${note.noteName}</span><small>s${note.s + 1}/f${note.f}</small>`;
+    this.sequence.forEach((note, i) => {
+      const pill = document.createElement('div');
+      pill.className = 'lb-note-pill';
+      pill.title = 'Clic: cambia durata';
+      pill.onclick = (e) => {
+        if (e.target.classList.contains('lb-pill-delete')) return;
+        this.cycleDuration(i);
+      };
+      const del = document.createElement('div');
+      del.className = 'lb-pill-delete';
+      del.textContent = '✕';
+      del.onclick = (e) => { e.stopPropagation(); this.removeNote(i); };
+      const durLabel = this.DUR_LABELS[note.dur] || `×${note.dur}`;
+      pill.innerHTML = `<span>${note.noteName}</span><small>s${note.s + 1}/f${note.f}</small><div class="lb-pill-dur">${durLabel}</div>`;
+      pill.appendChild(del);
       container.appendChild(pill);
     });
   }
@@ -1279,14 +1479,16 @@ class LickBuilder {
     if (!this.sequence.length) return;
     this.app.audio.init();
     const bpm = parseInt(document.getElementById('lb-bpm').value) || 80;
-    const subdiv = parseFloat(document.getElementById('lb-subdiv').value) || 1;
-    const dur = (60 / bpm) * subdiv;
+    const sound = document.getElementById('lb-sound')?.value || 'Electric Piano';
     const tuning = Theory.TUNINGS[this.app.getUiSettings().tuningName] || Theory.TUNINGS["E Standard"];
     const ctx = this.app.audio.context;
-    const t0 = ctx.currentTime + 0.1;
-    this.sequence.forEach((note, i) => {
+    let t = ctx.currentTime + 0.1;
+    this.sequence.forEach(note => {
+      const beatDur = 60 / bpm;
+      const noteDur = beatDur * note.dur;
       const oct = [4,3,3,3,2,2][note.s] + Math.floor((tuning[note.s] + note.f) / 12);
-      this.app.audio.playChord([0], note.noteIdx, t0 + i * dur, Math.max(dur * 0.85, 0.05), 0.25, "Electric Piano", oct);
+      this.app.audio.playChord([0], note.noteIdx, t, Math.max(noteDur * 0.9, 0.05), 0.25, sound, oct);
+      t += noteDur;
     });
   }
 
@@ -1365,8 +1567,6 @@ class GrooveTrainer {
   }
 
   clearPattern() { this.pattern.fill(false); this.pattern[0] = true; this.renderGrid(); }
-
-  updateBPM() {}
 
   toggle() {
     this.isPlaying ? this.stop() : this.start();
@@ -1505,6 +1705,79 @@ class RealBook {
   }
 }
 
+// --- Reharmonizer ---
+class Reharmonizer {
+  constructor(app) { this.app = app; }
+
+  _quality(rest) {
+    if (!rest) return 'maj';
+    if (rest.includes('m7b5') || rest.includes('ø'))        return 'm7b5';
+    if (rest.includes('dim7') || rest.includes('°7'))        return 'dim7';
+    if (rest.includes('dim')  || rest.includes('°'))         return 'dim';
+    if (rest.includes('mMaj') || rest.includes('mM'))        return 'mMaj7';
+    if (rest.includes('maj7') || rest.includes('Maj7') || rest.includes('Δ')) return 'maj7';
+    if (rest.includes('alt'))                                return '7alt';
+    if (rest.match(/m(?!aj)/i) || rest.includes('min')) {
+      return rest.includes('7') ? 'm7' : 'm';
+    }
+    if (rest.includes('7')) return '7';
+    return 'maj7';
+  }
+
+  analyze() {
+    const input = document.getElementById('rh-input').value.trim();
+    if (!input) return;
+    const list = document.getElementById('rh-results');
+    list.innerHTML = '';
+    const tokens = input.split(/[\s|,]+/).filter(c => c && c !== '|' && c !== '%');
+    let found = false;
+    tokens.forEach(chordStr => {
+      const p = ChordParser.parse(chordStr);
+      if (!p) return;
+      found = true;
+      const quality = this._quality(p.rest);
+      const subs    = this._getSubs(p.root, quality);
+      const card = document.createElement('div');
+      card.className = 'rh-card';
+      card.innerHTML = `<div class="rh-original">${chordStr}</div>
+        <div class="rh-subs">${subs.map(s =>
+          `<span class="rh-sub-badge" title="${s.reason}">${s.chord}<small>${s.label}</small></span>`
+        ).join('')}</div>`;
+      list.appendChild(card);
+    });
+    if (!found) list.innerHTML = `<p style="color:#666;text-align:center;margin-top:20px;">${T('rh.no-results')}</p>`;
+  }
+
+  _getSubs(root, quality) {
+    const ri   = Theory.NOTES.indexOf(root);
+    const note = (offset) => Theory.NOTES[(ri + offset + 12) % 12];
+    const subs = [];
+
+    if (quality === '7' || quality === '7alt') {
+      subs.push({ chord: `${note(6)}7`,    label: T('rh.tritone-sub'), reason: 'Tritone sub: dominante a distanza di tritono' });
+      subs.push({ chord: `${root}7alt`,    label: T('rh.altered'),     reason: 'Dominante alterata: max tensione verso I' });
+      subs.push({ chord: `${note(2)}m7`,   label: T('rh.ii-of-v'),    reason: 'ii del V: prepara la dominante' });
+    } else if (quality === 'maj7' || quality === 'maj') {
+      subs.push({ chord: `${note(4)}m7`,   label: T('rh.diatonic-3'),  reason: 'III sub: condivide 3a e 7a' });
+      subs.push({ chord: `${note(9)}m7`,   label: T('rh.diatonic-6'),  reason: 'VI sub: condivide 2 note comuni' });
+      subs.push({ chord: `${note(10)}maj7`,label: T('rh.modal-bvii'),  reason: 'Modal interchange: bVII dal minore parallelo' });
+      subs.push({ chord: `${note(8)}maj7`, label: T('rh.modal-bvi'),   reason: 'Modal interchange: bVI dal minore parallelo' });
+    } else if (quality === 'm7' || quality === 'm') {
+      subs.push({ chord: `${note(3)}maj7`, label: T('rh.relative-maj'),reason: 'Relativo maggiore: bIII partendo dal minore' });
+      subs.push({ chord: `${note(10)}7`,   label: T('rh.backdoor'),    reason: 'Backdoor dominant: bVII7' });
+      subs.push({ chord: `${note(5)}maj7`, label: T('rh.iv-maj'),      reason: 'IV maggiore: colore più luminoso' });
+    } else if (quality === 'm7b5') {
+      subs.push({ chord: `${note(3)}dim7`, label: T('rh.dim-sub'),     reason: 'Dim7: condivide 3 note con m7b5' });
+      subs.push({ chord: `${note(5)}7b9`,  label: T('rh.dom-b9'),      reason: 'Dominante b9 che risolve al relativo' });
+    } else if (quality === 'dim7' || quality === 'dim') {
+      subs.push({ chord: `${note(3)}7b9`,  label: T('rh.dim-as-dom'),  reason: 'Dim7 come V7b9' });
+      subs.push({ chord: `${note(6)}7b9`,  label: T('rh.dim-as-dom'),  reason: 'Dim7 come V7b9 (tritono)' });
+    }
+    subs.push({ chord: `${note(7)}7`, label: T('rh.sec-dom'), reason: 'Dominante secondaria: V7 di questo accordo' });
+    return subs;
+  }
+}
+
 // --- Preset Progressions ---
 const PRESET_PROGRESSIONS = {
   "ii-V-I (C)":          "| Dm7 G7 | Cmaj7 |",
@@ -1519,6 +1792,340 @@ const PRESET_PROGRESSIONS = {
   "Modal (D Dorian)":    "| Dm7 | Em7 | Fmaj7 | G7 | Am7 | Bm7b5 | Cmaj7 | Dm7 |",
 };
 
+// --- Guitar Tuner ---
+class GuitarTuner {
+  constructor(app) {
+    this.app = app;
+    this.isActive = false;
+    this.stream = null;
+    this.analyser = null;
+    this.animFrame = null;
+    this.tunerCtx = null;
+    this._freqBuf = [];
+    this._lastDisplay = 0;
+    this.STRINGS = [
+      { label: '6 Mi', note: 'E2', freq: 82.41 },
+      { label: '5 La', note: 'A2', freq: 110.00 },
+      { label: '4 Re', note: 'D3', freq: 146.83 },
+      { label: '3 Sol', note: 'G3', freq: 196.00 },
+      { label: '2 Si', note: 'B3', freq: 246.94 },
+      { label: '1 Mi', note: 'E4', freq: 329.63 },
+    ];
+  }
+
+  async toggle() {
+    if (this.isActive) { this.stop(); } else { await this.start(); }
+  }
+
+  async start() {
+    const btn = document.getElementById('tuner-start-btn');
+    const status = document.getElementById('tuner-status');
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
+      if (!this.tunerCtx) this.tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
+      else if (this.tunerCtx.state === 'suspended') await this.tunerCtx.resume();
+      const source = this.tunerCtx.createMediaStreamSource(this.stream);
+      this.analyser = this.tunerCtx.createAnalyser();
+      this.analyser.fftSize = 8192;
+      this.analyser.smoothingTimeConstant = 0.8;
+      source.connect(this.analyser);
+      this.isActive = true;
+      if (btn) { btn.textContent = '⏹ Stop'; btn.style.background = 'rgba(231,76,60,0.2)'; }
+      if (status) status.textContent = window.currentLang === 'it' ? 'Microfono attivo — suona una corda...' : 'Microphone active — play a string...';
+      this._detect();
+    } catch (e) {
+      if (status) status.textContent = window.currentLang === 'it' ? '⚠ Accesso al microfono negato. Controlla i permessi del browser.' : '⚠ Microphone access denied. Check browser permissions.';
+    }
+  }
+
+  stop() {
+    this.isActive = false;
+    if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+    if (this.animFrame) { cancelAnimationFrame(this.animFrame); this.animFrame = null; }
+    const btn = document.getElementById('tuner-start-btn');
+    if (btn) { btn.textContent = '🎙 Avvia'; btn.style.background = ''; }
+    const status = document.getElementById('tuner-status');
+    if (status) status.textContent = window.currentLang === 'it' ? 'Premi Avvia per iniziare.' : 'Press Start to begin.';
+    this._updateDisplay(null);
+  }
+
+  _detect() {
+    if (!this.isActive) return;
+    const buf = new Float32Array(this.analyser.fftSize);
+    this.analyser.getFloatTimeDomainData(buf);
+    const raw = this._autoCorrelate(buf, this.tunerCtx.sampleRate);
+    const freq = raw > 50 && raw < 1600 ? raw : null;
+    // Accumulate valid readings; drain slowly on silence for a brief hold
+    if (freq) {
+      this._freqBuf.push(freq);
+      if (this._freqBuf.length > 6) this._freqBuf.shift();
+    } else if (this._freqBuf.length > 0) {
+      this._freqBuf.shift();
+    }
+    // Throttle display to ~80 ms to avoid flickering
+    const now = performance.now();
+    if (now - this._lastDisplay >= 80) {
+      this._lastDisplay = now;
+      this._updateDisplay(this._freqBuf.length >= 2 ? this._median(this._freqBuf) : null);
+    }
+    this.animFrame = requestAnimationFrame(() => this._detect());
+  }
+
+  _median(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  _autoCorrelate(buf, sr) {
+    // RMS check
+    let rms = 0;
+    for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+    if (Math.sqrt(rms / buf.length) < 0.008) return -1;
+
+    const minLag = Math.floor(sr / 1600);
+    const maxLag = Math.min(Math.floor(sr / 50), buf.length - 1);
+    const windowLen = Math.min(2048, buf.length - maxLag);
+
+    let bestCorr = -Infinity, bestLag = -1;
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let corr = 0;
+      for (let j = 0; j < windowLen; j++) corr += buf[j] * buf[j + lag];
+      if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+    }
+    if (bestLag < 0 || bestCorr <= 0) return -1;
+
+    // Parabolic interpolation
+    let T0 = bestLag;
+    if (T0 > minLag && T0 < maxLag) {
+      const c0 = this._corrAt(buf, T0 - 1, windowLen);
+      const c1 = bestCorr;
+      const c2 = this._corrAt(buf, T0 + 1, windowLen);
+      const a = (c0 + c2 - 2 * c1) / 2;
+      const b = (c2 - c0) / 2;
+      if (a < 0) T0 -= b / (2 * a);
+    }
+    return sr / T0;
+  }
+
+  _corrAt(buf, lag, len) {
+    let c = 0;
+    for (let j = 0; j < len && j + lag < buf.length; j++) c += buf[j] * buf[j + lag];
+    return c;
+  }
+
+  _freqToNote(freq) {
+    const semitones = Math.round(12 * Math.log2(freq / 440));
+    // A4=0 semitones → noteIdx 9; shift so C=0
+    const noteIdx = ((semitones + 9) % 12 + 12) % 12;
+    const octave = 4 + Math.floor((semitones + 9) / 12);
+    const exactFreq = 440 * Math.pow(2, semitones / 12);
+    const cents = Math.round(1200 * Math.log2(freq / exactFreq));
+    return { noteName: Theory.NOTES[noteIdx], octave, cents };
+  }
+
+  _updateDisplay(freq) {
+    const noteEl = document.getElementById('tuner-note');
+    const freqEl = document.getElementById('tuner-freq');
+    const centsEl = document.getElementById('tuner-cents');
+    const needleEl = document.getElementById('tuner-needle');
+    if (!noteEl) return;
+
+    if (!freq) {
+      noteEl.textContent = '–'; noteEl.style.color = '#555';
+      if (freqEl) freqEl.textContent = '';
+      if (centsEl) { centsEl.textContent = ''; centsEl.style.color = '#aaa'; }
+      if (needleEl) needleEl.style.transform = 'rotate(0deg) translateX(-50%)';
+      return;
+    }
+
+    const { noteName, octave, cents } = this._freqToNote(freq);
+    const inTune = Math.abs(cents) < 5;
+    const close = Math.abs(cents) < 15;
+    const color = inTune ? '#2ecc71' : close ? '#f39c12' : '#e74c3c';
+    noteEl.textContent = noteName + octave;
+    noteEl.style.color = color;
+    if (freqEl) freqEl.textContent = freq.toFixed(1) + ' Hz';
+    if (centsEl) {
+      centsEl.textContent = inTune ? '✓ In Tune' : (cents > 0 ? '+' : '') + cents + '¢';
+      centsEl.style.color = color;
+    }
+    if (needleEl) {
+      const deg = Math.max(-50, Math.min(50, cents * 0.8));
+      needleEl.style.transform = `rotate(${deg}deg) translateX(-50%)`;
+    }
+  }
+
+  playRef(freq) {
+    this.app.audio.init();
+    const ctx = this.app.audio.context;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 2.5);
+  }
+}
+
+// --- Chord Diagram SVG Renderer ---
+function renderChordDiagramSVG(frets, fingers, baseFret, name) {
+  // frets: [E A D G B e] — -1=muted, 0=open, n>=1=fret position (absolute)
+  // fingers: [0..4]
+  const W = 110, H = 130;
+  const NX = 20, NY = 28; // nut origin
+  const SW = (W - NX - 10) / 5; // string spacing
+  const FH = (H - NY - 12) / 5; // fret height (5 visible frets)
+  const R = 7; // dot radius
+  const START = baseFret;
+  const isOpen = START <= 1;
+
+  let s = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+
+  // Nut (thick line if open position)
+  if (isOpen) {
+    s += `<line x1="${NX}" y1="${NY}" x2="${NX + SW*5}" y2="${NY}" stroke="#ccc" stroke-width="3.5" stroke-linecap="round"/>`;
+  } else {
+    s += `<text x="${NX-3}" y="${NY + FH*0.6}" fill="#777" font-size="9" text-anchor="end" dominant-baseline="middle">${START}fr</text>`;
+    s += `<line x1="${NX}" y1="${NY}" x2="${NX + SW*5}" y2="${NY}" stroke="#444" stroke-width="1"/>`;
+  }
+
+  // Fret lines
+  for (let i = 0; i <= 5; i++) {
+    const y = NY + i * FH;
+    s += `<line x1="${NX}" y1="${y}" x2="${NX + SW*5}" y2="${y}" stroke="#333" stroke-width="1"/>`;
+  }
+
+  // String lines
+  for (let i = 0; i < 6; i++) {
+    const x = NX + i * SW;
+    s += `<line x1="${x}" y1="${NY}" x2="${x}" y2="${NY + FH*5}" stroke="#555" stroke-width="1.5"/>`;
+  }
+
+  // Dots and muted/open markers
+  for (let i = 0; i < 6; i++) {
+    const x = NX + i * SW;
+    const f = frets[i];
+    if (f === -1) {
+      s += `<text x="${x}" y="${NY-7}" fill="#e74c3c" font-size="11" font-weight="bold" text-anchor="middle">✕</text>`;
+    } else if (f === 0) {
+      s += `<circle cx="${x}" cy="${NY-8}" r="5" fill="none" stroke="#999" stroke-width="1.5"/>`;
+    } else {
+      const fretPos = f - START;
+      const cy = NY + fretPos * FH + FH / 2;
+      s += `<circle cx="${x}" cy="${cy}" r="${R}" fill="#FFD60A"/>`;
+      if (fingers && fingers[i]) s += `<text x="${x}" y="${cy+3.5}" fill="#000" font-size="8" font-weight="bold" text-anchor="middle">${fingers[i]}</text>`;
+    }
+  }
+
+  s += '</svg>';
+  return s;
+}
+
+// --- Chord Diagram Data (CAGED barre forms) ---
+const BARRE_TEMPLATES = {
+  // E-form (root on 6th string, open note = E = noteIdx 4)
+  'maj_E':   { rel: [0,2,2,1,0,0],  fng: [1,3,4,2,1,1], rootStr: 5, openNote: 4 },
+  'm_E':     { rel: [0,2,2,0,0,0],  fng: [1,3,4,1,1,1], rootStr: 5, openNote: 4 },
+  '7_E':     { rel: [0,2,0,1,0,0],  fng: [1,3,1,2,1,1], rootStr: 5, openNote: 4 },
+  'maj7_E':  { rel: [0,2,1,1,0,0],  fng: [1,3,2,2,1,1], rootStr: 5, openNote: 4 },
+  'm7_E':    { rel: [0,2,2,0,3,0],  fng: [1,3,4,1,2,1], rootStr: 5, openNote: 4 },
+  'mMaj7_E': { rel: [0,2,1,0,0,0],  fng: [1,3,2,1,1,1], rootStr: 5, openNote: 4 },
+  'm7b5_E':  { rel: [0,1,2,0,3,0],  fng: [1,2,3,1,4,1], rootStr: 5, openNote: 4 },
+  // A-form (root on 5th string, open note = A = noteIdx 9)
+  'maj_A':   { rel: [-1,0,2,2,2,0], fng: [0,1,3,4,2,1], rootStr: 4, openNote: 9 },
+  'm_A':     { rel: [-1,0,2,2,1,0], fng: [0,1,3,4,2,1], rootStr: 4, openNote: 9 },
+  '7_A':     { rel: [-1,0,2,0,2,0], fng: [0,1,2,1,3,1], rootStr: 4, openNote: 9 },
+  'maj7_A':  { rel: [-1,0,2,1,2,0], fng: [0,1,3,2,4,1], rootStr: 4, openNote: 9 },
+  'm7_A':    { rel: [-1,0,2,0,1,0], fng: [0,1,3,1,2,1], rootStr: 4, openNote: 9 },
+  'mMaj7_A': { rel: [-1,0,2,1,1,0], fng: [0,1,3,2,2,1], rootStr: 4, openNote: 9 },
+  'm7b5_A':  { rel: [-1,0,1,2,1,3], fng: [0,1,2,3,2,4], rootStr: 4, openNote: 9 },
+  'dim7_A':  { rel: [-1,0,1,2,1,2], fng: [0,1,2,4,3,3], rootStr: 4, openNote: 9 },
+};
+
+function getChordDiagrams(rootIdx, chordType) {
+  // Map chord type to barre template keys
+  const typeMap = {
+    'maj7': ['maj7_E','maj7_A'], 'm7': ['m7_E','m7_A'], '7': ['7_E','7_A'],
+    'maj': ['maj_E','maj_A'], 'm': ['m_E','m_A'],
+    'maj9': ['maj7_E','maj7_A'], '9': ['7_E','7_A'], 'm9': ['m7_E','m7_A'],
+    '13': ['7_E','7_A'], 'mMaj7': ['mMaj7_E','mMaj7_A'],
+    'maj7#11': ['maj7_E','maj7_A'], '7alt': ['7_E','7_A'],
+    'm7b5': ['m7b5_E','m7b5_A'], 'dim7': ['dim7_A'],
+  };
+  const templates = (typeMap[chordType] || ['maj_E','maj_A']).map(k => BARRE_TEMPLATES[k]).filter(Boolean);
+
+  return templates.map(tmpl => {
+    const barre = (rootIdx - tmpl.openNote + 12) % 12;
+    const baseFret = barre === 0 ? 1 : barre;
+    const frets = tmpl.rel.map(r => r === -1 ? -1 : (r === 0 && barre === 0) ? 0 : (r === 0 && barre > 0) ? barre : r + barre);
+    // For open position (barre=0), mark open strings correctly
+    const correctedFrets = barre === 0
+      ? tmpl.rel.map(r => r < 0 ? -1 : r)
+      : frets;
+    const label = tmpl.rootStr === 5 ? `E form` : `A form`;
+    return { frets: correctedFrets, fingers: tmpl.fng, baseFret: barre === 0 ? 1 : baseFret, label };
+  });
+}
+
+// --- Key Detection ---
+function detectKey(chords) {
+  if (!chords || chords.length === 0) return null;
+  // Diatonic chord quality indexed by chromatic semitone from root (0–11).
+  // '—' marks non-diatonic positions — always scores 0.
+  const MAJOR_SCALE = [
+    {q:'maj7'}, {q:'—'}, {q:'m7'}, {q:'—'}, {q:'m7'}, {q:'maj7'},
+    {q:'—'}, {q:'7'}, {q:'—'}, {q:'m7'}, {q:'—'}, {q:'m7b5'}
+  ];
+  // Natural minor (jazz uses harmonic V7 at position 7)
+  const MINOR_SCALE = [
+    {q:'m7'}, {q:'—'}, {q:'m7b5'}, {q:'maj7'}, {q:'—'}, {q:'m7'},
+    {q:'—'}, {q:'7'}, {q:'maj7'}, {q:'—'}, {q:'7'}, {q:'—'}
+  ];
+  function chordQualityGroup(rest) {
+    if (!rest) return 'maj';
+    if (rest.includes('m7b5') || rest.includes('ø')) return 'm7b5';
+    if (rest.includes('mMaj')) return 'mMaj7';
+    if (rest.includes('dim')) return 'dim7';
+    if (rest.includes('maj7') || rest.includes('Maj7')) return 'maj7';
+    if (rest.match(/m(?!aj)/i) || rest.includes('min')) {
+      return rest.includes('7') ? 'm7' : 'm';
+    }
+    if (rest.includes('7')) return '7';
+    return 'maj';
+  }
+  function qualityMatch(actual, expected) {
+    if (expected === '—') return 0;
+    if (actual === expected) return 2;
+    // Close matches: dom7 ≈ maj (secondary dominant)
+    if (expected === '7' && (actual === 'maj' || actual === 'maj7')) return 0.5;
+    if (expected === 'maj7' && actual === 'maj') return 1;
+    if (expected === 'm7' && actual === 'm') return 1;
+    return 0;
+  }
+  let best = null, bestScore = -1;
+  for (let root = 0; root < 12; root++) {
+    for (const [mode, scale] of [['major', MAJOR_SCALE], ['minor', MINOR_SCALE]]) {
+      let score = 0;
+      for (const c of chords) {
+        const p = ChordParser.parse(c); if (!p) continue;
+        const ci = Theory.NOTES.indexOf(p.root); if (ci === -1) continue;
+        const deg = (ci - root + 12) % 12;
+        score += qualityMatch(chordQualityGroup(p.rest), scale[deg].q);
+      }
+      if (score > bestScore) { bestScore = score; best = { root, mode }; }
+    }
+  }
+  if (!best || bestScore < 1) return null;
+  const rootName = Theory.NOTES[best.root];
+  return { root: rootName, mode: best.mode, score: bestScore,
+    label: best.mode === 'major' ? `${rootName} maggiore` : `${rootName} minore` };
+}
+
 // --- Main Application ---
 class JazzVizApp {
   constructor() {
@@ -1532,7 +2139,10 @@ class JazzVizApp {
     this.scaleNavigator = new ScaleNavigator(this);
     this.lickBuilder = new LickBuilder(this);
     this.grooveTrainer = new GrooveTrainer(this);
+    this.tuner = new GuitarTuner(this);
     this.realBook = new RealBook(this);
+    this.intervalEarTrainer = new IntervalEarTrainer(this);
+    this.reharmonizer = new Reharmonizer(this);
     this.currentView = 'explorer';
     this.explorerMode = 'normal'; this.highlightedIntervals = new Set(); this.manualNotes = new Set(); this.customScaleMap = new Set();
     this.init();
@@ -1601,6 +2211,10 @@ class JazzVizApp {
   }
 
   switchView(viewId) {
+    // Stop tuner if leaving tuner view
+    if (this.currentView === 'tuner' && viewId !== 'tuner' && this.tuner?.isActive) {
+      this.tuner.stop();
+    }
     this.currentView = viewId;
     document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`view-${viewId}`).classList.add('active');
@@ -1612,6 +2226,7 @@ class JazzVizApp {
       'chord-voicing': T('title.chord-voicing'), 'ear-training': T('title.ear-training'),
       'scale-navigator': T('title.scale-navigator'), 'lick-builder': T('title.lick-builder'),
       'groove-trainer': T('title.groove-trainer'), 'real-book': T('title.real-book'),
+      'tuner': T('title.tuner'),
     };
     document.querySelectorAll('.nav-item').forEach(n => {
       n.classList.remove('active');
@@ -1631,7 +2246,7 @@ class JazzVizApp {
     if (gameBar) gameBar.style.display = 'none';
     if (nfBar) nfBar.style.display = 'none';
     const fbLayer = document.getElementById('fretboard-layer');
-    const noFretboardViews = ['grade-learner','teoria','teoria-generale','ear-training','scale-navigator','groove-trainer','real-book'];
+    const noFretboardViews = ['grade-learner','teoria','teoria-generale','ear-training','scale-navigator','groove-trainer','real-book','tuner','interval-ear-training','reharmonizer'];
     const gameFretboardViews = ['interval-learner','note-finder','lick-builder'];
     const isGameView = gameFretboardViews.includes(viewId);
     if (fbLayer) fbLayer.classList.toggle('game-mode', isGameView);
@@ -1682,6 +2297,10 @@ class JazzVizApp {
     } else if (viewId === 'real-book') {
         this.realBook.init();
         this.realBook.render();
+    } else if (viewId === 'interval-ear-training') {
+        this.intervalEarTrainer.reset();
+    } else if (viewId === 'reharmonizer') {
+        document.getElementById('rh-results').innerHTML = '';
     } else if (!noFretboardViews.includes(viewId)) {
         this.fretboard.update(this.getUiSettings());
     }
@@ -1844,10 +2463,57 @@ class JazzVizApp {
       });
     });
     if(allChordsFound.length > 0) {
+      const key = detectKey(allChordsFound);
       document.getElementById('overall-suggestion').style.display = 'block';
-      document.getElementById('suggestion-text').innerText = allChordsFound.join(' → ');
+      document.getElementById('suggestion-text').innerText = key
+        ? `Tonalità suggerita: ${key.label}`
+        : `Accordi: ${allChordsFound.join(' → ')}`;
     }
+    this.renderVoiceLeading();
     app.save();
+  }
+
+  renderVoiceLeading() {
+    const panel = document.getElementById('voice-leading-panel');
+    if (!panel) return;
+    const steps = this.progression.getSteps();
+    if (steps.length < 2) { panel.innerHTML = ''; return; }
+
+    const parseStep = (step) => {
+      const chord = step.querySelector('.prog-chord-name').value;
+      const root  = step.querySelector('.prog-root-select').value;
+      const ri    = Theory.NOTES.indexOf(root);
+      const ints  = ChordParser.getIntervals(chord);
+      const third   = ints.find(i => i === 3 || i === 4);
+      const seventh = ints.find(i => i === 9 || i === 10 || i === 11);
+      const absNote = (semi) => ri !== -1 && semi != null ? (ri + semi) % 12 : null;
+      const noteName = (semi) => semi != null && ri !== -1 ? Theory.NOTES[(ri + semi) % 12] : '–';
+      return { chord, thirdAbs: absNote(third), seventhAbs: absNote(seventh), thirdNote: noteName(third), seventhNote: noteName(seventh) };
+    };
+
+    const data = steps.map(parseStep);
+    const deltaStr = (curr, prev) => {
+      if (curr == null || prev == null) return '<span class="vl-delta vl-static">–</span>';
+      const raw = (curr - prev + 12) % 12;
+      const d   = raw > 6 ? raw - 12 : raw;
+      const cls = d === 0 ? 'vl-static' : Math.abs(d) <= 2 ? 'vl-smooth' : 'vl-leap';
+      return `<span class="vl-delta ${cls}">${d > 0 ? '+' : ''}${d}</span>`;
+    };
+
+    let html = `<div style="font-size:0.72em;text-transform:uppercase;color:#555;font-weight:700;margin-bottom:6px;letter-spacing:0.5px;">Voice Leading — Guide Tones</div>
+      <table class="vl-table"><thead><tr><th>Accordo</th><th>3ª</th><th>Δ</th><th>7ª</th><th>Δ</th></tr></thead><tbody>`;
+    data.forEach((d, i) => {
+      const prev = data[i - 1];
+      html += `<tr>
+        <td class="vl-chord">${d.chord}</td>
+        <td class="vl-note">${d.thirdNote}</td>
+        <td>${deltaStr(d.thirdAbs, prev?.thirdAbs)}</td>
+        <td class="vl-note">${d.seventhNote}</td>
+        <td>${deltaStr(d.seventhAbs, prev?.seventhAbs)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    panel.innerHTML = html;
   }
 }
 
@@ -1930,13 +2596,24 @@ const TRANSLATIONS = {
     'nav.chord-voicing':'Chord Voicing','nav.ear-training':'Ear Training',
     'nav.scale-navigator':'Scale Navigator','nav.lick-builder':'Lick Builder',
     'nav.groove-trainer':'Groove Trainer','nav.real-book':'Real Book',
+    'nav.tuner':'Accordatore',
     'title.chord-voicing':'CHORD VOICING','title.ear-training':'EAR TRAINING',
     'title.scale-navigator':'SCALE NAVIGATOR','title.lick-builder':'LICK BUILDER',
     'title.groove-trainer':'GROOVE TRAINER','title.real-book':'REAL BOOK',
+    'title.tuner':'ACCORDATORE',
     'cv.title':'Chord Voicing Explorer','cv.subtitle':'Esplora i toni degli accordi jazz sul manico.',
     'cv.chord-type':'Tipo Accordo','cv.load-btn':'Carica su Fretboard',
     'cv.formula':'Formula','cv.scale-rec':'Scala Consigliata','cv.info-desc':'Descrizione',
+    'cv.fingering':'Diteggiatura',
     'cv.tip-text':'Premi "Carica su Fretboard" per visualizzare i toni sul manico con Arpeggio attivo. Usa la sidebar per esplorare scale associate.',
+    'btn.replay':'🔊 Riascolta',
+    'gl.free-mode':'Modalità Libera',
+    'tuner.title':'Accordatore Cromatico',
+    'tuner.subtitle':'Suona una corda: l\'accordatore rileva la nota in tempo reale tramite microfono.',
+    'tuner.start':'🎙 Avvia','tuner.stop':'⏹ Stop',
+    'tuner.status':'Premi Avvia per iniziare.',
+    'tuner.ref':'Note di riferimento (clic = suona)',
+    'lb.sound':'Suono',
     'et.title':'Ear Training','et.subtitle':'Allena l\'orecchio: identifica gli accordi.',
     'et.ready':'Premi ▶ Play per ascoltare','et.status':'Seleziona la difficoltà e ascolta.',
     'et.listening':'Ascolta... poi scegli!','et.correct':'✓ Corretto! Bravissimo.',
@@ -1945,7 +2622,7 @@ const TRANSLATIONS = {
     'btn.play-chord':'▶ Play Accordo',
     'sn.title':'Scale Navigator','sn.subtitle':'Trova le scale adatte a ogni accordo jazz.',
     'sn.chord-type':'Tipo Accordo','sn.load-btn':'Carica','sn.no-results':'Nessun risultato.',
-    'lb.title':'Lick Builder','lb.subtitle':'Costruisci e suona le tue frasi musicali sul manico.',
+    'lb.title':'Lick Builder','lb.subtitle':'Componi e suona le tue frasi musicali sul manico.',
     'lb.play':'▶ Play','lb.undo':'↩ Undo','lb.clear':'× Cancella',
     'lb.subdivision':'Suddivisione','lb.empty':'Clicca le note sul manico per costruire un lick...',
     'lb.tip':'Seleziona la scala nella sidebar, poi clicca le note sul manico per registrare il tuo lick.',
@@ -1957,6 +2634,24 @@ const TRANSLATIONS = {
     'rb.title':'Real Book','rb.subtitle':'Standard jazz pronti da caricare nel Player.',
     'rb.load-btn':'Carica nel Player','rb.no-results':'Nessun risultato trovato.',
     'rb.search':'Cerca standard...',
+    'sg.play':'Suona','sg.training':'Allenamento','sg.build':'Componi','sg.theory':'Teoria','sg.tools':'Strumenti', 'sg.explore':'Esplora',
+    'nav.interval-ear-training':'Interval Ear Training','title.interval-ear-training':'INTERVAL EAR TRAINING',
+    'iet.title':'Interval Ear Training','iet.subtitle':'Allena l\'orecchio: identifica gli intervalli musicali ad orecchio.',
+    'iet.ready':'Premi ▶ Play per ascoltare','iet.listening':'Ascolta... poi scegli!',
+    'iet.correct':'✓ Corretto! Bravissimo.','iet.wrong':'✗ Sbagliato! Era:',
+    'nav.reharmonizer':'Reharmonizer','title.reharmonizer':'REHARMONIZER',
+    'rh.title':'Reharmonizer','rh.subtitle':'Inserisci una progressione per ottenere sostituzioni armoniche.',
+    'rh.placeholder':'Es: Dm7 G7 Cmaj7','rh.analyze':'Analizza',
+    'rh.no-results':'Nessun accordo riconosciuto.',
+    'rh.tritone-sub':'Tritone Sub','rh.altered':'Alt. Dom.',
+    'rh.ii-of-v':'ii del V','rh.diatonic-3':'III sub',
+    'rh.diatonic-6':'VI sub','rh.modal-bvii':'bVII (MI)',
+    'rh.modal-bvi':'bVI (MI)','rh.relative-maj':'Relativo Mag.',
+    'rh.backdoor':'Backdoor Dom.','rh.iv-maj':'IV Mag.',
+    'rh.dim-sub':'Dim7 sub','rh.dom-b9':'Dom. b9',
+    'rh.dim-as-dom':'Dim → Dom','rh.sec-dom':'Dom. Sec.',
+    'th.jazz10':'Scale Bebop','th.jazz11':'Modal Interchange',
+    'th.jazz12':'Ritmo e Comping Jazz',
   },
   en: {
     'nav.explorer':'Explorer','nav.player':'Player','nav.calculator':'Calculator',
@@ -2032,13 +2727,24 @@ const TRANSLATIONS = {
     'nav.chord-voicing':'Chord Voicing','nav.ear-training':'Ear Training',
     'nav.scale-navigator':'Scale Navigator','nav.lick-builder':'Lick Builder',
     'nav.groove-trainer':'Groove Trainer','nav.real-book':'Real Book',
+    'nav.tuner':'Tuner',
     'title.chord-voicing':'CHORD VOICING','title.ear-training':'EAR TRAINING',
     'title.scale-navigator':'SCALE NAVIGATOR','title.lick-builder':'LICK BUILDER',
     'title.groove-trainer':'GROOVE TRAINER','title.real-book':'REAL BOOK',
+    'title.tuner':'TUNER',
     'cv.title':'Chord Voicing Explorer','cv.subtitle':'Explore jazz chord tones on the fretboard.',
     'cv.chord-type':'Chord Type','cv.load-btn':'Load to Fretboard',
     'cv.formula':'Formula','cv.scale-rec':'Recommended Scale','cv.info-desc':'Description',
+    'cv.fingering':'Fingering',
     'cv.tip-text':'Press "Load to Fretboard" to display chord tones with Arpeggio mode active. Use the sidebar to explore associated scales.',
+    'btn.replay':'🔊 Play Again',
+    'gl.free-mode':'Free Mode',
+    'tuner.title':'Chromatic Tuner',
+    'tuner.subtitle':'Play a string: the tuner detects the note in real time via microphone.',
+    'tuner.start':'🎙 Start','tuner.stop':'⏹ Stop',
+    'tuner.status':'Press Start to begin.',
+    'tuner.ref':'Reference notes (click = play)',
+    'lb.sound':'Sound',
     'et.title':'Ear Training','et.subtitle':'Train your ear: identify chords by sound.',
     'et.ready':'Press ▶ Play to listen','et.status':'Select difficulty and listen.',
     'et.listening':'Listening... then choose!','et.correct':'✓ Correct! Well done.',
@@ -2047,7 +2753,7 @@ const TRANSLATIONS = {
     'btn.play-chord':'▶ Play Chord',
     'sn.title':'Scale Navigator','sn.subtitle':'Find the right scale for every jazz chord.',
     'sn.chord-type':'Chord Type','sn.load-btn':'Load','sn.no-results':'No results found.',
-    'lb.title':'Lick Builder','lb.subtitle':'Build and play your musical phrases on the fretboard.',
+    'lb.title':'Lick Builder','lb.subtitle':'Write and play your musical phrases on the fretboard.',
     'lb.play':'▶ Play','lb.undo':'↩ Undo','lb.clear':'× Clear',
     'lb.subdivision':'Subdivision','lb.empty':'Click notes on the fretboard to build a lick...',
     'lb.tip':'Select a scale in the sidebar, then click notes on the fretboard to record your lick.',
@@ -2059,6 +2765,24 @@ const TRANSLATIONS = {
     'rb.title':'Real Book','rb.subtitle':'Jazz standards ready to load into the Player.',
     'rb.load-btn':'Load to Player','rb.no-results':'No results found.',
     'rb.search':'Search standards...',
+    'sg.play':'Play','sg.training':'Training','sg.build':'Compose','sg.theory':'Theory','sg.tools':'Tools', 'sg.explore':'Explore',
+    'nav.interval-ear-training':'Interval Ear Training','title.interval-ear-training':'INTERVAL EAR TRAINING',
+    'iet.title':'Interval Ear Training','iet.subtitle':'Train your ear: identify musical intervals by sound.',
+    'iet.ready':'Press ▶ Play to listen','iet.listening':'Listening... then choose!',
+    'iet.correct':'✓ Correct! Well done.','iet.wrong':'✗ Wrong! It was:',
+    'nav.reharmonizer':'Reharmonizer','title.reharmonizer':'REHARMONIZER',
+    'rh.title':'Reharmonizer','rh.subtitle':'Enter a progression to get harmonic substitutions.',
+    'rh.placeholder':'e.g.: Dm7 G7 Cmaj7','rh.analyze':'Analyze',
+    'rh.no-results':'No recognized chords.',
+    'rh.tritone-sub':'Tritone Sub','rh.altered':'Alt. Dom.',
+    'rh.ii-of-v':'ii of V','rh.diatonic-3':'III sub',
+    'rh.diatonic-6':'VI sub','rh.modal-bvii':'bVII (MI)',
+    'rh.modal-bvi':'bVI (MI)','rh.relative-maj':'Relative Maj.',
+    'rh.backdoor':'Backdoor Dom.','rh.iv-maj':'IV Maj.',
+    'rh.dim-sub':'Dim7 sub','rh.dom-b9':'Dom. b9',
+    'rh.dim-as-dom':'Dim → Dom','rh.sec-dom':'Sec. Dom.',
+    'th.jazz10':'Bebop Scales','th.jazz11':'Modal Interchange',
+    'th.jazz12':'Jazz Rhythm & Comping',
   }
 };
 
@@ -2076,6 +2800,10 @@ function applyTranslations() {
     const v = T('nav.' + el.getAttribute('data-i18n-nav'));
     if (v) el.textContent = v;
   });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const v = T(el.getAttribute('data-i18n-placeholder'));
+    if (v) el.placeholder = v;
+  });
   const btn = document.getElementById('lang-btn');
   if (btn) btn.textContent = window.currentLang === 'it' ? 'EN' : 'IT';
   if (typeof app !== 'undefined' && app) {
@@ -2087,6 +2815,9 @@ function applyTranslations() {
       'chord-voicing': T('title.chord-voicing'), 'ear-training': T('title.ear-training'),
       'scale-navigator': T('title.scale-navigator'), 'lick-builder': T('title.lick-builder'),
       'groove-trainer': T('title.groove-trainer'), 'real-book': T('title.real-book'),
+      'tuner': T('title.tuner'),
+      'interval-ear-training': T('title.interval-ear-training'),
+      'reharmonizer': T('title.reharmonizer'),
     };
     const titleEl = document.getElementById('view-title');
     if (titleEl) titleEl.innerText = titleMap[app.currentView] || app.currentView.toUpperCase();
@@ -2306,6 +3037,86 @@ const THEORY_EN = {
       <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Exercise:</strong> Take a simple pentatonic lick and add chromatic approach notes before each downbeat note. You'll immediately get a bebop sound!</div></li>
     </ul>
     <div class="teoria-tip mt-3"><strong>Tip:</strong> Parker, Dizzy, and Monk used enclosures continuously. Listen to "Anthropology" by Charlie Parker and try to identify approach notes — they're everywhere.</div>`,
+
+  'jazz-10': `<p class="teoria-intro"><strong>Bebop Scales</strong> are standard scales enriched with one chromatic passing tone. The result: chord tones (R, 3, 5, 7) always land on the <em>strong beats</em>, making melodic lines naturally fluid at any tempo.</p>
+    <div class="scale-grid">
+      <div class="scale-item">
+        <div class="scale-item-name">Bebop Dominant</div>
+        <div class="scale-item-chord">On: G7, C7, dominants</div>
+        <div class="scale-item-desc">Mixolydian + chromatic major 7th between b7 and R. Chord tones R, 3, 5, b7 fall on the beat. The quintessential bebop scale.</div>
+        <div class="scale-intervals"><span class="scale-int-badge">1</span><span class="scale-int-badge">2</span><span class="scale-int-badge">3</span><span class="scale-int-badge">4</span><span class="scale-int-badge">5</span><span class="scale-int-badge">6</span><span class="scale-int-badge">b7</span><span class="scale-int-badge" style="border-color:var(--accent);color:var(--accent)">7*</span></div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name">Bebop Major</div>
+        <div class="scale-item-chord">On: Cmaj7, Fmaj7, Maj7</div>
+        <div class="scale-item-desc">Ionian + chromatic #5 between 5th and 6th. Chord tones R, 3, 5, 7 land on the beat. Classic big band sound.</div>
+        <div class="scale-intervals"><span class="scale-int-badge">1</span><span class="scale-int-badge">2</span><span class="scale-int-badge">3</span><span class="scale-int-badge">4</span><span class="scale-int-badge">5</span><span class="scale-int-badge" style="border-color:var(--accent);color:var(--accent)">#5*</span><span class="scale-int-badge">6</span><span class="scale-int-badge">7</span></div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name">Bebop Dorian</div>
+        <div class="scale-item-chord">On: Dm7, Am7, m7</div>
+        <div class="scale-item-desc">Dorian + chromatic b2 between R and 2nd. Chord tones R, b3, 5, b7 fall on the beat. Typical minor bebop sound.</div>
+        <div class="scale-intervals"><span class="scale-int-badge">1</span><span class="scale-int-badge" style="border-color:var(--accent);color:var(--accent)">b2*</span><span class="scale-int-badge">2</span><span class="scale-int-badge">b3</span><span class="scale-int-badge">4</span><span class="scale-int-badge">5</span><span class="scale-int-badge">6</span><span class="scale-int-badge">b7</span></div>
+      </div>
+    </div>
+    <div class="teoria-tip mt-3"><strong>How to use them:</strong> Play descending from the octave — that's where chord tones fall on the beat. The goal isn't to "run the scale" but to craft phrases that land on the right note at the right time. Parker, Coltrane, and Cannonball used them instinctively.</div>`,
+
+  'jazz-11': `<p class="teoria-intro"><strong>Modal Interchange</strong> means borrowing chords from a parallel mode — same tonic, different mode. It adds unexpected harmonic color while remaining anchored to the home key.</p>
+    <div class="scale-grid">
+      <div class="scale-item">
+        <div class="scale-item-name" style="color:#f1c40f">bVII in Major</div>
+        <div class="scale-item-chord">e.g.: in C → Bbmaj7</div>
+        <div class="scale-item-desc">The most common borrow from the parallel minor. Instantly recognizable rock/pop-modern sound.</div>
+        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Bbmaj7 | Fmaj7 | G7 |</div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name" style="color:#9b59b6">bVI in Major</div>
+        <div class="scale-item-chord">e.g.: in C → Abmaj7</div>
+        <div class="scale-item-desc">Romantic, cinematic color. Classic cadence of modern pop and jazz ballads.</div>
+        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Abmaj7 | Fm7 | G7 |</div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name" style="color:#e74c3c">iv minor in Major</div>
+        <div class="scale-item-chord">e.g.: in C → Fm7</div>
+        <div class="scale-item-desc">The minor IV (from parallel Dorian) is one of the most emotional borrows. Often resolves to I or V. Typical of jazz ballads.</div>
+        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Fm7 | Em7 | A7 |</div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name" style="color:#27ae60">bIII in Major</div>
+        <div class="scale-item-chord">e.g.: in C → Ebmaj7</div>
+        <div class="scale-item-desc">Creates a temporary modulation effect toward the relative minor tonic. Common in jazz-fusion and Brazilian music.</div>
+        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Ebmaj7 | Fmaj7 | G7 |</div>
+      </div>
+    </div>
+    <div class="teoria-tip mt-3"><strong>How to spot them:</strong> If a chord doesn't belong to the diatonic scale but makes expressive sense, it's probably a modal borrow. Look for it in the parallel scale. Use the <strong>Reharmonizer</strong> to find modal borrows for any chord.</div>`,
+
+  'jazz-12': `<p class="teoria-intro"><strong>Comping</strong> (rhythmic-harmonic accompaniment) is the art of supporting a soloist with improvised chords. In jazz, comping is itself an improvisation — a musical dialogue with the soloist.</p>
+    <div class="scale-grid">
+      <div class="scale-item">
+        <div class="scale-item-name">The Swing Feel</div>
+        <div class="scale-item-desc">Jazz eighth notes are NOT played straight. They're swung: the first eighth is longer than the second (roughly 2:1), creating the characteristic jazz groove.</div>
+        <div class="prog-example" style="font-size:0.8em;margin-top:8px;">Written:  ♪ ♪ ♪ ♪
+Played:   ♩.♪ ♩.♪ (triplet feel)</div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name">Rhythmic Anticipations</div>
+        <div class="scale-item-desc">Comping chords often anticipate the harmonic change by half a beat. The chord on beat 1 of the next measure is played on the "4 and" (upbeat of 4). Creates forward motion.</div>
+        <div class="prog-example" style="font-size:0.8em;margin-top:8px;">| . . . [Gm7] | G7 . . . |
+              ↑ anticipation on "4-and"</div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name">Shell Voicings</div>
+        <div class="scale-item-desc">Comping uses minimal voicings: Root + 3rd + 7th (the guide tones). Omit the 5th. "Freddie Green voicings" with 2–3 notes are the foundation of swing guitar comping.</div>
+        <div class="prog-example" style="font-size:0.8em;margin-top:8px;">Cmaj7 → C + E + B
+G7    → G + B + F</div>
+      </div>
+      <div class="scale-item">
+        <div class="scale-item-name">Dialogue with the Soloist</div>
+        <div class="scale-item-desc">When the soloist plays a lot, comping simplifies. In the soloist's rests, comping fills in. It's a two-way musical conversation.</div>
+        <div class="teoria-tip" style="margin-top:8px;font-size:0.85em;">Rule: <em>less is more.</em> Herbie Hancock, Bill Evans, Kenny Barron — all leave space.</div>
+      </div>
+    </div>
+    <div class="teoria-tip mt-3"><strong>First exercise:</strong> Play chords only on beats 2 and 4 (the backbeat). Then add anticipations and variations. Use the <strong>Groove Trainer</strong> to practice basic rhythmic patterns.</div>`,
 };
 
 const app = new JazzVizApp();
@@ -2325,6 +3136,13 @@ window.applyFullScale = () => {
 window.resetFretboard = () => { app.highlightedIntervals.clear(); app.manualNotes.clear(); window.applyFullScale(); };
 window.setExplorerMode = (m) => app.setExplorerMode(m);
 window.switchView = (v) => app.switchView(v);
+window.toggleTuner = () => app.tuner.toggle();
+window.tunerPlayRef = (freq) => app.tuner.playRef(freq);
+window.replayIL = () => app.intervalLearner.replay();
+window.replayGL = () => app.gradeLearner.replay();
+window.replayNF = () => app.noteFinder.replay();
+window.replayET  = () => app.earTrainer.replay();
+window.replayIET = () => app.intervalEarTrainer.replay();
 window.toggleMenu = () => document.getElementById("sidebar-menu").classList.toggle("active");
 window.showHelpModal = () => document.getElementById("help-modal").style.display = "flex";
 window.hideHelpModal = () => document.getElementById("help-modal").style.display = "none";

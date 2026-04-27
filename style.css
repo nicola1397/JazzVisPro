@@ -90,6 +90,10 @@ body {
   gap: 15px;
 }
 
+#view-title {
+  font-weight: 700;
+}
+
 .logo {
   padding: 0 25px 20px;
   font-weight: 800; 
@@ -908,6 +912,32 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
   margin: 6px 16px;
 }
 
+/* ===== SIDEBAR COLLAPSIBLE GROUPS ===== */
+.sidebar-group { margin: 2px 0; }
+.sidebar-group-header {
+  padding: 5px 16px 3px;
+  font-size: 0.69em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: #444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: color 0.2s;
+}
+.sidebar-group-header:hover { color: #777; }
+.sidebar-group-arrow {
+  font-size: 1em;
+  transition: transform 0.2s;
+  display: inline-block;
+  transform: scale(1.5);
+}
+.sidebar-group.collapsed .sidebar-group-arrow { transform: scale(1.5) rotate(-90deg); }
+.sidebar-group.collapsed .sidebar-group-items { display: none; }
+
 /* ===== MODE A: CHORD VOICING ===== */
 .cv-int-badge {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -969,13 +999,25 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 
 /* ===== MODE D: LICK BUILDER ===== */
 .lb-note-pill {
+  position: relative;
   background: rgba(255,214,10,0.12); border: 1px solid rgba(255,214,10,0.35);
-  border-radius: 8px; padding: 6px 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  min-width: 44px;
+  border-radius: 8px; padding: 6px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  min-width: 48px; cursor: pointer; user-select: none;
+  transition: background 0.15s;
 }
+.lb-note-pill:hover { background: rgba(255,214,10,0.22); }
 .lb-note-pill span { font-weight: 800; font-size: 0.9em; color: var(--accent); line-height: 1; }
-.lb-note-pill small { font-size: 0.65em; color: #777; }
+.lb-note-pill small { font-size: 0.62em; color: #666; }
+.lb-pill-dur { font-size: 0.58em; color: #f39c12; font-weight: 700; margin-top: 1px; }
+.lb-pill-delete {
+  position: absolute; top: -7px; right: -7px;
+  width: 16px; height: 16px; background: #e74c3c;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 0.6em; font-weight: 900; color: #fff; opacity: 0;
+  transition: opacity 0.15s; cursor: pointer; z-index: 2; line-height: 1;
+}
+.lb-note-pill:hover .lb-pill-delete { opacity: 1; }
 
 /* ===== MODE E: GROOVE TRAINER ===== */
 .gt-pattern-grid {
@@ -1029,3 +1071,120 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .rb-cat-btn:hover { border-color: var(--accent); color: var(--accent); }
 .rb-cat-btn.active { background: rgba(255,214,10,0.15); border-color: var(--accent); color: var(--accent); }
 .rb-load-btn { white-space: nowrap; flex-shrink: 0; }
+
+/* ===== GUITAR TUNER ===== */
+.tuner-display {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 20px 0;
+}
+.tuner-note-name {
+  font-size: 5.5em; font-weight: 900; letter-spacing: -2px;
+  line-height: 1; transition: color 0.15s; font-variant-numeric: tabular-nums;
+  min-width: 180px; text-align: center;
+}
+.tuner-freq-display { font-size: 1em; color: #888; min-height: 1.4em; }
+.tuner-cents-display {
+  font-size: 1.6em; font-weight: 700; min-height: 1.6em;
+  transition: color 0.15s;
+}
+.tuner-meter {
+  position: relative; width: 260px; height: 80px;
+  margin: 8px auto 0;
+}
+.tuner-meter-bg {
+  position: absolute; width: 100%; height: 100%;
+  background: linear-gradient(90deg, #e74c3c 0%, #e74c3c 30%, #f39c12 40%, #2ecc71 45%, #2ecc71 55%, #f39c12 60%, #e74c3c 70%, #e74c3c 100%);
+  border-radius: 4px 4px 0 0; opacity: 0.15;
+}
+.tuner-meter-center {
+  position: absolute; left: 50%; top: 0; width: 2px; height: 100%;
+  background: #2ecc71; transform: translateX(-50%); opacity: 0.4;
+}
+.tuner-needle {
+  position: absolute; width: 3px; height: 70px;
+  background: var(--accent); bottom: 0; left: 50%;
+  transform-origin: bottom center; transform: rotate(0deg) translateX(-50%);
+  border-radius: 2px 2px 0 0; transition: transform 0.1s ease-out;
+  margin-left: -1.5px;
+}
+.tuner-strings-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+  margin-top: 16px; width: 100%;
+}
+.tuner-string-btn {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px; padding: 10px 5px; cursor: pointer;
+  text-align: center; transition: all 0.2s; color: #fff;
+}
+.tuner-string-btn:hover { background: rgba(255,214,10,0.1); border-color: var(--accent); }
+.tuner-string-btn .ts-name { font-size: 1.2em; font-weight: 900; color: var(--accent); display: block; }
+.tuner-string-btn .ts-freq { font-size: 0.7em; color: #666; display: block; margin-top: 2px; }
+.tuner-instr { font-size: 0.8em; color: #555; text-align: center; margin-top: 10px; }
+
+/* ===== CHORD DIAGRAMS ===== */
+.chord-diagram-grid {
+  display: flex; flex-wrap: wrap; gap: 20px;
+  justify-content: center; margin: 15px 0;
+}
+.chord-diagram-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.chord-diagram-label {
+  font-size: 0.72em; color: #888; text-align: center;
+}
+
+/* ===== REPLAY BUTTON ===== */
+.btn-replay {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+  color: #ccc; padding: 0 14px; border-radius: 8px; cursor: pointer;
+  font-size: 0.85em; height: 38px; transition: all 0.2s; white-space: nowrap;
+}
+.btn-replay:hover { background: rgba(255,255,255,0.12); border-color: #aaa; color: #fff; }
+
+/* ===== FREE MODE TOGGLE ===== */
+.free-mode-badge {
+  font-size: 0.72em; background: rgba(255,165,0,0.18); border: 1px solid rgba(255,165,0,0.4);
+  color: #ffa500; border-radius: 20px; padding: 2px 10px; white-space: nowrap;
+}
+
+/* ===== MODE G: INTERVAL EAR TRAINING ===== */
+.iet-diff-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+  color: #aaa; padding: 6px 16px; border-radius: 20px;
+  font-size: 0.8em; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.iet-diff-btn:hover { border-color: var(--accent); color: var(--accent); }
+.iet-diff-btn.active { background: rgba(255,214,10,0.15); border-color: var(--accent); color: var(--accent); }
+
+/* ===== VOICE LEADING TABLE ===== */
+.vl-table {
+  width: 100%; border-collapse: collapse; font-size: 0.85em;
+  background: rgba(0,0,0,0.25); border-radius: 10px; overflow: hidden;
+}
+.vl-table th {
+  background: rgba(255,255,255,0.05); color: #888; font-size: 0.78em;
+  text-transform: uppercase; padding: 7px 10px; text-align: center; font-weight: 700;
+}
+.vl-table td { padding: 7px 10px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
+.vl-chord { font-weight: 800; color: var(--accent); text-align: left !important; }
+.vl-note  { font-weight: 700; color: #ddd; }
+.vl-delta { display: inline-block; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 0.9em; }
+.vl-static { background: rgba(255,255,255,0.06); color: #888; }
+.vl-smooth { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.vl-leap   { background: rgba(231,76,60,0.15); color: #e74c3c; }
+
+/* ===== REHARMONIZER ===== */
+.rh-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+}
+.rh-original { font-size: 1.2em; font-weight: 900; color: var(--accent); margin-bottom: 10px; }
+.rh-subs { display: flex; flex-wrap: wrap; gap: 8px; }
+.rh-sub-badge {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px; padding: 6px 12px; font-size: 0.85em; font-weight: 700;
+  cursor: default; transition: background 0.2s; color: #ddd;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 90px; text-align: center;
+}
+.rh-sub-badge:hover { background: rgba(255,214,10,0.08); border-color: rgba(255,214,10,0.3); }
+.rh-sub-badge small { font-size: 0.75em; color: #888; font-weight: 400; }

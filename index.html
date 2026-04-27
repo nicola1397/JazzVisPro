@@ -4,34 +4,90 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jazz Viz Pro - Professional Edition</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="fav-ico.png">
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script> -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"> -->
+    <script src="libs/Tone.js"></script>
+    <link href="libs/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="fav-ico.svg">
 
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script> -->
+    <script src="libs/bootstrap.bundle.min.js" defer></script>
   </head>
   <body>
     <div class="app-container">
       <aside class="sidebar" id="sidebar-menu">
         <button class="nav-toggle d-lg-none" onclick="toggleMenu()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: white; font-size: 1.5rem;">✕</button>
         <div class="logo">JAZZ<span>VIZ</span> PRO</div>
-        <div class="nav-item active" onclick="switchView('explorer')" data-i18n-nav="explorer">Explorer</div>
-        <div class="nav-item" onclick="switchView('player')" data-i18n-nav="player">Player</div>
-        <div class="nav-item" onclick="switchView('calculator')" data-i18n-nav="calculator">Calculator</div>
-        <div class="nav-item" onclick="switchView('interval-learner')" data-i18n-nav="interval-learner">Interval Learner</div>
-        <div class="nav-item" onclick="switchView('grade-learner')" data-i18n-nav="grade-learner">Grade Learner</div>
-        <div class="nav-item" onclick="switchView('snapshots')" data-i18n-nav="snapshots">Snapshots</div>
-        <div class="nav-item" onclick="switchView('note-finder')" data-i18n-nav="note-finder">Note Finder</div>
-        <div class="nav-item" onclick="switchView('teoria-generale')" data-i18n-nav="teoria-generale">Teoria Generale</div>
-        <div class="nav-item" onclick="switchView('teoria')" data-i18n-nav="teoria">Teoria Jazz</div>
-        <div class="sidebar-nav-separator"></div>
-        <div class="nav-item" onclick="switchView('chord-voicing')" data-i18n-nav="chord-voicing">Chord Voicing</div>
-        <div class="nav-item" onclick="switchView('ear-training')" data-i18n-nav="ear-training">Ear Training</div>
-        <div class="nav-item" onclick="switchView('scale-navigator')" data-i18n-nav="scale-navigator">Scale Navigator</div>
-        <div class="nav-item" onclick="switchView('lick-builder')" data-i18n-nav="lick-builder">Lick Builder</div>
-        <div class="nav-item" onclick="switchView('groove-trainer')" data-i18n-nav="groove-trainer">Groove Trainer</div>
-        <div class="nav-item" onclick="switchView('real-book')" data-i18n-nav="real-book">Real Book</div>
+       
+        
+        <div class="sidebar-group" id="sg-explore">
+         <div class="sidebar-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span data-i18n="sg.explore">Esplora</span><span class="sidebar-group-arrow">▾</span>
+          </div>
+          <div class="sidebar-group-items">
+            <div class="nav-item active" onclick="switchView('explorer')" data-i18n-nav="explorer">Explorer</div>
+            <div class="nav-item" onclick="switchView('snapshots')" data-i18n-nav="snapshots">Snapshots</div>
+            <div class="nav-item" onclick="switchView('chord-voicing')" data-i18n-nav="chord-voicing">Chord Voicing</div>
+            <div class="nav-item" onclick="switchView('scale-navigator')" data-i18n-nav="scale-navigator">Scale Navigator</div>
+            <div class="nav-item" onclick="switchView('reharmonizer')" data-i18n-nav="reharmonizer">Reharmonizer</div>
+          </div>
+        </div>
+
+        
+        <div class="sidebar-group collapsed" id="sg-tools">
+          <div class="sidebar-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span data-i18n="sg.tools">Strumenti</span><span class="sidebar-group-arrow">▾</span>
+          </div>
+          <div class="sidebar-group-items">
+            <div class="nav-item" onclick="switchView('tuner')" data-i18n-nav="tuner">Accordatore</div>
+            <div class="nav-item" onclick="switchView('lick-builder')" data-i18n-nav="lick-builder">Lick Builder</div>            
+          </div>
+        </div>
+
+        <div class="sidebar-group collapsed" id="sg-play">
+          <div class="sidebar-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span data-i18n="sg.play">Suona</span><span class="sidebar-group-arrow">▾</span>
+          </div>
+          <div class="sidebar-group-items">
+            <div class="nav-item" onclick="switchView('player')" data-i18n-nav="player">Player</div>
+            <div class="nav-item" onclick="switchView('calculator')" data-i18n-nav="calculator">Calculator</div>
+            <div class="nav-item" onclick="switchView('real-book')" data-i18n-nav="real-book">Real Book</div>
+          </div>
+        </div>
+
+        <div class="sidebar-group collapsed" id="sg-training">
+          <div class="sidebar-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span data-i18n="sg.training">Allenamento</span><span class="sidebar-group-arrow">▾</span>
+          </div>
+          <div class="sidebar-group-items">
+            <div class="nav-item" onclick="switchView('interval-learner')" data-i18n-nav="interval-learner">Interval Learner</div>
+            <div class="nav-item" onclick="switchView('grade-learner')" data-i18n-nav="grade-learner">Grade Learner</div>
+            <div class="nav-item" onclick="switchView('note-finder')" data-i18n-nav="note-finder">Note Finder</div>
+            <div class="nav-item" onclick="switchView('ear-training')" data-i18n-nav="ear-training">Ear Training</div>
+            <div class="nav-item" onclick="switchView('interval-ear-training')" data-i18n-nav="interval-ear-training">Interval Ear Training</div>
+            <div class="nav-item" onclick="switchView('groove-trainer')" data-i18n-nav="groove-trainer">Groove Trainer</div>
+          </div>
+        </div>
+
+        <!-- <div class="sidebar-group collapsed" id="sg-build">
+          <div class="sidebar-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span data-i18n="sg.build">Costruisci</span><span class="sidebar-group-arrow">▾</span>
+          </div>
+          <div class="sidebar-group-items">
+              [ ADD ITEMS HERE ]
+          </div>
+        </div> -->
+
+        <div class="sidebar-group collapsed" id="sg-theory">
+          <div class="sidebar-group-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span data-i18n="sg.theory">Teoria</span><span class="sidebar-group-arrow">▾</span>
+          </div>
+          <div class="sidebar-group-items">
+            <div class="nav-item" onclick="switchView('teoria-generale')" data-i18n-nav="teoria-generale">Teoria Generale</div>
+            <div class="nav-item" onclick="switchView('teoria')" data-i18n-nav="teoria">Teoria Jazz</div>
+          </div>
+        </div>
 
         <div class="sidebar-controls">
             <div class="nav-group"><label data-i18n="label.tuning">Accordatura</label><select id="tuning-select" onchange="renderFretboard(); applyFullScale();"></select></div>
@@ -76,6 +132,7 @@
                 <div id="question-text" class="h3 mb-0" style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;" data-i18n="il.ready">Premi "Inizia" per partire</div>
                 <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
                     <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.intervalLearner.start()" data-i18n="btn.start-next">Inizia / Prossimo</button>
+                    <button class="btn-replay" onclick="replayIL()" data-i18n="btn.replay">🔊 Riascolta</button>
                     <button class="btn-reset w-auto" style="height: 38px;" onclick="app.intervalLearner.reset()" data-i18n="btn.reset-game">Reset</button>
                     <div id="score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
                 </div>
@@ -87,6 +144,7 @@
                 <div id="note-finder-question" class="h3 mb-0" style="color: #32d74b; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;" data-i18n="nf.ready">Premi "Inizia" per partire</div>
                 <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
                     <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.noteFinder.start()" data-i18n="btn.start-next">Inizia / Prossimo</button>
+                    <button class="btn-replay" onclick="replayNF()" data-i18n="btn.replay">🔊 Riascolta</button>
                     <button class="btn-reset w-auto" style="height: 38px;" onclick="app.noteFinder.reset()" data-i18n="btn.reset-game">Reset</button>
                     <div id="note-finder-score" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
                 </div>
@@ -154,6 +212,7 @@
                   </div>
                 </div>
                 <div id="progression-steps" class="progression-steps-container"></div>
+                <div id="voice-leading-panel" style="overflow-x:auto;margin-bottom:10px;"></div>
                 <div class="progression-controls row g-3 m-0 w-100">
                     <div class="col-12 col-md-6 col-xl-3">
                         <div class="control-section h-100">
@@ -263,8 +322,13 @@
                     <div id="grade-question-text" class="h3 mb-0" style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;" data-i18n="gl.ready">Premi "Inizia" per partire</div>
                     <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
                         <button class="btn-add-step w-auto" style="min-width: 150px;" onclick="app.gradeLearner.start()" data-i18n="btn.start-next">Inizia / Prossimo</button>
+                        <button class="btn-replay" onclick="replayGL()" data-i18n="btn.replay">🔊 Riascolta</button>
                         <button class="btn-reset w-auto" style="height: 38px;" onclick="app.gradeLearner.reset()" data-i18n="btn.reset-game">Reset</button>
                         <div id="grade-score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="checkbox" id="gl-free-mode" style="accent-color: var(--accent);">
+                        <label for="gl-free-mode" class="free-mode-badge" data-i18n="gl.free-mode">Modalità Libera</label>
                     </div>
                     <div id="grade-game-status" class="small" style="color: #aaa;" data-i18n="gl.status">Mettiti alla prova! Qual è il grado della nota?</div>
                 </div>
@@ -655,6 +719,101 @@ Con tritone sub: | Dm7  | Db7  | Cmaj7 |</div>Il Db7 scende cromaticamente al C 
                   </div>
                 </div>
 
+                <div class="teoria-card">
+                  <button class="teoria-header" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="th.jazz10">Scale Bebop</span> <span class="teoria-arrow">▸</span></button>
+                  <div class="teoria-body" data-theory-id="jazz-10">
+                    <p class="teoria-intro">Le <strong>Scale Bebop</strong> sono scale standard arricchite con una nota cromatica aggiuntiva. Il risultato: le note di accordo (R, 3, 5, 7) cadono sempre sui <em>battiti forti</em>, rendendo le frasi melodicamente fluide a qualunque velocità.</p>
+                    <div class="scale-grid">
+                      <div class="scale-item">
+                        <div class="scale-item-name">Bebop Dominante</div>
+                        <div class="scale-item-chord">Su: G7, C7, dominanti</div>
+                        <div class="scale-item-desc">Misolidio + 7a naturale cromatica tra b7 e R. Le note R, 3, 5, b7 cadono in battere. La scala del bebop per eccellenza.</div>
+                        <div class="scale-intervals"><span class="scale-int-badge">1</span><span class="scale-int-badge">2</span><span class="scale-int-badge">3</span><span class="scale-int-badge">4</span><span class="scale-int-badge">5</span><span class="scale-int-badge">6</span><span class="scale-int-badge">b7</span><span class="scale-int-badge" style="border-color:var(--accent);color:var(--accent)">7*</span></div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name">Bebop Maggiore</div>
+                        <div class="scale-item-chord">Su: Cmaj7, Fmaj7, Maj7</div>
+                        <div class="scale-item-desc">Ionio + #5 cromatico tra 5a e 6a. Le note R, 3, 5, 7 cadono in battere. Suono big band classico.</div>
+                        <div class="scale-intervals"><span class="scale-int-badge">1</span><span class="scale-int-badge">2</span><span class="scale-int-badge">3</span><span class="scale-int-badge">4</span><span class="scale-int-badge">5</span><span class="scale-int-badge" style="border-color:var(--accent);color:var(--accent)">#5*</span><span class="scale-int-badge">6</span><span class="scale-int-badge">7</span></div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name">Bebop Dorico</div>
+                        <div class="scale-item-chord">Su: Dm7, Am7, m7</div>
+                        <div class="scale-item-desc">Dorico + b2 cromatico tra R e 2a. Le note R, b3, 5, b7 cadono in battere. Tipico suono minore bebop.</div>
+                        <div class="scale-intervals"><span class="scale-int-badge">1</span><span class="scale-int-badge" style="border-color:var(--accent);color:var(--accent)">b2*</span><span class="scale-int-badge">2</span><span class="scale-int-badge">b3</span><span class="scale-int-badge">4</span><span class="scale-int-badge">5</span><span class="scale-int-badge">6</span><span class="scale-int-badge">b7</span></div>
+                      </div>
+                    </div>
+                    <div class="teoria-tip mt-3"><strong>Come usarle:</strong> Suona in discesa a partire dall'ottava — è dove le note di accordo cadono in battere. L'obiettivo non è "fare la scala" ma creare frasi che atterrano sulle note giuste al momento giusto. Parker, Coltrane e Cannonball le usavano istintivamente.</div>
+                  </div>
+                </div>
+
+                <div class="teoria-card">
+                  <button class="teoria-header" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="th.jazz11">Modal Interchange (Accordi in Prestito)</span> <span class="teoria-arrow">▸</span></button>
+                  <div class="teoria-body" data-theory-id="jazz-11">
+                    <p class="teoria-intro">Il <strong>Modal Interchange</strong> consiste nel prendere accordi da un modo parallelo — stessa tonica, modo diverso. Aggiunge colori armonici inaspettati restando ancorati alla tonalità principale.</p>
+                    <div class="scale-grid">
+                      <div class="scale-item">
+                        <div class="scale-item-name" style="color:#f1c40f">bVII in Maggiore</div>
+                        <div class="scale-item-chord">Es: in Do → Bb maj7</div>
+                        <div class="scale-item-desc">Il prestito più comune dal minore parallelo. Suono rock/pop moderno molto riconoscibile.</div>
+                        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Bbmaj7 | Fmaj7 | G7 |</div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name" style="color:#9b59b6">bVI in Maggiore</div>
+                        <div class="scale-item-chord">Es: in Do → Ab maj7</div>
+                        <div class="scale-item-desc">Colore romantico e cinematografico. Cadenza classica del pop moderno e delle ballad jazz.</div>
+                        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Abmaj7 | Fm7 | G7 |</div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name" style="color:#e74c3c">iv minore in Maggiore</div>
+                        <div class="scale-item-chord">Es: in Do → Fm7</div>
+                        <div class="scale-item-desc">Il IV minore (da Dorico parallelo) è uno dei prestiti più emozionali. Risolve spesso sul I o V. Tipico delle ballad jazz.</div>
+                        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Fm7 | Em7 | A7 |</div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name" style="color:#27ae60">bIII in Maggiore</div>
+                        <div class="scale-item-chord">Es: in Do → Eb maj7</div>
+                        <div class="scale-item-desc">Crea un effetto di modulazione temporanea verso la tonica relativa minore. Comune in jazz-fusion e musica brasiliana.</div>
+                        <div class="prog-example" style="margin-top:6px;font-size:0.8em;">| Cmaj7 | Ebmaj7 | Fmaj7 | G7 |</div>
+                      </div>
+                    </div>
+                    <div class="teoria-tip mt-3"><strong>Come identificarli:</strong> Se un accordo non appartiene alla scala diatonica ma ha un senso espressivo, è probabilmente un prestito modale. Cercalo nella scala parallela. Usa il <strong>Reharmonizer</strong> per trovare prestiti modali per qualsiasi accordo.</div>
+                  </div>
+                </div>
+
+                <div class="teoria-card">
+                  <button class="teoria-header" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="th.jazz12">Ritmo e Comping Jazz</span> <span class="teoria-arrow">▸</span></button>
+                  <div class="teoria-body" data-theory-id="jazz-12">
+                    <p class="teoria-intro">Il <strong>Comping</strong> (accompagnamento ritmico-armonico) è l'arte di supportare un solista con accordi improvvisati. Nel jazz il comping è esso stesso un'improvvisazione che dialoga con il solista.</p>
+                    <div class="scale-grid">
+                      <div class="scale-item">
+                        <div class="scale-item-name">Il Feel Swing</div>
+                        <div class="scale-item-desc">Le crome jazz NON si suonano "dritte". Si suonano in swing: il primo ottavo è più lungo del secondo (circa 2:1), producendo il groove tipico del jazz.</div>
+                        <div class="prog-example" style="font-size:0.8em;margin-top:8px;">Scritto:  ♪ ♪ ♪ ♪
+Suonato:  ♩.♪ ♩.♪ (feel di terzina)</div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name">Anticipazioni Ritmiche</div>
+                        <div class="scale-item-desc">Gli accordi di comping spesso anticipano il cambio armonico di mezzo battito. L'accordo del battito 1 della misura successiva si suona sul "4 e" (levare del 4°). Crea propulsione.</div>
+                        <div class="prog-example" style="font-size:0.8em;margin-top:8px;">| . . . [Gm7] | G7 . . . |
+                ↑ anticipazione al "4e"</div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name">Shell Voicings</div>
+                        <div class="scale-item-desc">Per il comping si usano voicing minimali: Root + 3a + 7a (le guide tones). Ometti la 5a. I "Freddie Green voicings" a 2-3 note sono la base dello swing chitarristico.</div>
+                        <div class="prog-example" style="font-size:0.8em;margin-top:8px;">Cmaj7 → C + E + B
+G7    → G + B + F</div>
+                      </div>
+                      <div class="scale-item">
+                        <div class="scale-item-name">Dialogo con il Solista</div>
+                        <div class="scale-item-desc">Quando il solista suona molto, il comping si semplifica. Nelle pause del solista, il comping riempie. È una conversazione musicale bidirezionale.</div>
+                        <div class="teoria-tip" style="margin-top:8px;font-size:0.85em;">Regola: <em>meno è più.</em> Herbie Hancock, Bill Evans, Kenny Barron — tutti lasciano spazio.</div>
+                      </div>
+                    </div>
+                    <div class="teoria-tip mt-3"><strong>Primo esercizio:</strong> Suona accordi solo sui battiti 2 e 4 (il backbeat). Poi aggiungi anticipazioni e variazioni. Usa il <strong>Groove Trainer</strong> per esercitarti sui pattern ritmici di base.</div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -692,6 +851,11 @@ Con tritone sub: | Dm7  | Db7  | Cmaj7 |</div>Il Db7 scende cromaticamente al C 
                   <div style="flex:1;min-width:200px;"><span style="color:var(--secondary-text);text-transform:uppercase;font-size:0.75em;font-weight:700;" data-i18n="cv.info-desc">Descrizione</span><br><span id="cv-desc" style="color:#ccc;line-height:1.5;"></span></div>
                 </div>
               </div>
+              <!-- Chord Diagrams (Diteggiatura) -->
+              <div style="margin-top:20px;">
+                <div style="color:var(--secondary-text);text-transform:uppercase;font-size:0.75em;font-weight:700;margin-bottom:10px;" data-i18n="cv.fingering">Diteggiatura</div>
+                <div id="cv-chord-diagrams" class="chord-diagram-grid"></div>
+              </div>
               <div class="teoria-tip" data-i18n="cv.tip-text">Premi "Carica su Fretboard" per visualizzare i toni dell'accordo sul manico con la modalità Arpeggio attiva. Usa la sidebar per esplorare le scale associate.</div>
             </div>
           </div>
@@ -711,6 +875,7 @@ Con tritone sub: | Dm7  | Db7  | Cmaj7 |</div>Il Db7 scende cromaticamente al C 
               </div>
               <div class="d-flex gap-3 justify-content-center flex-wrap mb-4">
                 <button class="btn-add-step" style="min-width:150px;" onclick="app.earTrainer.play()" data-i18n="btn.play-chord">▶ Play Accordo</button>
+                <button class="btn-replay" onclick="replayET()" data-i18n="btn.replay">🔊 Riascolta</button>
                 <button class="btn-reset" style="height:38px;width:auto;padding:0 20px;" onclick="app.earTrainer.reset()" data-i18n="btn.reset-game">Reset</button>
               </div>
               <div id="et-choices" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;"></div>
@@ -764,19 +929,33 @@ Con tritone sub: | Dm7  | Db7  | Cmaj7 |</div>Il Db7 scende cromaticamente al C 
                   <input type="number" id="lb-bpm" value="80" min="40" max="300" style="width:80px;">
                 </div>
                 <div class="nav-group" style="min-width:140px;">
-                  <label data-i18n="lb.subdivision">Suddivisione</label>
+                  <label data-i18n="lb.subdivision">Dur. default</label>
                   <select id="lb-subdiv">
-                    <option value="0.5">Ottavi (♪)</option>
-                    <option value="1" selected>Quarti (♩)</option>
-                    <option value="2">Mezze (𝅗𝅥)</option>
-                    <option value="0.333">Terzine</option>
+                    <option value="0.25">16° (♬)</option>
+                    <option value="0.5">8° (♪)</option>
+                    <option value="1" selected>4° (♩)</option>
+                    <option value="2">2° (𝅗𝅥)</option>
+                  </select>
+                </div>
+                <div class="nav-group" style="min-width:140px;">
+                  <label data-i18n="lb.sound">Suono</label>
+                  <select id="lb-sound">
+                    <option value="Electric Piano">Electric Piano</option>
+                    <option value="Grand Piano">Grand Piano</option>
+                    <option value="Warm Pad">Warm Pad</option>
+                    <option value="Strings">Strings</option>
+                    <option value="Jazz Organ">Jazz Organ</option>
+                    <option value="Brass Section">Brass Section</option>
                   </select>
                 </div>
               </div>
-              <div id="lb-sequence" style="min-height:60px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:15px;">
+              <div id="lb-sequence" style="min-height:65px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 12px 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:15px;">
                 <span id="lb-empty-hint" style="color:#555;font-size:0.85em;" data-i18n="lb.empty">Clicca le note sul manico per costruire un lick...</span>
               </div>
-              <div class="teoria-tip" data-i18n="lb.tip">Seleziona la scala nella sidebar, poi clicca le note sul manico per registrare il tuo lick.</div>
+              <div class="teoria-tip">
+                <span data-i18n="lb.tip">Seleziona la scala nella sidebar, poi clicca le note sul manico per registrare il tuo lick.</span>
+                <br><span style="font-size:0.85em;color:#888;margin-top:4px;display:block;">Clic sulla pillola → cambia durata · ✕ → rimuovi nota</span>
+              </div>
             </div>
           </div>
 
@@ -829,6 +1008,82 @@ Con tritone sub: | Dm7  | Db7  | Cmaj7 |</div>Il Db7 scende cromaticamente al C 
                 <div id="rb-category-btns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
               </div>
               <div id="rb-list" class="rb-list"></div>
+            </div>
+          </div>
+
+          <!-- Tuner View -->
+          <div id="view-tuner" class="view-panel">
+            <div class="importer-area" style="max-width:600px;margin:0 auto;width:100%;text-align:center;">
+              <h2 class="area-title" data-i18n="tuner.title">Accordatore Cromatico</h2>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="tuner.subtitle">Suona una corda: l'accordatore rileva la nota in tempo reale tramite microfono.</p>
+
+              <div class="tuner-display">
+                <div class="tuner-note-name" id="tuner-note" style="color:#555;">–</div>
+                <div class="tuner-freq-display" id="tuner-freq"></div>
+                <div class="tuner-cents-display" id="tuner-cents"></div>
+                <div class="tuner-meter">
+                  <div class="tuner-meter-bg"></div>
+                  <div class="tuner-meter-center"></div>
+                  <div class="tuner-needle" id="tuner-needle"></div>
+                </div>
+              </div>
+
+              <div style="margin:20px 0;">
+                <button id="tuner-start-btn" class="btn-add-step" style="min-width:160px;font-size:1.1em;" onclick="toggleTuner()">🎙 Avvia</button>
+              </div>
+
+              <div id="tuner-status" class="tuner-instr" data-i18n="tuner.status">Premi Avvia per iniziare.</div>
+
+              <!-- Reference strings -->
+              <div style="margin-top:28px;">
+                <div style="font-size:0.75em;text-transform:uppercase;color:#555;font-weight:700;margin-bottom:10px;" data-i18n="tuner.ref">Note di riferimento (clic = suona)</div>
+                <div class="tuner-strings-grid">
+                  <div class="tuner-string-btn" onclick="tunerPlayRef(82.41)"><span class="ts-name">E</span><span class="ts-freq">6ª · 82 Hz</span></div>
+                  <div class="tuner-string-btn" onclick="tunerPlayRef(110)"><span class="ts-name">A</span><span class="ts-freq">5ª · 110 Hz</span></div>
+                  <div class="tuner-string-btn" onclick="tunerPlayRef(146.83)"><span class="ts-name">D</span><span class="ts-freq">4ª · 147 Hz</span></div>
+                  <div class="tuner-string-btn" onclick="tunerPlayRef(196)"><span class="ts-name">G</span><span class="ts-freq">3ª · 196 Hz</span></div>
+                  <div class="tuner-string-btn" onclick="tunerPlayRef(246.94)"><span class="ts-name">B</span><span class="ts-freq">2ª · 247 Hz</span></div>
+                  <div class="tuner-string-btn" onclick="tunerPlayRef(329.63)"><span class="ts-name">E</span><span class="ts-freq">1ª · 330 Hz</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interval Ear Training View -->
+          <div id="view-interval-ear-training" class="view-panel">
+            <div class="importer-area" style="max-width:700px;margin:0 auto;width:100%">
+              <h2 class="area-title" data-i18n="iet.title">Interval Ear Training</h2>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="iet.subtitle">Allena l'orecchio: identifica gli intervalli musicali ad orecchio.</p>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:0.9em;"><span data-i18n="label.score">Punteggio</span>: <strong id="iet-score">0 / 0</strong></div>
+                <div id="iet-streak" style="font-size:0.9em;">🔥 0</div>
+              </div>
+              <div id="iet-question" style="text-align:center;font-size:2em;font-weight:900;color:var(--accent);min-height:54px;margin-bottom:16px;line-height:1.2;">?</div>
+              <div style="display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+                <button class="btn-icon btn-play" style="width:54px;height:54px;" onclick="app.intervalEarTrainer.play()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+                <button class="btn-io" onclick="app.intervalEarTrainer.replay()" data-i18n="btn.replay">🔊 Riascolta</button>
+                <button class="btn-reset" style="width:auto;padding:0 16px;" onclick="app.intervalEarTrainer.reset()" data-i18n="btn.reset-game">Reset</button>
+              </div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;">
+                <button class="iet-diff-btn active" data-diff="easy"   onclick="app.intervalEarTrainer.setDifficulty('easy')"   data-i18n="et.easy">Facile</button>
+                <button class="iet-diff-btn"        data-diff="medium" onclick="app.intervalEarTrainer.setDifficulty('medium')" data-i18n="et.medium">Medio</button>
+                <button class="iet-diff-btn"        data-diff="hard"   onclick="app.intervalEarTrainer.setDifficulty('hard')"   data-i18n="et.hard">Avanzato</button>
+              </div>
+              <div id="iet-choices" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;margin-bottom:16px;"></div>
+              <div id="iet-status" style="text-align:center;color:var(--secondary-text);font-size:0.9em;min-height:28px;" data-i18n="iet.ready">Premi ▶ Play per ascoltare</div>
+            </div>
+          </div>
+
+          <!-- Reharmonizer View -->
+          <div id="view-reharmonizer" class="view-panel">
+            <div class="importer-area" style="max-width:720px;margin:0 auto;width:100%">
+              <h2 class="area-title" data-i18n="rh.title">Reharmonizer</h2>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="rh.subtitle">Inserisci una progressione per ottenere sostituzioni armoniche.</p>
+              <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+                <input type="text" id="rh-input" placeholder="Es: Dm7 G7 Cmaj7" style="flex:1;min-width:200px;background:#2c2c2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:8px 12px;border-radius:8px;font-size:0.9em;" data-i18n-placeholder="rh.placeholder">
+                <button class="btn-add-step" onclick="app.reharmonizer.analyze()" data-i18n="rh.analyze">Analizza</button>
+              </div>
+              <div id="rh-results"></div>
             </div>
           </div>
 
