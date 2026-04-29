@@ -41,7 +41,9 @@
           </div>
           <div class="sidebar-group-items">
             <div class="nav-item" onclick="switchView('tuner')" data-i18n-nav="tuner">Accordatore</div>
-            <div class="nav-item" onclick="switchView('lick-builder')" data-i18n-nav="lick-builder">Lick Builder</div>            
+            <div class="nav-item" onclick="switchView('lick-builder')" data-i18n-nav="lick-builder">Lick Builder</div>
+            <div class="nav-item" onclick="switchView('chord-finder')" data-i18n-nav="chord-finder">Chord Finder</div>
+            <div class="nav-item" onclick="switchView('transposer')" data-i18n-nav="transposer">Trasposit. Rapido</div>
           </div>
         </div>
 
@@ -135,6 +137,10 @@
                     <button class="btn-replay" onclick="replayIL()" data-i18n="btn.replay">🔊 Riascolta</button>
                     <button class="btn-reset w-auto" style="height: 38px;" onclick="app.intervalLearner.reset()" data-i18n="btn.reset-game">Reset</button>
                     <div id="score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
+                </div>
+                <div class="d-flex align-items-center gap-2" style="margin-top:4px;">
+                  <input type="checkbox" id="il-descending" style="accent-color:var(--accent);">
+                  <label for="il-descending" style="color:#aaa;font-size:0.85em;" data-i18n="il.descending">Discendente</label>
                 </div>
                 <div id="game-status" class="small" style="color: #aaa;" data-i18n="il.status">Mettiti alla prova! Trova l'intervallo richiesto.</div>
             </div>
@@ -234,9 +240,13 @@
                             <div class="row g-2 align-items-end mt-0">
                                 <div class="col-6 col-md-12 col-xl"><div class="nav-group"><label data-i18n="label.sound">Suono</label><select id="chord-sound-select"></select></div></div>
                                 <div class="col-6 col-md-12 col-xl"><div class="nav-group"><label data-i18n="label.vol">Vol</label><input type="range" id="chord-vol-slider" min="0" max="0.5" step="0.05" value="0.1"></div></div>
-                                <div class="col-12 col-xl-auto d-flex gap-2">
+                                <div class="col-12 col-xl-auto d-flex gap-2 flex-wrap">
                                   <div class="checkbox-container"><input type="checkbox" id="play-chords-toggle" checked><label for="play-chords-toggle" data-i18n="label.synth">Synth</label></div>
                                   <div class="checkbox-container"><input type="checkbox" id="loop-selection"><label for="loop-selection" data-i18n="label.loop">Loop</label></div>
+                                  <div class="checkbox-container"><input type="checkbox" id="swing-toggle"><label for="swing-toggle" data-i18n="label.swing">Swing 8°</label></div>
+                                </div>
+                                <div class="col-12">
+                                  <button class="btn-io" style="width:100%;" onclick="autoAssignChords()" data-i18n="btn.auto-chords">Auto Accordi</button>
                                 </div>
                             </div>
                         </div>
@@ -888,6 +898,10 @@ G7    → G + B + F</div>
                 </div>
               </div>
               <div id="et-status" class="small" style="color:#aaa;margin-top:15px;" data-i18n="et.status">Seleziona la difficoltà e ascolta.</div>
+              <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;">
+                <div id="et-history-panel" style="min-height:40px;"></div>
+                <button class="btn-reset" style="width:auto;padding:0 16px;margin-top:10px;font-size:0.8em;" onclick="app.earTrainer.clearHistory()" data-i18n="et.clear-history">Cancella Storico</button>
+              </div>
             </div>
           </div>
 
@@ -919,11 +933,15 @@ G7    → G + B + F</div>
           <div id="view-lick-builder" class="view-panel">
             <div class="importer-area" style="max-width:860px;margin:0 auto;width:100%">
               <h2 class="area-title" data-i18n="lb.title">Lick Builder</h2>
-              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="lb.subtitle">Costruisci e suona le tue frasi musicali sul manico.</p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:15px;">
-                <button class="btn-add-step" onclick="app.lickBuilder.play()" data-i18n="lb.play">▶ Play</button>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:15px;" data-i18n="lb.subtitle">Costruisci e suona le tue frasi musicali sul manico.</p>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">
+                <button id="lb-play-btn" class="btn-add-step" onclick="app.lickBuilder.play()" data-i18n="lb.play">▶ Play</button>
+                <button id="lb-stop-btn" class="btn-io" onclick="app.lickBuilder.stop()" data-i18n="lb.stop" disabled>⏹ Stop</button>
                 <button class="btn-io" onclick="app.lickBuilder.undo()" data-i18n="lb.undo">↩ Undo</button>
                 <button class="btn-reset" style="width:auto;padding:0 20px;" onclick="app.lickBuilder.clear()" data-i18n="lb.clear">× Cancella</button>
+                <div class="checkbox-container" style="align-self:center;">
+                  <input type="checkbox" id="lb-loop"><label for="lb-loop" data-i18n="lb.loop">Loop</label>
+                </div>
                 <div class="nav-group" style="min-width:90px;">
                   <label data-i18n="label.bpm">BPM</label>
                   <input type="number" id="lb-bpm" value="80" min="40" max="300" style="width:80px;">
@@ -948,6 +966,16 @@ G7    → G + B + F</div>
                     <option value="Brass Section">Brass Section</option>
                   </select>
                 </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+                <button class="btn-io" onclick="app.lickBuilder.transpose(1)" data-i18n="lb.trans-up">+1 st</button>
+                <button class="btn-io" onclick="app.lickBuilder.transpose(-1)" data-i18n="lb.trans-down">-1 st</button>
+                <button class="btn-io" onclick="app.lickBuilder.startSpeedTrainer()" data-i18n="lb.speed-trainer">Speed Trainer</button>
+                <span id="lb-speed-display" style="color:var(--accent);font-size:0.85em;min-width:80px;"></span>
+                <button class="btn-io" onclick="app.lickBuilder.exportTab()" data-i18n="lb.export-tab">Esporta Tab</button>
+                <button class="btn-io" onclick="app.lickBuilder.exportJSON()" data-i18n="lb.export-json">Esporta JSON</button>
+                <button class="btn-io" onclick="document.getElementById('lb-import-file').click()" data-i18n="lb.import-json">Importa JSON</button>
+                <input type="file" id="lb-import-file" accept=".json" style="display:none" onchange="app.lickBuilder.importJSON(event)">
               </div>
               <div id="lb-sequence" style="min-height:65px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 12px 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:15px;">
                 <span id="lb-empty-hint" style="color:#555;font-size:0.85em;" data-i18n="lb.empty">Clicca le note sul manico per costruire un lick...</span>
@@ -1087,8 +1115,58 @@ G7    → G + B + F</div>
             </div>
           </div>
 
+          <!-- Chord Finder View -->
+          <div id="view-chord-finder" class="view-panel">
+            <div class="importer-area" style="max-width:600px;margin:0 auto;width:100%">
+              <h2 class="area-title" data-i18n="cf.title">Chord Finder</h2>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="cf.subtitle">Seleziona le note per trovare il nome dell'accordo.</p>
+              <div style="font-size:0.75em;text-transform:uppercase;color:#777;font-weight:700;margin-bottom:10px;" data-i18n="cf.select-notes">Seleziona Note</div>
+              <div id="cf-note-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;"></div>
+              <button class="btn-reset" style="width:auto;padding:0 20px;margin-bottom:20px;" onclick="app.chordFinder.clear()">× Reset</button>
+              <div style="font-size:0.75em;text-transform:uppercase;color:#777;font-weight:700;margin-bottom:10px;" data-i18n="cf.results">Accordi trovati</div>
+              <div id="cf-results"></div>
+            </div>
+          </div>
+
+          <!-- Quick Transposer View -->
+          <div id="view-transposer" class="view-panel">
+            <div class="importer-area" style="max-width:600px;margin:0 auto;width:100%">
+              <h2 class="area-title" data-i18n="qt.title">Trasposit. Rapido</h2>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="qt.subtitle">Trasponi velocemente una progressione di accordi.</p>
+              <div class="nav-group" style="margin-bottom:15px;">
+                <label>Input</label>
+                <textarea id="qt-input" rows="4" style="width:100%;background:#2c2c2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 12px;border-radius:8px;font-size:0.95em;resize:vertical;" placeholder="| Dm7 G7 | Cmaj7 |"></textarea>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:15px;">
+                <div class="nav-group" style="min-width:120px;">
+                  <label data-i18n="qt.semitones">Semitoni</label>
+                  <input type="number" id="qt-semitones" value="0" min="-11" max="11" style="width:80px;">
+                </div>
+                <button class="btn-add-step" onclick="app.quickTransposer.transpose()" data-i18n="qt.transpose">Trasponi</button>
+                <button class="btn-io" id="qt-copy-btn" onclick="app.quickTransposer.copyOutput()" data-i18n="qt.copy">Copia</button>
+                <button class="btn-io" onclick="app.quickTransposer.loadInPlayer()" data-i18n="qt.load-player">→ Player</button>
+              </div>
+              <div class="nav-group">
+                <label>Output</label>
+                <textarea id="qt-output" rows="4" readonly style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);color:#ccc;padding:10px 12px;border-radius:8px;font-size:0.95em;resize:vertical;"></textarea>
+              </div>
+            </div>
+          </div>
+
         </div>
       </main>
+    </div>
+
+    <!-- Tab Export Modal -->
+    <div id="lb-tab-modal" class="modal-overlay" onclick="document.getElementById('lb-tab-modal').style.display='none'">
+      <div class="modal-content" onclick="event.stopPropagation()" style="max-width:700px;">
+        <h3>ASCII Tab</h3>
+        <pre id="lb-tab-output" style="background:#111;color:#ccc;padding:15px;border-radius:8px;overflow-x:auto;font-size:0.9em;line-height:1.8;margin-bottom:15px;"></pre>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn-io" onclick="navigator.clipboard?.writeText(document.getElementById('lb-tab-output').textContent)">Copia</button>
+          <button class="btn-reset" style="width:auto;padding:0 20px;" onclick="document.getElementById('lb-tab-modal').style.display='none'" data-i18n="btn.close">Chiudi</button>
+        </div>
+      </div>
     </div>
 
     <!-- Help Modal -->

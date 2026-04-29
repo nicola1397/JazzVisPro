@@ -88,6 +88,9 @@ body {
   height: 60px;
   flex-shrink: 0;
   gap: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
 }
 
 #view-title {
@@ -563,6 +566,7 @@ select {
   padding: 0 15px;
 }
 .btn-io { background: #48484a; color: #fff; width: auto; padding: 0 15px; font-size: 0.85em; }
+.btn-io:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .progression-player-area {
   width: 100%;
@@ -1188,3 +1192,35 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 }
 .rh-sub-badge:hover { background: rgba(255,214,10,0.08); border-color: rgba(255,214,10,0.3); }
 .rh-sub-badge small { font-size: 0.75em; color: #888; font-weight: 400; }
+
+/* ===== CHORD FINDER ===== */
+.cf-note-btn {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
+  color: #ddd; font-size: 0.82em; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.cf-note-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cf-note-btn.selected { background: rgba(255,214,10,0.18); border-color: var(--accent); color: var(--accent); }
+.cf-result-item {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+  transition: background 0.15s;
+}
+.cf-result-item:hover { background: rgba(255,255,255,0.08); }
+
+/* ===== EAR TRAINING HISTORY ===== */
+.et-stat-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 7px; font-size: 0.82em;
+}
+.et-stat-type { min-width: 60px; font-weight: 700; color: #ccc; }
+.et-stat-bar {
+  flex: 1; height: 10px; background: rgba(255,255,255,0.08);
+  border-radius: 5px; overflow: hidden;
+}
+.et-stat-pct { min-width: 38px; text-align: right; color: #aaa; font-weight: 600; }
+.et-stat-cnt { min-width: 50px; text-align: right; color: #666; }
+
+/* ===== TAB MODAL ===== */
+#lb-tab-output { user-select: all; }
