@@ -1,4 +1,4 @@
-// --- Theory & Constants ---
+// --- Theory & Constants --- 
 class Theory {
   static get NOTES() {
     return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
