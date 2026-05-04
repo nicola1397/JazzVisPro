@@ -1227,4 +1227,4 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .et-stat-cnt { min-width: 50px; text-align: right; color: #666; }
 
 /* ===== TAB MODAL ===== */
-#lb-tab-output { user-select: all; }
+#lb-tab-output { user-select: all; } 
