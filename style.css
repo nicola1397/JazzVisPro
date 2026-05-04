@@ -725,6 +725,9 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .circle-note:hover { border-color: var(--accent); background: #3a3a3c; transform: translate(-50%, -50%) scale(1.1); z-index: 100; }
 .circle-note.correct { background: #32d74b !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(50, 215, 75, 0.4); z-index: 10; }
 .circle-note.wrong { background: #ff453a !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(255, 69, 58, 0.4); z-index: 10; }
+.circle-note.flat { width: 40px; height: 40px; font-size: 0.78em; background: rgba(48,209,88,.07); border-color: rgba(48,209,88,.30); }
+.circle-note.flat:hover { border-color: #32d74b; background: rgba(48,209,88,.18); }
+.circle-note.root { background: rgba(10,132,255,.18) !important; border-color: #0a84ff !important; }
 
 /* ========== TEORIA JAZZ SECTION ========== */
 .teoria-container { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }

@@ -843,37 +843,81 @@ class IntervalLearner {
   }
 }
 
+// --- Grade Learner Helpers ---
+const GL_ROOTS = ["C","C#","Db","D","D#","Eb","E","F","F#","Gb","G","G#","Ab","A","A#","Bb","B"];
+function glRootToIdx(name) {
+  let i = Theory.NOTES.indexOf(name);
+  if (i === -1) i = Theory.NOTES_FLAT.indexOf(name);
+  return i < 0 ? 0 : i;
+}
+function glUsesFlat(name) { return !Theory.NOTES.includes(name) && Theory.NOTES_FLAT.includes(name); }
+function glExpectFlat(name) {
+  const idx = glRootToIdx(name);
+  if (Theory.NOTES[idx] !== Theory.NOTES_FLAT[idx]) return glUsesFlat(name);
+  return idx === 5; // F uses Bb
+}
+
 // --- Grade Learner Engine ---
 class GradeLearner {
   constructor(app) {
     this.app = app;
     this.active = false;
-    this.root = 0;
+    this.gameRoot = 'C';
+    this.gameRootIdx = 0;
     this.targetGrade = 0;
     this.score = 0;
     this.total = 0;
+    this._lastPlayNote = undefined;
   }
 
   initUI() {
     const container = document.getElementById('note-circle-ui');
     if (!container) return;
     container.innerHTML = '';
-    const radius = 135;
-    const centerX = 160;
-    const centerY = 160;
+    const hardMode = document.getElementById('gl-hard-mode')?.checked;
+    const R = 135, RI = 80, CX = 160, CY = 160;
+    const curNotes = glExpectFlat(this.gameRoot) ? Theory.NOTES_FLAT : Theory.NOTES;
 
+    const innerRingSvg = document.getElementById('gl-inner-ring-svg');
+    if (innerRingSvg) innerRingSvg.style.display = hardMode ? '' : 'none';
+    const legend = document.getElementById('gl-legend');
+    if (legend) legend.style.display = hardMode ? 'flex' : 'none';
+
+    // Outer ring
     for (let i = 0; i < 12; i++) {
       const angle = (i * 30 - 90) * (Math.PI / 180);
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      const noteBtn = document.createElement('div');
-      noteBtn.className = 'circle-note';
-      noteBtn.style.left = `${x}px`;
-      noteBtn.style.top = `${y}px`;
-      noteBtn.dataset.index = i;
-      noteBtn.innerHTML = `<span>${Theory.NOTES[i]}</span><span class="ita">${Theory.NOTES_ITA[i]}</span>`;
-      noteBtn.onclick = () => this.checkAnswer(i, noteBtn);
-      container.appendChild(noteBtn);
+      const x = CX + R * Math.cos(angle);
+      const y = CY + R * Math.sin(angle);
+      const btn = document.createElement('div');
+      btn.className = 'circle-note';
+      if (i === this.gameRootIdx && !glUsesFlat(this.gameRoot)) btn.classList.add('root');
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+      btn.dataset.index = i;
+      btn.dataset.isFlat = 'false';
+      btn.innerHTML = `<span>${hardMode ? Theory.NOTES[i] : curNotes[i]}</span>`;
+      btn.onclick = () => this.checkAnswer(i, false, btn);
+      container.appendChild(btn);
+    }
+
+    // Inner flat ring (hard mode only, only enharmonic notes)
+    if (hardMode) {
+      for (let i = 0; i < 12; i++) {
+        if (Theory.NOTES[i] === Theory.NOTES_FLAT[i]) continue;
+        const angle = (i * 30 - 90) * (Math.PI / 180);
+        const x = CX + RI * Math.cos(angle);
+        const y = CY + RI * Math.sin(angle);
+        const btn = document.createElement('div');
+        btn.className = 'circle-note flat';
+        if (i === this.gameRootIdx && glUsesFlat(this.gameRoot)) btn.classList.add('root');
+        btn.style.left = `${x}px`;
+        btn.style.top = `${y}px`;
+        btn.dataset.index = i;
+        btn.dataset.isFlat = 'true';
+        btn.innerHTML = `<span>${Theory.NOTES_FLAT[i]}</span>`;
+        btn.onclick = () => this.checkAnswer(i, true, btn);
+        container.appendChild(btn);
+      }
     }
   }
 
@@ -888,43 +932,37 @@ class GradeLearner {
   start() {
     this.active = true;
     this.clearHighlights();
-
-    const settings = this.app.getUiSettings();
-    this.root = Theory.NOTES.indexOf(settings.root);
     const freeMode = document.getElementById('gl-free-mode')?.checked;
 
+    let rootName, scaleName, scale, degreeIdx;
+
     if (freeMode) {
-      // Modalità libera: root e scala casuali
-      this.root = Math.floor(Math.random() * 12);
+      rootName = GL_ROOTS[Math.floor(Math.random() * GL_ROOTS.length)];
       const scaleNames = Object.keys(Theory.SCALES);
-      const randomScaleName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
-      const scale = Theory.SCALES[randomScaleName];
-      const degreeIdx = Math.floor(Math.random() * scale.length);
-      this.targetGrade = scale[degreeIdx];
-      const rootName = window.currentLang === 'en' ? Theory.NOTES[this.root] : Theory.NOTES_ITA[this.root];
-      document.getElementById('grade-question-text').innerText = window.currentLang === 'en'
-        ? `Degree ${degreeIdx + 1} of ${rootName} ${randomScaleName}`
-        : `${degreeIdx + 1}° grado di ${rootName} ${randomScaleName}`;
-      document.getElementById('grade-game-status').innerText = window.currentLang === 'en'
-        ? `Find degree ${degreeIdx + 1} of the scale.`
-        : `Trova il ${degreeIdx + 1}° grado della scala.`;
+      scaleName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
+      scale = Theory.SCALES[scaleName];
     } else {
-      const scale = Theory.SCALES[settings.scaleName];
-      const degreeIdx = Math.floor(Math.random() * scale.length);
-      this.targetGrade = scale[degreeIdx];
-      const _rootName = window.currentLang === 'en' ? Theory.NOTES[this.root] : Theory.NOTES_ITA[this.root];
-      document.getElementById('grade-question-text').innerText = window.currentLang === 'en'
-        ? `Degree ${degreeIdx + 1} of ${_rootName} ${settings.scaleName}`
-        : `${degreeIdx + 1}° grado di ${_rootName} ${settings.scaleName}`;
-      document.getElementById('grade-game-status').innerText = window.currentLang === 'en'
-        ? `Find the note at degree ${degreeIdx + 1} of the scale.`
-        : `Trova la nota corrispondente al ${degreeIdx + 1}° grado della scala.`;
+      const rootSel = document.getElementById('gl-root-select');
+      const scaleSel = document.getElementById('gl-scale-select');
+      rootName = rootSel ? rootSel.value : (this.app.getUiSettings().root || 'C');
+      scaleName = scaleSel ? scaleSel.value : (this.app.getUiSettings().scaleName || 'Ionio (Maj7)');
+      scale = Theory.SCALES[scaleName] || Theory.SCALES['Ionio (Maj7)'];
     }
 
+    degreeIdx = Math.floor(Math.random() * scale.length);
+    this.targetGrade = scale[degreeIdx];
+    this.gameRoot = rootName;
+    this.gameRootIdx = glRootToIdx(rootName);
+    this.initUI();
+
+    const shortName = scaleName.replace(/ \(.*\)/, '');
+    document.getElementById('grade-question-text').innerText = T('gl.grade-label')
+      .replace('{0}', degreeIdx + 1).replace('{1}', rootName).replace('{2}', shortName);
+    document.getElementById('grade-game-status').innerText = T('gl.click-correct');
+
     this.app.audio.init();
-    const playNote = this.root;
-    this.app.audio.playChord([0], playNote, this.app.audio.context.currentTime, 0.8, 0.2, "Electric Piano", 4);
-    this._lastPlayNote = playNote;
+    this.app.audio.playChord([0], this.gameRootIdx, this.app.audio.context.currentTime, 0.8, 0.2, "Electric Piano", 4);
+    this._lastPlayNote = this.gameRootIdx;
   }
 
   replay() {
@@ -933,13 +971,22 @@ class GradeLearner {
     this.app.audio.playChord([0], this._lastPlayNote, this.app.audio.context.currentTime, 0.8, 0.2, "Electric Piano", 4);
   }
 
-  checkAnswer(index, element) {
+  checkAnswer(index, isFlat, element) {
     if (!this.active) return;
     this.active = false;
     this.total++;
-    const correctNote = (this.root + this.targetGrade) % 12;
-    const isCorrect = index === correctNote;
+    const hardMode = document.getElementById('gl-hard-mode')?.checked;
+    const correctNote = (this.gameRootIdx + this.targetGrade) % 12;
     const now = this.app.audio.context.currentTime;
+    let isCorrect;
+
+    if (hardMode) {
+      const isEnharm = Theory.NOTES[correctNote] !== Theory.NOTES_FLAT[correctNote];
+      const expectFlat = isEnharm && glExpectFlat(this.gameRoot);
+      isCorrect = (index === correctNote) && (!isEnharm || (isFlat === expectFlat));
+    } else {
+      isCorrect = index === correctNote;
+    }
 
     if (isCorrect) {
       this.score++;
@@ -948,24 +995,63 @@ class GradeLearner {
       this.app.audio.playChord([0], index, now, 0.8, 0.2, "Electric Piano", 4);
     } else {
       element.classList.add('wrong');
-      document.getElementById('grade-game-status').innerText = T('gl.wrong');
-      this.revealCorrect(correctNote);
+      const isEnharm = Theory.NOTES[correctNote] !== Theory.NOTES_FLAT[correctNote];
+      const expectFlat = hardMode ? (isEnharm && glExpectFlat(this.gameRoot)) : null;
+      const correctName = (expectFlat !== null && expectFlat)
+        ? Theory.NOTES_FLAT[correctNote] : Theory.NOTES[correctNote];
+      document.getElementById('grade-game-status').innerText = T('gl.wrong-answer').replace('{0}', correctName);
+      this.revealCorrect(correctNote, expectFlat);
       this.app.audio.playChord([0], index, now, 0.4, 0.2, "Electric Piano", 4);
       this.app.audio.playChord([0], correctNote, now + 0.5, 0.8, 0.2, "Electric Piano", 4);
     }
     document.getElementById('grade-score-display').innerText = `${this.score} / ${this.total}`;
   }
 
-  revealCorrect(index) {
-    document.querySelectorAll('.circle-note').forEach(n => {
-      if (parseInt(n.dataset.index) === index) n.classList.add('correct');
+  revealCorrect(correctNote, expectFlat) {
+    document.querySelectorAll('#note-circle-ui .circle-note').forEach(n => {
+      if (parseInt(n.dataset.index) !== correctNote) return;
+      if (expectFlat === null) { n.classList.add('correct'); return; }
+      const isEnharm = Theory.NOTES[correctNote] !== Theory.NOTES_FLAT[correctNote];
+      const nIsFlat = n.dataset.isFlat === 'true';
+      if (!isEnharm || (nIsFlat === expectFlat)) n.classList.add('correct');
     });
   }
 
   clearHighlights() {
-    document.querySelectorAll('.circle-note').forEach(n => {
+    document.querySelectorAll('#note-circle-ui .circle-note').forEach(n => {
       n.classList.remove('correct', 'wrong');
     });
+  }
+
+  initSelectors() {
+    const rootSel = document.getElementById('gl-root-select');
+    const scaleSel = document.getElementById('gl-scale-select');
+    if (rootSel && !rootSel.options.length) {
+      GL_ROOTS.forEach(r => {
+        const o = document.createElement('option'); o.value = r; o.textContent = r;
+        rootSel.appendChild(o);
+      });
+      const cur = this.app.getUiSettings().root || 'C';
+      if ([...rootSel.options].some(o => o.value === cur)) rootSel.value = cur;
+    }
+    if (scaleSel && !scaleSel.options.length) {
+      Object.keys(Theory.SCALES).forEach(s => {
+        const o = document.createElement('option'); o.value = s; o.textContent = s;
+        scaleSel.appendChild(o);
+      });
+      const cur = this.app.getUiSettings().scaleName || 'Ionio (Maj7)';
+      if ([...scaleSel.options].some(o => o.value === cur)) scaleSel.value = cur;
+    }
+    // Toggle selectors visibility when free mode changes
+    const freeCheck = document.getElementById('gl-free-mode');
+    const selDiv = document.getElementById('gl-selectors');
+    if (freeCheck && selDiv) {
+      const update = () => { selDiv.style.display = freeCheck.checked ? 'none' : 'flex'; };
+      freeCheck.removeEventListener('change', freeCheck._glHandler);
+      freeCheck._glHandler = update;
+      freeCheck.addEventListener('change', update);
+      update();
+    }
   }
 }
 
@@ -2562,6 +2648,7 @@ class JazzVizApp {
 
     document.getElementById("sidebar-menu").classList.remove("active");
     if (viewId === 'grade-learner') {
+        this.gradeLearner.initSelectors();
         this.gradeLearner.initUI();
         this.gradeLearner.reset();
     } else if (viewId === 'interval-learner') {
@@ -2921,7 +3008,10 @@ const TRANSLATIONS = {
     'cv.fingering':'Diteggiatura',
     'cv.tip-text':'Premi "Carica su Fretboard" per visualizzare i toni sul manico con Arpeggio attivo. Usa la sidebar per esplorare scale associate.',
     'btn.replay':'🔊 Riascolta',
-    'gl.free-mode':'Modalità Libera',
+    'gl.free-mode':'Modalità Libera','gl.hard-mode':'Hard Mode',
+    'gl.click-correct':'Clicca la nota corretta','gl.grade-label':'{0}° di {1} {2}',
+    'gl.wrong-answer':'Sbagliato! Era {0}',
+    'gl.sharp-outer':'Diesis (anello est.)','gl.flat-inner':'Bemolle (anello int.)',
     'tuner.title':'Accordatore Cromatico',
     'tuner.subtitle':'Suona una corda: l\'accordatore rileva la nota in tempo reale tramite microfono.',
     'tuner.start':'🎙 Avvia','tuner.stop':'⏹ Stop',
@@ -3065,7 +3155,10 @@ const TRANSLATIONS = {
     'cv.fingering':'Fingering',
     'cv.tip-text':'Press "Load to Fretboard" to display chord tones with Arpeggio mode active. Use the sidebar to explore associated scales.',
     'btn.replay':'🔊 Play Again',
-    'gl.free-mode':'Free Mode',
+    'gl.free-mode':'Free Mode','gl.hard-mode':'Hard Mode',
+    'gl.click-correct':'Click the correct note','gl.grade-label':'Degree {0} of {1} {2}',
+    'gl.wrong-answer':'Wrong! It was {0}',
+    'gl.sharp-outer':'Sharp (outer ring)','gl.flat-inner':'Flat (inner ring)',
     'tuner.title':'Chromatic Tuner',
     'tuner.subtitle':'Play a string: the tuner detects the note in real time via microphone.',
     'tuner.start':'🎙 Start','tuner.stop':'⏹ Stop',

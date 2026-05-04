@@ -336,15 +336,42 @@
                         <button class="btn-reset w-auto" style="height: 38px;" onclick="app.gradeLearner.reset()" data-i18n="btn.reset-game">Reset</button>
                         <div id="grade-score-display" class="h5 mb-0" style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">0 / 0</div>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="checkbox" id="gl-free-mode" style="accent-color: var(--accent);">
-                        <label for="gl-free-mode" class="free-mode-badge" data-i18n="gl.free-mode">Modalità Libera</label>
+                    <!-- Root & scale selectors (hidden in free mode) -->
+                    <div id="gl-selectors" class="d-flex align-items-center gap-2 flex-wrap justify-content-center">
+                        <select id="gl-root-select" class="form-select form-select-sm" style="width:auto;min-width:75px;background:#2c2c2e;color:#fff;border-color:#555;"></select>
+                        <select id="gl-scale-select" class="form-select form-select-sm" style="width:auto;min-width:200px;background:#2c2c2e;color:#fff;border-color:#555;"></select>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 flex-wrap justify-content-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="checkbox" id="gl-free-mode" style="accent-color: var(--accent);">
+                            <label for="gl-free-mode" class="free-mode-badge" data-i18n="gl.free-mode">Modalità Libera</label>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="checkbox" id="gl-hard-mode" style="accent-color: #ff9f0a;">
+                            <label for="gl-hard-mode" class="free-mode-badge" style="color:#ff9f0a;" data-i18n="gl.hard-mode">Hard Mode</label>
+                        </div>
                     </div>
                     <div id="grade-game-status" class="small" style="color: #aaa;" data-i18n="gl.status">Mettiti alla prova! Qual è il grado della nota?</div>
                 </div>
 
                 <div class="circle-container" style="position: relative; width: 320px; height: 320px; margin: 40px auto;">
-                    <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%; border: 2px solid rgba(255,255,255,0.05); border-radius: 50%;"></div>
+                    <svg id="gl-rings-svg" width="320" height="320" style="position:absolute;top:0;left:0;pointer-events:none;">
+                        <circle cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="1.5"/>
+                        <circle id="gl-inner-ring-svg" cx="160" cy="160" r="82" fill="none" stroke="rgba(255,214,10,.12)" stroke-width="1" stroke-dasharray="4,4" style="display:none;"/>
+                    </svg>
+                    <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%;"></div>
+                </div>
+
+                <!-- Hard mode legend -->
+                <div id="gl-legend" style="display:none; justify-content:center; gap:16px; margin-top:4px;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:10px;height:10px;border-radius:50%;background:#2c2c2e;border:1.5px solid #555;"></div>
+                        <span class="small text-secondary" data-i18n="gl.sharp-outer">Diesis (anello est.)</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:10px;height:10px;border-radius:50%;background:rgba(48,209,88,.12);border:1.5px solid rgba(48,209,88,.4);"></div>
+                        <span class="small text-secondary" data-i18n="gl.flat-inner">Bemolle (anello int.)</span>
+                    </div>
                 </div>
 
                 <p class="text-secondary small mt-4" data-i18n="gl.hint">Usa il circolo cromatico per identificare i gradi. Se sbagli, la nota corretta verrà evidenziata.</p>
