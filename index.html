@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it"> 
+<html lang="it">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1068,25 +1068,24 @@ G7    → G + B + F</div>
 
           <!-- Tuner View -->
           <div id="view-tuner" class="view-panel">
-            <div class="importer-area" style="max-width:600px;margin:0 auto;width:100%;text-align:center;">
+            <div class="importer-area" style="max-width:520px;margin:0 auto;width:100%;text-align:center;">
               <h2 class="area-title" data-i18n="tuner.title">Accordatore Cromatico</h2>
-              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="tuner.subtitle">Suona una corda: l'accordatore rileva la nota in tempo reale tramite microfono.</p>
+              <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:24px;" data-i18n="tuner.subtitle">Suona una corda: l'accordatore rileva la nota in tempo reale tramite microfono.</p>
 
-              <div class="tuner-display">
-                <div class="tuner-note-name" id="tuner-note" style="color:#555;">–</div>
-                <div class="tuner-freq-display" id="tuner-freq"></div>
-                <div class="tuner-cents-display" id="tuner-cents"></div>
-                <div class="tuner-meter">
-                  <div class="tuner-meter-bg"></div>
-                  <div class="tuner-meter-center"></div>
-                  <div class="tuner-needle" id="tuner-needle"></div>
-                </div>
+              <div class="tuner-card">
+                <svg id="tuner-arc-svg" class="tuner-arc-svg" viewBox="0 32 300 138" xmlns="http://www.w3.org/2000/svg">
+                  <g id="tuner-dots"></g>
+                  <text x="23" y="150" fill="rgba(255,255,255,0.22)" font-size="13" text-anchor="middle" font-family="sans-serif">♭</text>
+                  <text x="277" y="150" fill="rgba(255,255,255,0.22)" font-size="13" text-anchor="middle" font-family="sans-serif">♯</text>
+                  <text id="tuner-note" x="150" y="122" fill="#555" font-size="32" font-weight="900" text-anchor="middle" letter-spacing="-1" font-family="system-ui,-apple-system,sans-serif">–</text>
+                  <text id="tuner-cents" x="150" y="142" fill="#aaa" font-size="13" font-weight="700" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"></text>
+                  <text id="tuner-freq" x="150" y="157" fill="#666" font-size="11" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"></text>
+                </svg>
               </div>
 
-              <div style="margin:20px 0;">
-                <button id="tuner-start-btn" class="btn-add-step" style="min-width:160px;font-size:1.1em;" onclick="toggleTuner()">🎙 Avvia</button>
+              <div style="margin:20px 0 10px;">
+                <button id="tuner-start-btn" class="btn-add-step" style="min-width:160px;font-size:1.05em;" onclick="toggleTuner()">🎙 Avvia</button>
               </div>
-
               <div id="tuner-status" class="tuner-instr" data-i18n="tuner.status">Premi Avvia per iniziare.</div>
 
               <!-- Reference strings -->
@@ -1210,6 +1209,7 @@ G7    → G + B + F</div>
         </div>
     </div>
 
+    <script src="chords.complete.js" defer></script>
     <script src="script.js" defer></script>
   </body>
 </html>

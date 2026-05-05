@@ -1,4 +1,4 @@
-// --- Theory & Constants --- 
+// --- Theory & Constants ---
 class Theory {
   static get NOTES() {
     return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -2079,6 +2079,7 @@ class GuitarTuner {
       this.analyser.smoothingTimeConstant = 0.8;
       source.connect(this.analyser);
       this.isActive = true;
+      this._initDots();
       if (btn) { btn.textContent = '⏹ Stop'; btn.style.background = 'rgba(231,76,60,0.2)'; }
       if (status) status.textContent = window.currentLang === 'it' ? 'Microfono attivo — suona una corda...' : 'Microphone active — play a string...';
       this._detect();
@@ -2173,18 +2174,88 @@ class GuitarTuner {
     return { noteName: Theory.NOTES[noteIdx], octave, cents };
   }
 
+  _initDots() {
+    const g = document.getElementById('tuner-dots');
+    if (!g || g.childElementCount > 0) return;
+    const N = 25, CX = 150, CY = 163, R = 113;
+    const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const ax1 = (CX + R * Math.sin(-80 * Math.PI / 180)).toFixed(2);
+    const ay1 = (CY - R * Math.cos(-80 * Math.PI / 180)).toFixed(2);
+    const ax2 = (CX + R * Math.sin(80 * Math.PI / 180)).toFixed(2);
+    const ay2 = (CY - R * Math.cos(80 * Math.PI / 180)).toFixed(2);
+    arc.setAttribute('d', `M ${ax1} ${ay1} A ${R} ${R} 0 0 1 ${ax2} ${ay2}`);
+    arc.setAttribute('fill', 'none');
+    arc.setAttribute('stroke', 'rgba(255,255,255,0.05)');
+    arc.setAttribute('stroke-width', '1.5');
+    g.appendChild(arc);
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      const angleRad = (-80 + t * 160) * Math.PI / 180;
+      const sinA = Math.sin(angleRad), cosA = Math.cos(angleRad);
+      const isCenter = i === 12;
+      const halfLen = isCenter ? 5 : 4;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', (CX + (R - halfLen) * sinA).toFixed(2));
+      line.setAttribute('y1', (CY - (R - halfLen) * cosA).toFixed(2));
+      line.setAttribute('x2', (CX + (R + halfLen) * sinA).toFixed(2));
+      line.setAttribute('y2', (CY - (R + halfLen) * cosA).toFixed(2));
+      line.setAttribute('stroke', this._dotColor(Math.abs(-50 + t * 100)));
+      line.setAttribute('stroke-width', isCenter ? '5' : '3.5');
+      line.setAttribute('stroke-linecap', 'round');
+      line.setAttribute('class', 'tuner-dot');
+      line.style.opacity = isCenter ? '0.35' : '0.14';
+      g.appendChild(line);
+    }
+  }
+
+  _dotColor(absCents) {
+    const stops = [[0,39,174,96],[8,39,174,96],[22,241,196,15],[38,231,76,60],[50,231,76,60]];
+    for (let k = 0; k < stops.length - 1; k++) {
+      const [c0,r0,g0,b0] = stops[k], [c1,r1,g1,b1] = stops[k+1];
+      if (absCents <= c1) {
+        const p = c1 > c0 ? (absCents - c0) / (c1 - c0) : 0;
+        return `rgb(${Math.round(r0+p*(r1-r0))},${Math.round(g0+p*(g1-g0))},${Math.round(b0+p*(b1-b0))})`;
+      }
+    }
+    return '#e74c3c';
+  }
+
+  _dimAllDots() {
+    const g = document.getElementById('tuner-dots');
+    if (!g) return;
+    g.querySelectorAll('.tuner-dot').forEach((tick, i) => {
+      tick.style.opacity = i === 12 ? '0.35' : '0.14';
+      tick.setAttribute('stroke-width', i === 12 ? '5' : '3.5');
+    });
+  }
+
+  _updateDots(cents) {
+    const g = document.getElementById('tuner-dots');
+    if (!g) return;
+    const ticks = g.querySelectorAll('.tuner-dot');
+    if (!ticks.length) return;
+    const N = 25, centerIdx = 12;
+    const currentIdx = Math.max(0, Math.min(N - 1, Math.round((cents + 50) / 100 * (N - 1))));
+    const low = Math.min(centerIdx, currentIdx);
+    const high = Math.max(centerIdx, currentIdx);
+    ticks.forEach((tick, i) => {
+      const lit = i >= low && i <= high;
+      tick.style.opacity = lit ? '0.95' : (i === centerIdx ? '0.35' : '0.14');
+      tick.setAttribute('stroke-width', lit ? (i === centerIdx ? '6' : '4.5') : (i === centerIdx ? '5' : '3.5'));
+    });
+  }
+
   _updateDisplay(freq) {
     const noteEl = document.getElementById('tuner-note');
     const freqEl = document.getElementById('tuner-freq');
     const centsEl = document.getElementById('tuner-cents');
-    const needleEl = document.getElementById('tuner-needle');
     if (!noteEl) return;
 
     if (!freq) {
-      noteEl.textContent = '–'; noteEl.style.color = '#555';
+      noteEl.textContent = '–'; noteEl.setAttribute('fill', '#555');
       if (freqEl) freqEl.textContent = '';
-      if (centsEl) { centsEl.textContent = ''; centsEl.style.color = '#aaa'; }
-      if (needleEl) needleEl.style.transform = 'rotate(0deg) translateX(-50%)';
+      if (centsEl) { centsEl.textContent = ''; centsEl.setAttribute('fill', '#aaa'); }
+      this._dimAllDots();
       return;
     }
 
@@ -2193,16 +2264,14 @@ class GuitarTuner {
     const close = Math.abs(cents) < 15;
     const color = inTune ? '#2ecc71' : close ? '#f39c12' : '#e74c3c';
     noteEl.textContent = noteName + octave;
-    noteEl.style.color = color;
+    noteEl.setAttribute('fill', color);
     if (freqEl) freqEl.textContent = freq.toFixed(1) + ' Hz';
     if (centsEl) {
       centsEl.textContent = inTune ? '✓ In Tune' : (cents > 0 ? '+' : '') + cents + '¢';
-      centsEl.style.color = color;
+      centsEl.setAttribute('fill', color);
     }
-    if (needleEl) {
-      const deg = Math.max(-50, Math.min(50, cents * 0.8));
-      needleEl.style.transform = `rotate(${deg}deg) translateX(-50%)`;
-    }
+    this._initDots();
+    this._updateDots(cents);
   }
 
   playRef(freq) {
@@ -2275,50 +2344,37 @@ function renderChordDiagramSVG(frets, fingers, baseFret, name) {
   return s;
 }
 
-// --- Chord Diagram Data (CAGED barre forms) ---
-const BARRE_TEMPLATES = {
-  // E-form (root on 6th string, open note = E = noteIdx 4)
-  'maj_E':   { rel: [0,2,2,1,0,0],  fng: [1,3,4,2,1,1], rootStr: 5, openNote: 4 },
-  'm_E':     { rel: [0,2,2,0,0,0],  fng: [1,3,4,1,1,1], rootStr: 5, openNote: 4 },
-  '7_E':     { rel: [0,2,0,1,0,0],  fng: [1,3,1,2,1,1], rootStr: 5, openNote: 4 },
-  'maj7_E':  { rel: [0,2,1,1,0,0],  fng: [1,3,2,2,1,1], rootStr: 5, openNote: 4 },
-  'm7_E':    { rel: [0,2,2,0,3,0],  fng: [1,3,4,1,2,1], rootStr: 5, openNote: 4 },
-  'mMaj7_E': { rel: [0,2,1,0,0,0],  fng: [1,3,2,1,1,1], rootStr: 5, openNote: 4 },
-  'm7b5_E':  { rel: [0,1,2,0,3,0],  fng: [1,2,3,1,4,1], rootStr: 5, openNote: 4 },
-  // A-form (root on 5th string, open note = A = noteIdx 9)
-  'maj_A':   { rel: [-1,0,2,2,2,0], fng: [0,1,3,4,2,1], rootStr: 4, openNote: 9 },
-  'm_A':     { rel: [-1,0,2,2,1,0], fng: [0,1,3,4,2,1], rootStr: 4, openNote: 9 },
-  '7_A':     { rel: [-1,0,2,0,2,0], fng: [0,1,2,1,3,1], rootStr: 4, openNote: 9 },
-  'maj7_A':  { rel: [-1,0,2,1,2,0], fng: [0,1,3,2,4,1], rootStr: 4, openNote: 9 },
-  'm7_A':    { rel: [-1,0,2,0,1,0], fng: [0,1,3,1,2,1], rootStr: 4, openNote: 9 },
-  'mMaj7_A': { rel: [-1,0,2,1,1,0], fng: [0,1,3,2,2,1], rootStr: 4, openNote: 9 },
-  'm7b5_A':  { rel: [-1,0,1,2,1,3], fng: [0,1,2,3,2,4], rootStr: 4, openNote: 9 },
-  'dim7_A':  { rel: [-1,0,1,2,1,2], fng: [0,1,2,4,3,3], rootStr: 4, openNote: 9 },
-};
-
 function getChordDiagrams(rootIdx, chordType) {
-  // Map chord type to barre template keys
   const typeMap = {
-    'maj7': ['maj7_E','maj7_A'], 'm7': ['m7_E','m7_A'], '7': ['7_E','7_A'],
-    'maj': ['maj_E','maj_A'], 'm': ['m_E','m_A'],
-    'maj9': ['maj7_E','maj7_A'], '9': ['7_E','7_A'], 'm9': ['m7_E','m7_A'],
-    '13': ['7_E','7_A'], 'mMaj7': ['mMaj7_E','mMaj7_A'],
-    'maj7#11': ['maj7_E','maj7_A'], '7alt': ['7_E','7_A'],
-    'm7b5': ['m7b5_E','m7b5_A'], 'dim7': ['dim7_A'],
+    'maj': '', 'min': 'm', 'm': 'm',
+    '7': '7', 'maj7': 'maj7', 'm7': 'm7',
+    'm7b5': 'm7b5', 'dim7': 'dim7', 'dim': 'dim',
+    'aug': 'aug', 'sus2': 'sus2', 'sus4': 'sus4',
+    '9': '9', 'maj9': 'maj9', 'm9': 'm9',
+    '13': '13', 'mMaj7': 'mmaj7', '7alt': '7b5',
+    'maj7#11': 'maj#11', '6': '6', 'm6': 'm6', 'add9': 'add9',
   };
-  const templates = (typeMap[chordType] || ['maj_E','maj_A']).map(k => BARRE_TEMPLATES[k]).filter(Boolean);
+  const suffix = Object.prototype.hasOwnProperty.call(typeMap, chordType) ? typeMap[chordType] : chordType;
+  const rootName = Theory.NOTES[rootIdx];
+  const key = rootName + suffix;
+  const voicings = (typeof CHORD_COLLECTION !== 'undefined') ? CHORD_COLLECTION[key] : null;
+  if (!voicings || !voicings.length) return [];
 
-  return templates.map(tmpl => {
-    const barre = (rootIdx - tmpl.openNote + 12) % 12;
-    const baseFret = barre === 0 ? 1 : barre;
-    const frets = tmpl.rel.map(r => r === -1 ? -1 : (r === 0 && barre === 0) ? 0 : (r === 0 && barre > 0) ? barre : r + barre);
-    // For open position (barre=0), mark open strings correctly
-    const correctedFrets = barre === 0
-      ? tmpl.rel.map(r => r < 0 ? -1 : r)
-      : frets;
-    const label = tmpl.rootStr === 5 ? `E form` : `A form`;
-    return { frets: correctedFrets, fingers: tmpl.fng, baseFret: barre === 0 ? 1 : baseFret, label };
-  });
+  const result = [];
+  for (const v of voicings) {
+    const frets = v.positions.map(p => p === 'x' ? -1 : parseInt(p));
+    const fingers = v.fingerings[0].map(f => parseInt(f));
+    const activeFrets = frets.filter(f => f > 0);
+    if (!activeFrets.length) continue;
+    const minFret = Math.min(...activeFrets);
+    const maxFret = Math.max(...activeFrets);
+    if (maxFret - minFret > 4) continue;
+    const hasOpen = frets.some(f => f === 0);
+    const baseFret = hasOpen ? 1 : minFret;
+    const label = baseFret <= 1 ? 'Open' : `${minFret}fr`;
+    result.push({ frets, fingers, baseFret, label });
+  }
+  return result;
 }
 
 // --- Key Detection ---
@@ -2429,7 +2485,7 @@ class ChordFinder {
         const extras = selected.filter(n => !chordNotes.has(n));
         if (hasAll && extras.length === 0) {
           const missing = [...chordNotes].filter(n => !selected.includes(n));
-          matches.push({ name: Theory.NOTES[root] + tmpl.name, root, missing, score: selected.length - missing.length * 0.5 });
+          matches.push({ name: Theory.NOTES[root] + tmpl.name, root, type: tmpl.name, missing, score: selected.length - missing.length * 0.5 });
         }
       }
     }
@@ -2437,8 +2493,27 @@ class ChordFinder {
     if (!matches.length) { results.innerHTML = `<div style="color:#666;font-size:0.9em;text-align:center;padding:20px;">Nessun accordo trovato.</div>`; return; }
     results.innerHTML = matches.slice(0, 12).map(m => {
       const missingStr = m.missing.length ? ` <span style="color:#777;font-size:0.8em;">(manca: ${m.missing.map(n=>Theory.NOTES[n]).join(', ')})</span>` : '';
-      return `<div class="cf-result-item">${m.name}${missingStr}</div>`;
+      return `<div class="cf-result-item" data-root="${m.root}" data-type="${m.type}" onclick="app.chordFinder.toggleDiagram(this)"><span>${m.name}${missingStr}</span><span class="cf-result-arrow">▾</span></div><div class="cf-diagram-panel"></div>`;
     }).join('');
+  }
+
+  toggleDiagram(el) {
+    const panel = el.nextElementSibling;
+    const isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.cf-diagram-panel.open').forEach(p => { p.classList.remove('open'); p.innerHTML = ''; });
+    document.querySelectorAll('.cf-result-item.expanded').forEach(i => i.classList.remove('expanded'));
+    if (isOpen) return;
+    const root = parseInt(el.dataset.root);
+    const typeRaw = el.dataset.type;
+    const typeNorm = typeRaw === 'min' ? 'm' : typeRaw;
+    const diagrams = getChordDiagrams(root, typeNorm);
+    if (!diagrams.length) {
+      panel.innerHTML = '<div style="color:#666;font-size:0.8em;padding:10px 14px;">Nessuna diteggiatura disponibile.</div>';
+    } else {
+      panel.innerHTML = `<div class="chord-diagram-grid" style="padding:12px 14px 14px;">${diagrams.map(d => `<div class="chord-diagram-wrap">${renderChordDiagramSVG(d.frets, d.fingers, d.baseFret, '')}<div class="chord-diagram-label">${d.label}</div></div>`).join('')}</div>`;
+    }
+    panel.classList.add('open');
+    el.classList.add('expanded');
   }
 
   clear() {

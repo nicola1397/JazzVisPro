@@ -885,7 +885,6 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 
 /* Mobile responsiveness for new sections */
 @media (max-width: 768px) {
-  .cf-note-btn { width: 45px; height: 45px; font-size: 0.68em; }
   .scale-grid { grid-template-columns: 1fr; }
   .caged-grid { grid-template-columns: repeat(3, 1fr); }
   .interval-row { flex-wrap: wrap; }
@@ -1081,39 +1080,20 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .rb-load-btn { white-space: nowrap; flex-shrink: 0; }
 
 /* ===== GUITAR TUNER ===== */
-.tuner-display {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 8px; padding: 20px 0;
+.tuner-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px; padding: 24px 20px 18px; margin-bottom: 4px;
 }
+.tuner-arc-svg { width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto; }
 .tuner-note-name {
-  font-size: 5.5em; font-weight: 900; letter-spacing: -2px;
+  font-size: 2.8em; font-weight: 900; letter-spacing: -1px;
   line-height: 1; transition: color 0.15s; font-variant-numeric: tabular-nums;
-  min-width: 180px; text-align: center;
+  text-align: center; margin-top: 4px;
 }
-.tuner-freq-display { font-size: 1em; color: #888; min-height: 1.4em; }
+.tuner-freq-display { font-size: 0.8em; color: #666; min-height: 1.2em; text-align: center; margin-top: 2px; }
 .tuner-cents-display {
-  font-size: 1.6em; font-weight: 700; min-height: 1.6em;
-  transition: color 0.15s;
-}
-.tuner-meter {
-  position: relative; width: 260px; height: 80px;
-  margin: 8px auto 0;
-}
-.tuner-meter-bg {
-  position: absolute; width: 100%; height: 100%;
-  background: linear-gradient(90deg, #e74c3c 0%, #e74c3c 30%, #f39c12 40%, #2ecc71 45%, #2ecc71 55%, #f39c12 60%, #e74c3c 70%, #e74c3c 100%);
-  border-radius: 4px 4px 0 0; opacity: 0.15;
-}
-.tuner-meter-center {
-  position: absolute; left: 50%; top: 0; width: 2px; height: 100%;
-  background: #2ecc71; transform: translateX(-50%); opacity: 0.4;
-}
-.tuner-needle {
-  position: absolute; width: 3px; height: 70px;
-  background: var(--accent); bottom: 0; left: 50%;
-  transform-origin: bottom center; transform: rotate(0deg) translateX(-50%);
-  border-radius: 2px 2px 0 0; transition: transform 0.1s ease-out;
-  margin-left: -1.5px;
+  font-size: 1.05em; font-weight: 700; min-height: 1.4em;
+  transition: color 0.15s; text-align: center; margin-top: 1px;
 }
 .tuner-strings-grid {
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
@@ -1128,6 +1108,8 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .tuner-string-btn .ts-name { font-size: 1.2em; font-weight: 900; color: var(--accent); display: block; }
 .tuner-string-btn .ts-freq { font-size: 0.7em; color: #666; display: block; margin-top: 2px; }
 .tuner-instr { font-size: 0.8em; color: #555; text-align: center; margin-top: 10px; }
+.tuner-dot { transition: opacity 0.08s ease; }
+#tuner-note, #tuner-cents { transition: fill 0.15s; }
 
 /* ===== CHORD DIAGRAMS ===== */
 .chord-diagram-grid {
@@ -1206,12 +1188,26 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 }
 .cf-note-btn:hover { border-color: var(--accent); color: var(--accent); }
 .cf-note-btn.selected { background: rgba(255,214,10,0.18); border-color: var(--accent); color: var(--accent); }
+@media (max-width: 768px) {
+  .cf-note-btn { width: 35px; height: 35px; font-size: 0.68em; }
+}
+
 .cf-result-item {
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
-  transition: background 0.15s;
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 0;
+  transition: background 0.15s; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
 }
 .cf-result-item:hover { background: rgba(255,255,255,0.08); }
+.cf-result-item.expanded { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
+.cf-result-arrow { font-size: 0.7em; color: #555; transition: transform 0.2s; flex-shrink: 0; margin-left: 8px; }
+.cf-result-item.expanded .cf-result-arrow { transform: rotate(180deg); color: var(--accent); }
+.cf-diagram-panel {
+  display: none; margin-bottom: 8px;
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1);
+  border-top: none; border-radius: 0 0 8px 8px;
+}
+.cf-diagram-panel.open { display: block; }
 
 /* ===== EAR TRAINING HISTORY ===== */
 .et-stat-row {
@@ -1227,4 +1223,4 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .et-stat-cnt { min-width: 50px; text-align: right; color: #666; }
 
 /* ===== TAB MODAL ===== */
-#lb-tab-output { user-select: all; } 
+#lb-tab-output { user-select: all; }
