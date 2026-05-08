@@ -4,6 +4,17 @@
       <h2 class="area-title">{{ t('fh.title') }}</h2>
       <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;">{{ t('fh.subtitle') }}</p>
 
+      <!-- Difficulty Selector -->
+      <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:20px;">
+        <button
+          v-for="d in ['easy', 'medium', 'hard']"
+          :key="d"
+          class="et-diff-btn"
+          :class="{ active: difficulty === d }"
+          @click="setDifficulty(d)"
+        >{{ t('et.' + d) }}</button>
+      </div>
+
       <!-- Score & Streak -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="font-size:0.9em;"><span>{{ t('label.score') }}</span>: <strong>{{ score }} / {{ total }}</strong></div>
@@ -44,7 +55,7 @@
       <!-- Answer Grid -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
         <button
-          v-for="deg in DEGREES"
+          v-for="deg in currentDegrees"
           :key="deg"
           class="et-choice-btn"
           :class="{
@@ -65,35 +76,58 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
 import { NOTES } from '../utils/theory.js'
 
 const { t } = useI18n()
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const DEGREES = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°']
-const PROGRESSIONS = [
-  ['I', 'vi', 'ii', 'V'],
-  ['ii', 'V', 'I'],
-  ['I', 'IV', 'vii°', 'iii', 'vi', 'ii', 'V', 'I'],
-  ['I', 'V', 'vi', 'IV'],
-  ['ii', 'V', 'I', 'vi'],
-]
-
-const CHORD_MAP = {
-  'I':    'maj7',
-  'ii':   'm7',
-  'iii':  'm7',
-  'IV':   'maj7',
-  'V':    '7',
-  'vi':   'm7',
-  'vii°': 'm7b5'
+// ── Configuration ─────────────────────────────────────────────────────────────
+const DIFFICULTY_CONFIG = {
+  easy: {
+    degrees: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'],
+    progressions: [
+      ['I', 'vi', 'ii', 'V'],
+      ['ii', 'V', 'I'],
+      ['I', 'IV', 'vii°', 'iii', 'vi', 'ii', 'V', 'I'],
+      ['I', 'V', 'vi', 'IV']
+    ],
+    chordMap: {
+      'I': 'maj7', 'ii': 'm7', 'iii': 'm7', 'IV': 'maj7', 'V': '7', 'vi': 'm7', 'vii°': 'm7b5'
+    }
+  },
+  medium: {
+    degrees: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°', 'i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII', 'II'],
+    progressions: [
+      ['i', 'VI', 'iv', 'V'],
+      ['ii°', 'V', 'i'],
+      ['I', 'II', 'ii', 'V'],
+      ['i', 'iv', 'VII', 'III', 'VI', 'ii°', 'V', 'i']
+    ],
+    chordMap: {
+      'I': 'maj7', 'ii': 'm7', 'iii': 'm7', 'IV': 'maj7', 'V': '7', 'vi': 'm7', 'vii°': 'm7b5',
+      'i': 'm7', 'ii°': 'm7b5', 'III': 'maj7', 'iv': 'm7', 'v': 'm7', 'VI': 'maj7', 'VII': '7',
+      'II': '7'
+    }
+  },
+  hard: {
+    degrees: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°', 'i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII', 'II', 'bII', 'bIII', 'bVI', 'bVII', '#iv°'],
+    progressions: [
+      ['I', 'bVI', 'bII', 'V'],
+      ['I', '#iv°', 'IV', 'iv', 'I'],
+      ['I', 'bIII', 'bVI', 'bVII'],
+      ['ii', 'bII', 'I']
+    ],
+    chordMap: {
+      'I': 'maj7', 'ii': 'm7', 'iii': 'm7', 'IV': 'maj7', 'V': '7', 'vi': 'm7', 'vii°': 'm7b5',
+      'i': 'm7', 'ii°': 'm7b5', 'III': 'maj7', 'iv': 'm7', 'v': 'm7', 'VI': 'maj7', 'VII': '7',
+      'II': '7', 'bII': 'maj7', 'bIII': 'maj7', 'bVI': 'maj7', 'bVII': '7', '#iv°': 'dim7'
+    }
+  }
 }
 
-const SCALE_STEPS = [0, 2, 4, 5, 7, 9, 11] // Major scale intervals
-
 // ── State ─────────────────────────────────────────────────────────────────────
+const difficulty         = ref('easy')
 const currentProgression = ref([])
 const targetIdx          = ref(-1)
 const active             = ref(false)
@@ -105,7 +139,35 @@ const streak             = ref(0)
 const statusMsg          = ref('')
 const lastCorrect        = ref(false)
 
+// ── Computed ──────────────────────────────────────────────────────────────────
+const currentDegrees = computed(() => DIFFICULTY_CONFIG[difficulty.value].degrees)
+
+// ── Logic ─────────────────────────────────────────────────────────────────────
+function getSemitones(degree) {
+  const baseMap = { 'I':0, 'II':2, 'III':4, 'IV':5, 'V':7, 'VI':9, 'VII':11 }
+  let offset = 0
+  
+  // Handle accidentals
+  let cleanDegree = degree.replace('°', '')
+  if (cleanDegree.includes('b')) {
+    offset = -1
+    cleanDegree = cleanDegree.replace('b', '')
+  } else if (cleanDegree.includes('#')) {
+    offset = 1
+    cleanDegree = cleanDegree.replace('#', '')
+  }
+  
+  const base = cleanDegree.toUpperCase()
+  const baseSemitones = baseMap[base] ?? 0
+  return (baseSemitones + offset + 12) % 12
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────────
+function setDifficulty(d) {
+  difficulty.value = d
+  resetGame()
+}
+
 function generateNew() {
   active.value   = true
   answered.value = false
@@ -113,14 +175,14 @@ function generateNew() {
   selectedAnswer.value = null
   
   const rootIdx = Math.floor(Math.random() * 12)
-  const rootName = NOTES[rootIdx]
+  const config = DIFFICULTY_CONFIG[difficulty.value]
+  const template = config.progressions[Math.floor(Math.random() * config.progressions.length)]
   
-  const template = PROGRESSIONS[Math.floor(Math.random() * PROGRESSIONS.length)]
   currentProgression.value = template.map(deg => {
-    const degIdx = DEGREES.indexOf(deg)
-    const chordRoot = NOTES[(rootIdx + SCALE_STEPS[degIdx]) % 12]
+    const semitones = getSemitones(deg)
+    const chordRoot = NOTES[(rootIdx + semitones) % 12]
     return {
-      name: chordRoot + CHORD_MAP[deg],
+      name: chordRoot + config.chordMap[deg],
       degree: deg
     }
   })
@@ -162,6 +224,7 @@ function resetGame() {
 <style scoped>
 .et-choice-btn {
   padding: 12px 5px;
-  font-size: 1.1em;
+  font-size: 0.95em;
+  font-weight: 700;
 }
 </style>
