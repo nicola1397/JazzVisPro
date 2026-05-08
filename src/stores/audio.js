@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { noteIndexToFrequency } from '../utils/theory.js'
+import { noteIndexToFrequency, NOTES } from '../utils/theory.js'
 
 export const useAudioStore = defineStore('audio', () => {
   const context         = ref(null)
   const chordSynth      = ref(null)
   const pianoSampler    = ref(null)
+  const bassSynth       = ref(null)
+  const drumSynth       = ref(null)
   const currentPreset   = ref(null)
   let currentOscillators = []
 
@@ -40,6 +42,7 @@ export const useAudioStore = defineStore('audio', () => {
       const compressor = new Tone.Compressor({ threshold:-20, ratio:4, attack:0.003, release:0.25 }).connect(limiter)
       const reverb     = new Tone.Reverb({ decay:2.5, preDelay:0.1, wet:0.3 }).connect(compressor)
       const filter     = new Tone.Filter({ frequency:2000, type:'lowpass', rolloff:-12 }).connect(reverb)
+      
       chordSynth.value = new Tone.PolySynth(Tone.Synth, {
         maxPolyphony: 6,
         oscillator: { type:'triangle' },
@@ -47,6 +50,19 @@ export const useAudioStore = defineStore('audio', () => {
         volume: -12,
       }).connect(filter)
       chordSynth.value.filterNode = filter
+
+      bassSynth.value = new Tone.MonoSynth({
+        oscillator: { type:'sine' },
+        envelope: { attack:0.05, decay:0.3, sustain:0.4, release:0.8 },
+        volume: -8
+      }).connect(compressor)
+
+      drumSynth.value = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0 },
+        volume: -20
+      }).connect(compressor)
+
       pianoSampler.value = new Tone.Sampler({
         urls: { A1:'A1.mp3', A2:'A2.mp3' },
         baseUrl: 'https://tonejs.github.io/audio/salamander/',
@@ -59,6 +75,7 @@ export const useAudioStore = defineStore('audio', () => {
   function stopAll() {
     try { if (chordSynth.value) chordSynth.value.releaseAll() } catch {}
     try { if (pianoSampler.value) pianoSampler.value.releaseAll() } catch {}
+    try { if (bassSynth.value) bassSynth.value.triggerRelease() } catch {}
     currentOscillators.forEach(({ osc, gain }) => {
       try {
         gain.gain.exponentialRampToValueAtTime(0.001, context.value.currentTime + 0.1)
@@ -118,7 +135,6 @@ export const useAudioStore = defineStore('audio', () => {
         synth.triggerAttackRelease(notes, duration, time)
       } catch (e) { console.warn('playChord Tone error:', e) }
     } else if (ctx) {
-      // Web Audio fallback
       const volPer = (vol / Math.max(tones.length, 1)) * 0.5
       let oct = baseOctave, prevNIdx = rootNoteIdx
       tones.forEach((interval, i) => {
@@ -144,13 +160,13 @@ export const useAudioStore = defineStore('audio', () => {
     }
   }
 
-  function playClick(time, isDownbeat, vol, soundName) {
+  function playClick(time, isDownbeat, vol, soundName, multiplier = 1.0) {
     const ctx = context.value
     if (!ctx) return
     try {
       const gain = ctx.createGain()
       gain.connect(ctx.destination)
-      gain.gain.value = vol
+      gain.gain.value = vol * multiplier
       const sound = METRONOME_SAMPLES[soundName] || METRONOME_SAMPLES.Beep
       if (sound.type === 'osc') {
         const osc = ctx.createOscillator()
@@ -161,6 +177,23 @@ export const useAudioStore = defineStore('audio', () => {
         osc.stop(time + 0.05)
       }
     } catch {}
+  }
+
+  function playBass(noteIdx, time, dur, vol = 0.5) {
+    if (!bassSynth.value) return
+    const freq = noteIndexToFrequency(noteIdx, 2)
+    bassSynth.value.triggerAttackRelease(freq, dur, time, vol)
+  }
+
+  function playDrum(type, time, vol = 0.3) {
+    if (!drumSynth.value) return
+    if (type === 'ride') {
+      drumSynth.value.envelope.decay = 0.05
+      drumSynth.value.triggerAttack(time, vol)
+    } else if (type === 'snare') {
+      drumSynth.value.envelope.decay = 0.15
+      drumSynth.value.triggerAttack(time, vol * 0.5)
+    }
   }
 
   function playRef(freq) {
@@ -182,8 +215,9 @@ export const useAudioStore = defineStore('audio', () => {
   }
 
   return {
-    context, chordSynth, pianoSampler,
+    context, chordSynth, pianoSampler, bassSynth, drumSynth,
     METRONOME_SAMPLES, CHORD_SOUNDS,
     init, stopAll, playNoteImmediate, playChord, playClick, playRef,
+    playBass, playDrum,
   }
 })

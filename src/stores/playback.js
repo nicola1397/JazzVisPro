@@ -44,6 +44,7 @@ export const usePlaybackStore = defineStore('playback', () => {
   const playChords      = ref(true)
   const loopSelection   = ref(false)
   const swingEnabled    = ref(false)
+  const accompanimentStyle = ref('Standard') // 'Standard', 'Swing', 'Bossa'
 
   let nextNoteTime    = 0
   let beatsRemaining  = 0
@@ -282,17 +283,61 @@ export const usePlaybackStore = defineStore('playback', () => {
       if (playChords.value) _triggerChord(step, time)
     }
 
-    audio.playClick(time, beatInBar === 0, metroVol.value, metroSound.value)
+    const currentStep = steps.value[activeIndex.value]
+    const bpb = currentStep?.beats || 4
+    const den = currentStep?.denominator || 4
+    const beatDur = (60.0 / bpm.value) * (4 / den)
 
-    if (swingEnabled.value) {
-      const den = steps.value[activeIndex.value]?.denominator || 4
-      const beatDur = (60.0 / bpm.value) * (4 / den)
+    // Algorithmic Accompaniment
+    if (accompanimentStyle.value === 'Swing') {
+      _playSwing(time, currentStep, beatInBar, beatDur)
+    } else if (accompanimentStyle.value === 'Bossa') {
+      _playBossa(time, currentStep, beatInBar, beatDur)
+    } else {
+      audio.playClick(time, beatInBar === 0, metroVol.value, metroSound.value)
+    }
+
+    if (swingEnabled.value && accompanimentStyle.value === 'Standard') {
       audio.playClick(time + beatDur * 0.67, false, metroVol.value * 0.45, metroSound.value)
     }
 
     beatsRemaining--
-    const bpb = steps.value[activeIndex.value]?.beats || 4
     beatInBar = (beatInBar + 1) % bpb
+  }
+
+  function _playSwing(time, step, beat, dur) {
+    // Walking Bass
+    const rootIdx = NOTES.indexOf(step.root)
+    let bassNote = rootIdx
+    if (beat === 3) {
+      // Approach note to next chord
+      const nextIdx = (activeIndex.value + 1) % steps.value.length
+      const nextRoot = NOTES.indexOf(steps.value[nextIdx].root)
+      bassNote = (nextRoot + (Math.random() > 0.5 ? 1 : -1) + 12) % 12
+    } else if (beat === 1 || beat === 2) {
+      // Scale degree
+      const sc = SCALES[step.scale] || [0, 2, 4, 5, 7, 9, 11]
+      bassNote = (rootIdx + sc[Math.floor(Math.random() * sc.length)]) % 12
+    }
+    audio.playBass(bassNote, time, dur * 0.9, 0.4)
+
+    // Ride Cymbal (Spang-a-lang)
+    audio.playDrum('ride', time, 0.25)
+    if (beat % 2 === 1) { // On beats 2 and 4
+      audio.playDrum('ride', time + dur * 0.67, 0.15)
+    }
+  }
+
+  function _playBossa(time, step, beat, dur) {
+    const rootIdx = NOTES.indexOf(step.root)
+    // Root-Fifth bass
+    const bassNote = (beat % 2 === 0) ? rootIdx : (rootIdx + 7) % 12
+    audio.playBass(bassNote, time, dur * 0.8, 0.45)
+    
+    // Cross-stick pattern simulation
+    if (beat === 0 || beat === 2 || (beat === 1 && Math.random() > 0.5)) {
+       audio.playDrum('ride', time, 0.2)
+    }
   }
 
   function _triggerChord(step, time) {
@@ -367,7 +412,7 @@ export const usePlaybackStore = defineStore('playback', () => {
   return {
     steps, activeIndex, isPlaying, isCountingDown, countdownValue,
     bpm, metroVol, metroSound, chordSound, chordVol,
-    playChords, loopSelection, swingEnabled,
+    playChords, loopSelection, swingEnabled, accompanimentStyle,
     voiceLeadingData,
     scheduleSave, loadFromData,
     addStep, removeStep, updateStep, clearProgression,

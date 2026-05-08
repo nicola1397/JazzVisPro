@@ -28,6 +28,7 @@
       <RouterLink class="nav-item" to="/interval-learner"      @click="appStore.closeSidebar()">Interval Learner</RouterLink>
       <RouterLink class="nav-item" to="/grade-learner"         @click="appStore.closeSidebar()">Grade Learner</RouterLink>
       <RouterLink class="nav-item" to="/note-finder"           @click="appStore.closeSidebar()">Note Finder</RouterLink>
+      <RouterLink class="nav-item" to="/functional-harmony"    @click="appStore.closeSidebar()">Functional Harmony</RouterLink>
       <RouterLink class="nav-item" to="/ear-training"          @click="appStore.closeSidebar()">Ear Training</RouterLink>
       <RouterLink class="nav-item" to="/interval-ear-training" @click="appStore.closeSidebar()">Interval Ear Training</RouterLink>
       <RouterLink class="nav-item" to="/groove-trainer"        @click="appStore.closeSidebar()">Groove Trainer</RouterLink>

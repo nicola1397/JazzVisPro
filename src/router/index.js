@@ -8,6 +8,7 @@ const routes = [
   { path: '/interval-learner',    component: () => import('../views/IntervalLearnerView.vue'),      meta: { title:'title.interval-learner', fretboard:true, legend:false, game:'interval' } },
   { path: '/grade-learner',       component: () => import('../views/GradeLearnerView.vue'),         meta: { title:'title.grade-learner',    fretboard:false,legend:false } },
   { path: '/note-finder',         component: () => import('../views/NoteFinderView.vue'),           meta: { title:'title.note-finder',      fretboard:true, legend:false, game:'note' } },
+  { path: '/functional-harmony',  component: () => import('../views/FunctionalHarmonyView.vue'),  meta: { title:'fh.title',               fretboard:false,legend:false } },
   { path: '/ear-training',        component: () => import('../views/EarTrainingView.vue'),          meta: { title:'title.ear-training',     fretboard:false,legend:false } },
   { path: '/interval-ear-training', component: () => import('../views/IntervalEarTrainingView.vue'), meta: { title:'title.interval-ear-training', fretboard:false, legend:false } },
   { path: '/chord-voicing',       component: () => import('../views/ChordVoicingView.vue'),         meta: { title:'title.chord-voicing',    fretboard:false,legend:false } },
