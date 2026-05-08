@@ -81,8 +81,8 @@
           style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:left; animation: fadeIn 0.3s ease;">
           <div style="font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:8px;"
             :style="{ color: isCorrect ? '#22c55e' : '#ef4444' }">
-            <span v-if="isCorrect">✓ {{ t('et.correct') }}</span>
-            <span v-else>✗ {{ t('et.wrong') }}</span>
+            <span v-if="isCorrect">{{ t('et.correct') }}</span>
+            <span v-else>{{ t('et.wrong') }}</span>
           </div>
           <div style="font-size:0.9em; color:#bbb; line-height:1.5;">
             {{ langContent.explanation }}
