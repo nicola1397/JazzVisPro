@@ -1,147 +1,108 @@
 <template>
   <div id="view-grade-learner" class="view-panel active">
-    <div class="importer-area" style="max-width:680px;margin: 0 auto; width: 100%; text-align: center;">
+    <div class="importer-area text-center" style="max-width:720px;margin: 0 auto; width: 100%;">
       <h2 class="area-title" data-i18n="gl.title">{{ t('gl.title') }}</h2>
 
-      <!-- Top Bar -->
-      <div style="width:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <!-- Question -->
-        <div style="flex:1;min-width:200px;font-size:1.05em;font-weight:600;color:var(--text-h);">
+      <!-- Unified Game Bar -->
+      <div id="grade-game-bar"
+        style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(255, 214, 10, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+
+        <!-- Question Text -->
+        <div id="grade-question-text" class="h3 mb-0"
+          style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
           <span v-if="active">{{ questionText }}</span>
-          <span v-else style="color:var(--text);font-style:italic;">{{ t('gl.ready') }}</span>
+          <span v-else>{{ t('gl.ready') }}</span>
         </div>
 
-        <!-- Score -->
-        <div style="font-size:0.9em;color:var(--text);">
-          {{ t('gl.status') }}: <strong style="color:var(--text-h);">{{ score }} / {{ total }}</strong>
+        <!-- Action Buttons & Score -->
+        <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+          <button class="btn-add-step w-auto" style="min-width: 150px;" @click="startNext"
+            :disabled="active && feedbackMsg === ''">{{ t('btn.start-next') }}</button>
+          <button class="btn-replay" @click="playRootNote" :disabled="!active">{{ t('btn.replay') }}</button>
+          <button class="btn-reset w-auto" style="height: 38px;" @click="resetGame">Reset</button>
+          <div id="grade-score-display" class="h5 mb-0"
+            style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">
+            {{ score }} / {{ total }}
+          </div>
         </div>
 
-        <!-- Buttons -->
-        <div style="display:flex;gap:8px;">
-          <button class="btn-add-step" @click="startNext">{{ t('btn.start-next') }}</button>
-          <button class="btn-replay" @click="playRootNote">{{ t('btn.replay') }}</button>
-          <button class="btn-reset" style="width:auto;padding:0 14px;" @click="resetGame">{{ t('btn.reset-game') }}</button>
-        </div>
-      </div>
-
-      <!-- Mode Checkboxes -->
-      <div style="display:flex;gap:20px;align-items:center;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9em;">
-          <input type="checkbox" v-model="freeMode"> {{ t('gl.free-mode') }}
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9em;">
-          <input type="checkbox" v-model="hardMode"> {{ t('gl.hard-mode') }}
-        </label>
-      </div>
-
-      <!-- Fixed Mode Selectors -->
-      <div v-if="!freeMode" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;">
-        <div class="nav-group">
-          <label>Root</label>
-          <select v-model="fixedRoot">
+        <!-- Root & Scale Selectors -->
+        <div v-if="!freeMode" id="gl-selectors"
+          class="d-flex align-items-center gap-2 flex-wrap justify-content-center mt-2">
+          <select v-model="fixedRoot" class="form-select form-select-sm"
+            style="width:auto;min-width:75px;background:#2c2c2e;color:#fff;border-color:#555;padding:4px 8px;border-radius:6px;">
             <option v-for="n in GL_ROOTS" :key="n" :value="n">{{ n }}</option>
           </select>
-        </div>
-        <div class="nav-group">
-          <label>Scale</label>
-          <select v-model="fixedScale">
+          <select v-model="fixedScale" class="form-select form-select-sm"
+            style="width:auto;min-width:200px;background:#2c2c2e;color:#fff;border-color:#555;padding:4px 8px;border-radius:6px;">
             <option v-for="s in scaleNames" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>
+
+        <!-- Mode Toggles -->
+        <div class="d-flex align-items-center gap-3 flex-wrap justify-content-center mt-1">
+          <div class="d-flex align-items-center gap-2">
+            <input type="checkbox" id="gl-free-mode" v-model="freeMode" style="accent-color: var(--accent);">
+            <label for="gl-free-mode" style="color:var(--text);font-size:0.85em;cursor:pointer;">{{ t('gl.free-mode')
+              }}</label>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <input type="checkbox" id="gl-hard-mode" v-model="hardMode" style="accent-color: #ff9f0a;">
+            <label for="gl-hard-mode" style="color:#ff9f0a;font-size:0.85em;cursor:pointer;">{{ t('gl.hard-mode')
+              }}</label>
+          </div>
+        </div>
+
+        <!-- Feedback & Status -->
+        <div id="grade-game-status" class="small" style="color: #aaa; min-height: 20px;">
+          <span v-if="feedbackMsg" :style="{ color: feedbackOk ? '#22c55e' : '#ef4444', fontWeight: '700' }">{{
+            feedbackMsg }}</span>
+          <span v-else>{{ t('gl.status') }}</span>
+        </div>
       </div>
 
-      <!-- Status feedback -->
-      <div v-if="feedbackMsg" :style="{
-        fontSize:'1em', fontWeight:'600', padding:'6px 18px', borderRadius:'20px',
-        background: feedbackOk ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-        color: feedbackOk ? '#16a34a' : '#dc2626',
-        transition: 'all 0.3s'
-      }">{{ feedbackMsg }}</div>
-
       <!-- Legend -->
-      <div style="display:flex;gap:14px;font-size:0.78em;color:var(--text);">
-        <span v-if="hardMode">
-          <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#aaa;margin-right:4px;vertical-align:middle;"></span>{{ t('gl.sharp-outer') }}
-          <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#667;margin-right:4px;margin-left:8px;vertical-align:middle;"></span>{{ t('gl.flat-inner') }}
-        </span>
+      <div id="gl-legend" v-if="hardMode"
+        style="display:flex; justify-content:center; gap:16px; margin-top:4px; margin-bottom: 20px;">
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:10px;height:10px;border-radius:50%;background:#2c2c2e;border:1.5px solid #555;"></div>
+          <span class="small text-secondary">{{ t('gl.sharp-outer') }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div
+            style="width:10px;height:10px;border-radius:50%;background:rgba(48,209,88,.12);border:1.5px solid rgba(48,209,88,.4);">
+          </div>
+          <span class="small text-secondary">{{ t('gl.flat-inner') }}</span>
+        </div>
       </div>
 
       <!-- Chromatic Circle -->
-      <div class="circle-container" style="position: relative; width: 320px; height: 320px; margin: 40px auto;">
-          <svg id="gl-rings-svg" width="320" height="320" style="position:absolute;top:0;left:0;pointer-events:none;">
-              <circle cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="1.5"/>
-              <circle id="gl-inner-ring-svg" cx="160" cy="160" r="82" fill="none" stroke="rgba(255,214,10,.12)" stroke-width="1" stroke-dasharray="4,4" :style="hardMode ? 'display:block;' : 'display:none;'"/>
-          </svg>
-          <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%;">
+      <div class="circle-container" style="position: relative; width: 320px; height: 320px; margin: 20px auto;">
+        <svg id="gl-rings-svg" width="320" height="320" style="position:absolute;top:0;left:0;pointer-events:none;">
+          <circle cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="1.5" />
+          <circle id="gl-inner-ring-svg" cx="160" cy="160" r="82" fill="none" stroke="rgba(255,214,10,.12)"
+            stroke-width="1" stroke-dasharray="4,4" :style="hardMode ? 'display:block;' : 'display:none;'" />
+        </svg>
+        <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%;">
 
-            <!-- Outer ring (sharp names) -->
-            <button
-              v-for="n in noteButtons"
-              :key="'outer-' + n.idx"
-              :class="['gl-note-btn', noteStates[n.idx]]"
-              :style="{
-                position:'absolute',
-                left: n.ox + 'px',
-                top:  n.oy + 'px',
-                width:'44px', height:'44px',
-                borderRadius:'50%',
-                fontSize: n.isFlat ? '0.7em' : '0.82em',
-                fontWeight:'700',
-                cursor:'pointer',
-                border:'2px solid var(--border)',
-                background: noteStates[n.idx] === 'correct'
-                  ? '#22c55e'
-                  : noteStates[n.idx] === 'wrong'
-                    ? '#ef4444'
-                    : 'var(--code-bg)',
-                color: noteStates[n.idx] ? '#fff' : 'var(--text-h)',
-                transition:'background 0.2s, color 0.2s',
-                zIndex: 2,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                transform: 'translate(-50%, -50%)'
-              }"
-              @click="onNoteClick(n.idx, false)"
-            >{{ n.sharpName }}</button>
+          <!-- Outer ring -->
+          <button v-for="n in noteButtons" :key="'outer-' + n.idx" class="circle-note"
+            :class="[noteStates[n.idx], { root: n.isRoot }]" :style="{
+              left: n.x + 'px',
+              top: n.y + 'px',
+              zIndex: 2,
+            }" @click="onNoteClick(n.idx, false)">{{ n.label }}</button>
 
-            <!-- Inner ring (flat names) — hard mode only for enharmonic notes -->
-            <template v-if="hardMode">
-              <button
-                v-for="n in flatButtons"
-                :key="'inner-' + n.idx + '-flat'"
-                :class="['gl-note-btn', flatStates[n.idx]]"
-                :style="{
-                  position:'absolute',
-                  left: n.ix + 'px',
-                  top:  n.iy + 'px',
-                  width:'38px', height:'38px',
-                  borderRadius:'50%',
-                  fontSize:'0.68em',
-                  fontWeight:'700',
-                  cursor:'pointer',
-                  border:'2px solid var(--border)',
-                  background: flatStates[n.idx] === 'correct'
-                    ? '#22c55e'
-                    : flatStates[n.idx] === 'wrong'
-                      ? '#ef4444'
-                      : '#4b5563',
-                  color: flatStates[n.idx] ? '#fff' : '#d1d5db',
-                  transition:'background 0.2s',
-                  zIndex: 1,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  transform: 'translate(-50%, -50%)'
-                }"
-                @click="onNoteClick(n.idx, true)"
-              >{{ n.flatName }}</button>
-            </template>
-
-            <!-- Center label -->
-            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
-              <div style="font-size:0.75em;color:var(--text);line-height:1.3;">
-                <span v-if="active">{{ gameRoot }}</span>
-                <span v-else>♩</span>
-              </div>
-            </div>
-          </div>
+          <!-- Inner ring (hard mode only) -->
+          <template v-if="hardMode">
+            <button v-for="n in flatButtons" :key="'inner-' + n.idx" class="circle-note flat"
+              :class="[flatStates[n.idx], { root: n.isRoot }]" :style="{
+                left: n.x + 'px',
+                top: n.y + 'px',
+                zIndex: 1,
+              }" @click="onNoteClick(n.idx, true)">{{ n.label }}</button>
+          </template>
+        </div>
       </div>
 
     </div>
@@ -149,42 +110,65 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAudioStore } from '../stores/audio.js'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { NOTES, NOTES_FLAT, SCALES } from '../utils/theory.js'
 
-const audio    = useAudioStore()
+const audio = useAudioStore()
 const appStore = useAppStore()
-const { t }    = useI18n()
+const { t } = useI18n()
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const GL_ROOTS = ['C','C#','Db','D','D#','Eb','E','F','F#','Gb','G','G#','Ab','A','A#','Bb','B']
-const ORDINALS_IT = ['','1°','2°','3°','4°','5°','6°','7°']
-const ORDINALS_EN = ['','1st','2nd','3rd','4th','5th','6th','7th']
+const GL_ROOTS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B']
+const ORDINALS_IT = ['', '1°', '2°', '3°', '4°', '5°', '6°', '7°']
+const ORDINALS_EN = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th']
 
 // ── State ─────────────────────────────────────────────────────────────────────
-const score      = ref(0)
-const total      = ref(0)
-const active     = ref(false)
+const score = ref(0)
+const total = ref(0)
+const active = ref(false)
 const gameRootIdx = ref(0)
-const gameRoot   = ref('C')
-const targetGrade = ref(0)   // interval in semitones
-const targetDegree = ref(1)  // 1-based degree number
+const gameRoot = ref('C')
+const targetGrade = ref(0)
+const targetDegree = ref(1)
 const currentScale = ref('Ionio (Maj7)')
-const feedbackMsg  = ref('')
-const feedbackOk   = ref(true)
+const feedbackMsg = ref('')
+const feedbackOk = ref(true)
 
-// noteStates: 'correct' | 'wrong' | ''
-const noteStates = ref(Object.fromEntries(Array.from({length:12},(_,i)=>[i,''])))
-const flatStates = ref(Object.fromEntries(Array.from({length:12},(_,i)=>[i,''])))
+const noteStates = ref(Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i, ''])))
+const flatStates = ref(Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i, ''])))
 
-// Mode
-const freeMode  = ref(true)
-const hardMode  = ref(false)
-const fixedRoot  = ref('C')
+const freeMode = ref(true)
+const hardMode = ref(false)
+const fixedRoot = ref('C')
 const fixedScale = ref('Ionio (Maj7)')
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function glUsesFlat(name) { return !NOTES.includes(name) && NOTES_FLAT.includes(name); }
+
+function glExpectFlat(name) {
+  let i = NOTES.indexOf(name);
+  if (i === -1) i = NOTES_FLAT.indexOf(name);
+  const idx = i < 0 ? 0 : i;
+  if (NOTES[idx] !== NOTES_FLAT[idx]) return glUsesFlat(name);
+  return idx === 5; // F uses Bb
+}
+
+function rootNameToIdx(name) {
+  let i = NOTES.indexOf(name)
+  return i !== -1 ? i : NOTES_FLAT.indexOf(name)
+}
+
+function clearStates() {
+  noteStates.value = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i, '']))
+  flatStates.value = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i, '']))
+}
+
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 const scaleNames = computed(() => Object.keys(SCALES))
@@ -198,120 +182,127 @@ const questionText = computed(() => {
     .replace('{2}', currentScale.value)
 })
 
-// Circle geometry — outer radius 135, inner radius 80, center 160,160
 const noteButtons = computed(() => {
-  return Array.from({length:12}, (_, i) => {
+  const R = 135, CX = 160, CY = 160
+  const curNotes = glExpectFlat(gameRoot.value) ? NOTES_FLAT : NOTES
+  const isFlatRoot = glUsesFlat(gameRoot.value)
+
+  return Array.from({ length: 12 }, (_, i) => {
     const angle = (i * 30 - 90) * Math.PI / 180
-    const r = 135
+
+    // Root highlight logic:
+    // In easy mode, highlight if index matches.
+    // In hard mode, only highlight if it's NOT a flat root (those go to inner ring).
+    let isRoot = (i === gameRootIdx.value)
+    if (hardMode.value && isFlatRoot) isRoot = false
+
     return {
       idx: i,
-      sharpName: NOTES[i],
-      flatName: NOTES_FLAT[i],
-      isFlat: NOTES[i] !== NOTES_FLAT[i],
-      ox: 160 + r * Math.cos(angle),
-      oy: 160 + r * Math.sin(angle),
+      label: hardMode.value ? NOTES[i] : curNotes[i],
+      x: CX + R * Math.cos(angle),
+      y: CY + R * Math.sin(angle),
+      isRoot
     }
   })
 })
 
 const flatButtons = computed(() => {
-  // Only show inner ring for enharmonic (black key) notes
-  return noteButtons.value.filter(n => n.isFlat).map(n => {
-    const angle = (n.idx * 30 - 90) * Math.PI / 180
-    const r = 80
+  const RI = 80, CX = 160, CY = 160
+  const isFlatRoot = glUsesFlat(gameRoot.value)
+
+  return Array.from({ length: 12 }, (_, i) => {
+    if (NOTES[i] === NOTES_FLAT[i]) return null
+    const angle = (i * 30 - 90) * Math.PI / 180
+
+    // Root highlight logic:
+    // Only highlight if root uses flats.
+    let isRoot = (i === gameRootIdx.value && isFlatRoot)
+
     return {
-      ...n,
-      ix: 160 + r * Math.cos(angle),
-      iy: 160 + r * Math.sin(angle),
+      idx: i,
+      label: NOTES_FLAT[i],
+      x: CX + RI * Math.cos(angle),
+      y: CY + RI * Math.sin(angle),
+      isRoot
     }
-  })
+  }).filter(Boolean)
 })
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function clearStates() {
-  noteStates.value  = Object.fromEntries(Array.from({length:12},(_,i)=>[i,'']))
-  flatStates.value  = Object.fromEntries(Array.from({length:12},(_,i)=>[i,'']))
-}
-
-function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
-
-function rootNameToIdx(name) {
-  let i = NOTES.indexOf(name)
-  return i !== -1 ? i : NOTES_FLAT.indexOf(name)
-}
-
 // ── Game Logic ────────────────────────────────────────────────────────────────
-function startNext() {
-  audio.init()
+async function startNext() {
+  await audio.init()
   clearStates()
   feedbackMsg.value = ''
   active.value = true
 
   let root, scaleName
   if (freeMode.value) {
-    root      = randomItem(GL_ROOTS)
+    root = randomItem(GL_ROOTS)
     scaleName = randomItem(Object.keys(SCALES))
   } else {
-    root      = fixedRoot.value
+    root = fixedRoot.value
     scaleName = fixedScale.value
   }
 
   const scaleIntervals = SCALES[scaleName] || SCALES['Ionio (Maj7)']
-  const degreeIdx = Math.floor(Math.random() * scaleIntervals.length)  // 0-based index
+  const degreeIdx = Math.floor(Math.random() * scaleIntervals.length)
 
-  gameRoot.value    = root
+  gameRoot.value = root
   gameRootIdx.value = rootNameToIdx(root)
   currentScale.value = scaleName
-  targetGrade.value  = scaleIntervals[degreeIdx]
+  targetGrade.value = scaleIntervals[degreeIdx]
   targetDegree.value = degreeIdx + 1
 
-  // Sync appStore for fretboard
   appStore.setRoot(root)
   appStore.setScaleName(scaleName)
 
   playRootNote()
 }
 
-function playRootNote() {
+async function playRootNote() {
   if (!active.value) return
-  audio.init()
+  await audio.init()
   audio.playNoteImmediate(gameRootIdx.value, 0.8, 0.25, 'Electric Piano', 4)
 }
 
-function onNoteClick(idx, isFlat) {
+async function onNoteClick(idx, clickedIsFlat) {
   if (!active.value) return
   total.value++
+  await audio.init()
 
   const correctIdx = (gameRootIdx.value + targetGrade.value) % 12
-  const isCorrect  = idx === correctIdx
+
+  let isCorrect = (idx === correctIdx)
+  if (hardMode.value) {
+    const isEnharm = NOTES[idx] !== NOTES_FLAT[idx]
+    const correctIsFlat = glExpectFlat(gameRoot.value)
+    if (isEnharm && (clickedIsFlat !== correctIsFlat)) isCorrect = false
+  }
 
   if (isCorrect) {
-    // Mark correct
-    if (isFlat) {
-      flatStates.value  = { ...flatStates.value,  [idx]: 'correct' }
-    } else {
-      noteStates.value  = { ...noteStates.value,  [idx]: 'correct' }
-    }
+    if (clickedIsFlat) flatStates.value = { ...flatStates.value, [idx]: 'correct' }
+    else noteStates.value = { ...noteStates.value, [idx]: 'correct' }
+
     score.value++
     feedbackMsg.value = t('gl.correct')
-    feedbackOk.value  = true
+    feedbackOk.value = true
     audio.playNoteImmediate(idx, 0.6, 0.25, 'Electric Piano', 4)
     active.value = false
   } else {
-    // Wrong — mark wrong button, then reveal correct after 500ms
-    if (isFlat) {
-      flatStates.value = { ...flatStates.value, [idx]: 'wrong' }
-    } else {
-      noteStates.value = { ...noteStates.value, [idx]: 'wrong' }
-    }
-    const correctName = NOTES[correctIdx]
+    if (clickedIsFlat) flatStates.value = { ...flatStates.value, [idx]: 'wrong' }
+    else noteStates.value = { ...noteStates.value, [idx]: 'wrong' }
+
+    const correctIsFlat = glExpectFlat(gameRoot.value)
+    const correctName = correctIsFlat ? NOTES_FLAT[correctIdx] : NOTES[correctIdx]
     feedbackMsg.value = t('gl.wrong-answer').replace('{0}', correctName)
-    feedbackOk.value  = false
+    feedbackOk.value = false
 
     setTimeout(() => {
-      noteStates.value = { ...noteStates.value, [correctIdx]: 'correct' }
+      if (correctIsFlat && NOTES[correctIdx] !== NOTES_FLAT[correctIdx]) {
+        flatStates.value = { ...flatStates.value, [correctIdx]: 'correct' }
+      } else {
+        noteStates.value = { ...noteStates.value, [correctIdx]: 'correct' }
+      }
       audio.playNoteImmediate(correctIdx, 0.6, 0.25, 'Electric Piano', 4)
       active.value = false
     }, 500)
@@ -324,5 +315,10 @@ function resetGame() {
   active.value = false
   clearStates()
   feedbackMsg.value = ''
+  fixedRoot.value = 'C'
+  gameRoot.value = 'C'
+  gameRootIdx.value = 0
 }
+
+onMounted(() => { clearStates() })
 </script>

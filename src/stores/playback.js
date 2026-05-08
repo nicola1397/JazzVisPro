@@ -188,15 +188,15 @@ export const usePlaybackStore = defineStore('playback', () => {
   // ── Playback engine ───────────────────────────────────────────────
   function toggle() { isPlaying.value ? stop() : play() }
 
-  function play() {
-    audio.init()
+  async function play() {
+    await audio.init()
     isPlaying.value     = true
     activeIndex.value   = -1
     beatsRemaining      = 0
     beatInBar           = 0
     isCountingDown.value = true
     countdownValue.value = 4
-    nextNoteTime        = audio.context.currentTime
+    nextNoteTime        = Tone.now()
     _scheduler()
   }
 
@@ -234,8 +234,8 @@ export const usePlaybackStore = defineStore('playback', () => {
 
   function _scheduler() {
     if (!isPlaying.value) return
-    const ctx = audio.context
-    while (nextNoteTime < ctx.currentTime + 0.1) {
+    const now = Tone.now()
+    while (nextNoteTime < now + 0.1) {
       _runBeat(nextNoteTime)
       const step = steps.value[activeIndex.value] || steps.value[0]
       const den = step ? (step.denominator || 4) : 4

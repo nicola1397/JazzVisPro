@@ -1,6 +1,6 @@
 <template>
   <div id="view-functional-harmony" class="view-panel active">
-    <div class="importer-area text-center" style="max-width:650px;margin: 0 auto; width: 100%;">
+    <div class="importer-area text-center" style="max-width:720px;margin: 0 auto; width: 100%;">
       <h2 class="area-title">{{ t('fh.title') }}</h2>
       <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;">{{ t('fh.subtitle') }}</p>
 

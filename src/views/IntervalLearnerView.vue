@@ -53,7 +53,7 @@ function reset() {
   clearBoard()
 }
 
-function start() {
+async function start() {
   active = true
   root           = Math.floor(Math.random() * 12)
   targetInterval = Math.floor(Math.random() * 11) + 1
@@ -61,15 +61,15 @@ function start() {
   const rootName = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][root]
   questionText.value = `${t('il.find-prefix')}: ${info.label} ${t('il.find-of')} ${rootName}${descending.value ? ' ↓' : ''}`
   statusText.value   = t('il.click-status')
-  audio.init()
-  audio.playChord([0], root, audio.context.currentTime, 1, 0.2, 'Electric Piano', 3)
+  await audio.init()
+  audio.playChord([0], root, 0, 1, 0.2, 'Electric Piano', 3)
   drawBoard()
 }
 
-function replay() {
+async function replay() {
   if (!active && root === undefined) return
-  audio.init()
-  audio.playChord([0], root, audio.context.currentTime, 1, 0.2, 'Electric Piano', 3)
+  await audio.init()
+  audio.playChord([0], root, 0, 1, 0.2, 'Electric Piano', 3)
 }
 
 function drawBoard() {
@@ -94,12 +94,12 @@ function clearBoard() {
   })
 }
 
-function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
+async function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
   // Play the note
   const tuning = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
   const oct = BASE_OCTAVES[stringIndex] + Math.floor((tuning[stringIndex] + fretIndex) / 12)
-  audio.init()
-  audio.playChord([0], noteIndex, audio.context.currentTime, 0.8, 0.2, 'Electric Piano', oct)
+  await audio.init()
+  audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
   if (!active) return
   active = false
   total.value++
@@ -124,7 +124,7 @@ function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
     const targetNote = descending.value
       ? (root - targetInterval + 12) % 12
       : (root + targetInterval) % 12
-    setTimeout(() => audio.playChord([0], targetNote, audio.context.currentTime, 1.2, 0.2, 'Electric Piano', oct), 800)
+    setTimeout(() => audio.playChord([0], targetNote, 0, 1.2, 0.2, 'Electric Piano', oct), 800)
   }
 }
 

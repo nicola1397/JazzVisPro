@@ -1,6 +1,6 @@
 <template>
   <div id="view-interval-ear-training" class="view-panel active">
-    <div class="importer-area" style="max-width:700px;margin: 0 auto; width: 100%;">
+    <div class="importer-area text-center" style="max-width:720px;margin: 0 auto; width: 100%;">
       <h2 class="area-title" data-i18n="iet.title">{{ t('iet.title') }}</h2>
       <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="iet.subtitle">{{ t('iet.subtitle') }}</p>
 
@@ -170,24 +170,24 @@ function clearTimers() {
 
 function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)] }
 
-function scheduleIntervalPlay(root, semi) {
-  audio.init()
+async function scheduleIntervalPlay(root, semi) {
+  await audio.init()
   const rootNoteIdx = root
   const topNoteIdx  = (root + semi) % 12
   const topOctave   = semi >= 12 ? 5 : 4
 
   // 1) Play root
-  audio.playChord([0], rootNoteIdx, audio.context.currentTime + 0.02, 0.8, 0.25, 'Electric Piano', 4)
+  audio.playChord([0], rootNoteIdx, 0, 0.8, 0.25, 'Electric Piano', 4)
 
   // 2) After 800ms: top note
   const t1 = setTimeout(() => {
-    audio.playChord([0], topNoteIdx, audio.context.currentTime + 0.02, 0.8, 0.25, 'Electric Piano', topOctave)
+    audio.playChord([0], topNoteIdx, 0, 0.8, 0.25, 'Electric Piano', topOctave)
   }, 800)
 
   // 3) After 1700ms: both together
   const t2 = setTimeout(() => {
     const harmonicTones = semi === 0 ? [0] : [0, semi]
-    audio.playChord(harmonicTones, rootNoteIdx, audio.context.currentTime + 0.02, 0.8, 0.4, 'Electric Piano', 4)
+    audio.playChord(harmonicTones, rootNoteIdx, 0, 0.8, 0.4, 'Electric Piano', 4)
   }, 1700)
 
   playTimers.push(t1, t2)
@@ -199,8 +199,8 @@ function setDifficulty(d) {
   resetGame()
 }
 
-function playInterval() {
-  audio.init()
+async function playInterval() {
+  await audio.init()
   clearTimers()
   const pool = POOLS[difficulty.value]
   currentSemitones.value  = randomItem(pool)
@@ -213,8 +213,9 @@ function playInterval() {
   scheduleIntervalPlay(currentRoot.value, currentSemitones.value)
 }
 
-function replayInterval() {
+async function replayInterval() {
   if (phase.value === 'idle') return
+  await audio.init()
   clearTimers()
   scheduleIntervalPlay(currentRoot.value, currentSemitones.value)
 }

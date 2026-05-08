@@ -96,30 +96,38 @@
 
       </div>
 
-      <!-- Sequence Display -->
-      <div style="min-height:65px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 12px 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:15px;">
-        <span v-if="sequence.length === 0" style="color:#555;font-size:0.85em;">{{ t('lb.empty') }}</span>
-        <div
-          v-for="(note, idx) in sequence"
-          :key="idx"
-          class="lb-note-pill"
-          :style="playingIdx === idx ? 'background:rgba(255,214,10,0.22);border-color:var(--accent);' : ''"
-          @click="cycleDuration(idx)"
-        >
-          <span>{{ note.noteName }}</span>
-          <small>s{{ note.s + 1 }}/f{{ note.f }}</small>
-          <div class="lb-pill-dur">{{ DUR_LABELS[note.dur] }}</div>
-          <button
-            class="lb-pill-delete"
-            style="opacity:1"
-            @click.stop="removeNote(idx)"
-          >✕</button>
-        </div>
-      </div>
+      <!-- Sequence Display with Drag-and-Drop -->
+      <draggable 
+        v-model="sequence" 
+        item-key="id"
+        class="lb-sequence-container"
+        ghost-class="lb-pill-ghost"
+        :animation="200"
+      >
+        <template #item="{element, index}">
+          <div
+            class="lb-note-pill"
+            :style="playingIdx === index ? 'background:rgba(255,214,10,0.22);border-color:var(--accent);' : ''"
+            @click="cycleDuration(index)"
+          >
+            <span>{{ element.noteName }}</span>
+            <small>s{{ element.s + 1 }}/f{{ element.f }}</small>
+            <div class="lb-pill-dur">{{ DUR_LABELS[element.dur] }}</div>
+            <button
+              class="lb-pill-delete"
+              style="opacity:1"
+              @click.stop="removeNote(index)"
+            >✕</button>
+          </div>
+        </template>
+        <template #header>
+          <span v-if="sequence.length === 0" style="color:#555;font-size:0.85em;">{{ t('lb.empty') }}</span>
+        </template>
+      </draggable>
 
       <div class="teoria-tip">
         <span>{{ t('lb.tip') }}</span>
-        <br><span style="font-size:0.85em;color:#888;margin-top:4px;display:block;">Clic sulla pillola → cambia durata · ✕ → rimuovi nota</span>
+        <br><span style="font-size:0.85em;color:#888;margin-top:4px;display:block;">Clic sulla pillola → cambia durata · ✕ → rimuovi nota · Trascina per riordinare</span>
       </div>
 
     </div>
@@ -128,6 +136,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import draggable from 'vuedraggable'
 import { useI18n } from '../composables/useI18n.js'
 import { useAudioStore } from '../stores/audio.js'
 
@@ -153,10 +162,15 @@ const trainerTargetBpm = ref(120)
 let trainerInterval = null
 
 // ── Actions ───────────────────────────────────────────────────────────────────
-function addNote({ noteIndex, stringIndex, fretIndex, element }) {
+async function addNote({ noteIndex, stringIndex, fretIndex, element }) {
   if (isPlaying.value) return
+  
+  // Play note immediate feedback
+  await audio.playNoteImmediate(noteIndex, '8n', 0.5, soundName.value, 4)
+
   const noteName = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][noteIndex]
   sequence.value.push({
+    id: Date.now() + Math.random(), // Unique ID for draggable
     noteName,
     noteIndex,
     s: stringIndex,
@@ -194,11 +208,11 @@ function cycleDuration(idx) {
 // ── Playback Logic ────────────────────────────────────────────────────────────
 let playTimeout = null
 
-function startPlay() {
+async function startPlay() {
   if (sequence.value.length === 0) return
   isPlaying.value = true
   playingIdx.value = 0
-  audio.init()
+  await audio.init()
   playNext()
 }
 
@@ -224,9 +238,7 @@ function playNext() {
   }
 
   const note = sequence.value[playingIdx.value]
-  // In lick builder, we use a simple playNote or similar.
-  // Actually audio store has playChord, we use it with single note [0]
-  audio.playChord([0], note.noteIndex, audio.context.currentTime, 1, 0.2, soundName.value, 4)
+  audio.playChord([0], note.noteIndex, 0, 1, 0.2, soundName.value, 4)
 
   const ms = (60 / bpm.value) * 1000 * (4 / parseInt(note.dur))
   playingIdx.value++
@@ -263,7 +275,11 @@ function importJson(event) {
     try {
       const data = JSON.parse(e.target.result)
       if (data.sequence) {
-        sequence.value = data.sequence
+        // Ensure each note has a unique ID for dragging
+        sequence.value = data.sequence.map(n => ({
+          ...n,
+          id: n.id || (Date.now() + Math.random())
+        }))
         if (data.bpm) bpm.value = data.bpm
       }
     } catch { alert('Invalid JSON file') }
@@ -286,3 +302,30 @@ onUnmounted(() => {
   stopPlay()
 })
 </script>
+
+<style scoped>
+.lb-sequence-container {
+  min-height: 65px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px 12px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.lb-pill-ghost {
+  opacity: 0.5;
+  background: var(--accent) !important;
+}
+
+.lb-pill-delete {
+  padding: 0;
+  border: none;
+  line-height: 16px;
+  text-align: center;
+}
+</style>

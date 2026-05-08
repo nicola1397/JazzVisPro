@@ -278,6 +278,17 @@ select {
   width: auto;
 }
 
+/* Main Viewport */
+.viewport {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+}
+
 /* Interval Legend */
 .controls {
   display: flex;
@@ -289,6 +300,8 @@ select {
   border-radius: 20px;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  width: fit-content;
+  max-width: 100%;
 }
 .color-option {
   display: flex;
@@ -311,16 +324,38 @@ select {
   border: 2px solid #fff;
 }
 
-/* Main Fretboard */
-.viewport {
+.note-circle-board {
+  position: relative;
   width: 100%;
-  box-sizing: border-box;
-  padding: 10px 25px;
+  height: 100%;
+  display: block;
+}
+
+.circle-note {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  background: #2c2c2e;
+  border: 2px solid #444;
+  border-radius: 50%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  margin: 0 auto;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.95em;
+  transform: translate(-50%, -50%);
+  user-select: none;
+  color: var(--text-h);
 }
+.circle-note:hover { border-color: var(--accent); background: #3a3a3c; transform: translate(-50%, -50%) scale(1.1); z-index: 100; }
+.circle-note.flat { width: 40px; height: 40px; font-size: 0.78em; background: rgba(48,209,88,.07); border-color: rgba(48,209,88,.30); }
+.circle-note.flat:hover { border-color: #32d74b; background: rgba(48,209,88,.18); }
+.circle-note.root { background: rgba(10,132,255,.18) !important; border-color: #0a84ff !important; }
+.circle-note.correct { background: #32d74b !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(50, 215, 75, 0.4); z-index: 10; }
+.circle-note.wrong { background: #ff453a !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(255, 69, 58, 0.4); z-index: 10; }
 
 .scroll-wrapper {
   width: 100%;
@@ -709,32 +744,6 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
   display: block; /* Assicura che sia un blocco solido */
 }
 
-.circle-note {
-  position: absolute;
-  width: 56px;
-  height: 56px;
-  background: #2c2c2e;
-  border: 2px solid #444;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 0.95em;
-  transform: translate(-50%, -50%);
-  user-select: none;
-}
-.circle-note .ita { font-size: 0.65em; opacity: 0.6; margin-top: -2px; text-transform: capitalize; }
-.circle-note:hover { border-color: var(--accent); background: #3a3a3c; transform: translate(-50%, -50%) scale(1.1); z-index: 100; }
-.circle-note.correct { background: #32d74b !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(50, 215, 75, 0.4); z-index: 10; }
-.circle-note.wrong { background: #ff453a !important; border-color: #fff !important; color: #000 !important; box-shadow: 0 0 20px rgba(255, 69, 58, 0.4); z-index: 10; }
-.circle-note.flat { width: 40px; height: 40px; font-size: 0.78em; background: rgba(48,209,88,.07); border-color: rgba(48,209,88,.30); }
-.circle-note.flat:hover { border-color: #32d74b; background: rgba(48,209,88,.18); }
-.circle-note.root { background: rgba(10,132,255,.18) !important; border-color: #0a84ff !important; }
-
 /* ========== TEORIA JAZZ SECTION ========== */
 .teoria-container { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
 
@@ -1028,7 +1037,8 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
   width: 16px; height: 16px; background: #e74c3c;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 0.6em; font-weight: 900; color: #fff; opacity: 0;
-  transition: opacity 0.15s; cursor: pointer; z-index: 2; line-height: 1;
+  transition: opacity 0.15s; cursor: pointer; z-index: 2; 
+  line-height: 1; padding: 0; border: none;
 }
 .lb-note-pill:hover .lb-pill-delete { opacity: 1; }
 

@@ -169,8 +169,8 @@ function setDifficulty(level) {
   resetGame()
 }
 
-function playChord() {
-  audio.init()
+async function playChord() {
+  await audio.init()
   const types = CHORD_SETS[difficulty.value]
   currentRoot.value  = Math.floor(Math.random() * 12)
   currentChord.value = types[Math.floor(Math.random() * types.length)]
@@ -182,17 +182,17 @@ function playChord() {
   statusMsg.value     = t('et.listening')
   lastCorrect.value   = false
 
-  audio.playChord(tones, currentRoot.value, audio.context.currentTime + 0.05, 1.5, 0.25, 'Electric Piano', 4)
+  audio.playChord(tones, currentRoot.value, 0, 1.5, 0.25, 'Electric Piano', 4)
 }
 
-function replayChord() {
+async function replayChord() {
   if (!currentChord.value) return
-  audio.init()
+  await audio.init()
   const tones = INTERVALS[currentChord.value] || [0,4,7,10]
-  audio.playChord(tones, currentRoot.value, audio.context.currentTime + 0.05, 1.5, 0.25, 'Electric Piano', 4)
+  audio.playChord(tones, currentRoot.value, 0, 1.5, 0.25, 'Electric Piano', 4)
 }
 
-function answer(type) {
+async function answer(type) {
   if (answered.value || phase.value !== 'listening') return
   answeredChord.value = type
   answered.value      = true
@@ -216,7 +216,8 @@ function answer(type) {
   saveStats()
 
   const tones = INTERVALS[currentChord.value] || [0,4,7,10]
-  audio.playChord(tones, currentRoot.value, audio.context.currentTime + 0.05, 1.0, 0.25, 'Electric Piano', 4)
+  await audio.init()
+  audio.playChord(tones, currentRoot.value, 0, 1.0, 0.25, 'Electric Piano', 4)
 }
 
 function resetGame() {

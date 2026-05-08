@@ -47,20 +47,20 @@ function reset() {
   clearBoard()
 }
 
-function start() {
+async function start() {
   active = true
   const notes = appStore.accidental === '#' ? NOTES : NOTES_FLAT
   targetNote = Math.floor(Math.random() * 12)
   questionText.value = `${t('nf.find-prefix')}: ${notes[targetNote]}`
   statusText.value   = t('nf.click-status')
-  audio.init()
-  audio.playChord([0], targetNote, audio.context.currentTime, 0.8, 0.2, 'Electric Piano', 4)
+  await audio.init()
+  audio.playChord([0], targetNote, 0, 0.8, 0.2, 'Electric Piano', 4)
   clearBoard()
 }
 
-function replay() {
-  audio.init()
-  audio.playChord([0], targetNote, audio.context.currentTime, 0.8, 0.2, 'Electric Piano', 4)
+async function replay() {
+  await audio.init()
+  audio.playChord([0], targetNote, 0, 0.8, 0.2, 'Electric Piano', 4)
 }
 
 function clearBoard() {
@@ -70,12 +70,12 @@ function clearBoard() {
   })
 }
 
-function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
+async function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
   const notes  = appStore.accidental === '#' ? NOTES : NOTES_FLAT
   const tuning = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
   const oct    = BASE_OCTAVES[stringIndex] + Math.floor((tuning[stringIndex] + fretIndex) / 12)
-  audio.init()
-  audio.playChord([0], noteIndex, audio.context.currentTime, 0.8, 0.2, 'Electric Piano', oct)
+  await audio.init()
+  audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
   if (!active) return
   active = false; total.value++
   element.style.transition = 'all 0.2s ease'
