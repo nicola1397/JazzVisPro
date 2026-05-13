@@ -2,7 +2,7 @@
   <div class="app-container">
     <AppSidebar />
 
-    <main class="main-content">
+    <main class="main-content" v-if="appStore.isLoaded">
       <AppNavbar />
 
       <CountdownOverlay
@@ -38,6 +38,7 @@
         <RouterView />
       </div>
     </main>
+    <div v-else>{{ t('label.loading-app') }}</div>
   </div>
 </template>
 
@@ -66,27 +67,26 @@ watch(() => appStore.lang, lang => {
   document.documentElement.setAttribute('lang', lang)
 }, { immediate: true })
 
-function handleNoteClick({ noteIndex, stringIndex, fretIndex, element }) {
+function handleNoteClick({ noteIndex, midiNote, stringIndex, fretIndex, element }) {
   const path = route.path
   if (['/interval-learner', '/note-finder', '/lick-builder'].includes(path)) {
     window.dispatchEvent(new CustomEvent('fretboard:noteClick', {
-      detail: { noteIndex, stringIndex, fretIndex, element }
+      detail: { noteIndex, midiNote, stringIndex, fretIndex, element }
     }))
   } else {
-    const posKey = `${stringIndex}-${fretIndex}`
-    if (appStore.explorerMode === 'custom') appStore.toggleCustomNote(posKey)
-    else appStore.toggleManualNote(posKey)
+    if (appStore.explorerMode === 'custom') {
+      const posKey = `${stringIndex}-${fretIndex}`
+      appStore.toggleCustomNote(posKey)
+    } else if (appStore.explorerMode === 'highlight') {
+      const posKey = `${stringIndex}-${fretIndex}`
+      appStore.toggleManualNote(posKey)
+    }
+    // In 'normal' mode, direct fretboard clicks are disabled
   }
 }
 
 onMounted(() => {
   const data = appStore.loadFromStorage()
   playbackStore.loadFromData(data)
-})
-
-watch(route, (to, from) => {
-  if (from.path === '/groove-trainer') window.dispatchEvent(new CustomEvent('groove:stop'))
-  if (from.path === '/tuner')          window.dispatchEvent(new CustomEvent('tuner:stop'))
-  if (from.path === '/lick-builder')   window.dispatchEvent(new CustomEvent('lickbuilder:stop'))
 })
 </script>

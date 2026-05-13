@@ -1,40 +1,50 @@
 <template>
-  <div id="view-reharmonizer" class="view-panel active">
-    <div class="importer-area" style="max-width:720px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title" data-i18n="rh.title">{{ t('rh.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;">{{ t('rh.subtitle') }}</p>
+  <div id="view-reharmonizer" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">JAZZ · DECK</span>
+        <h1 class="jd-titlemark-name">{{ t('rh.title') }}</h1>
+      </div>
+    </header>
 
-      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <section class="jd-console">
+      <div class="jd-grain" aria-hidden="true"></div>
+      <div class="jd-section-label">
+        <span>{{ t('rh.subtitle') }}</span>
+        <div class="jd-section-rule"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:0;flex-wrap:wrap;position:relative;z-index:1;">
         <input
           v-model="inputText"
           type="text"
           :placeholder="t('rh.placeholder')"
-          style="flex:1;min-width:200px;background:#2c2c2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:8px 12px;border-radius:8px;font-size:0.9em;"
+          style="flex:1;min-width:200px;"
           @keydown.enter="analyze"
         >
         <button class="btn-add-step" @click="analyze">{{ t('rh.analyze') }}</button>
       </div>
+    </section>
 
-      <div v-if="results.length === 0 && analyzed" style="color:#666;text-align:center;padding:20px;">
-        {{ t('rh.no-results') }}
+    <div v-if="results.length === 0 && analyzed" style="color:var(--jd-muted);text-align:center;padding:40px;font-family:var(--jd-mono);font-size:0.9em;">
+      {{ t('rh.no-results') }}
+    </div>
+
+    <div v-for="item in results" :key="item.original" class="rh-card" style="padding:18px 20px;margin-bottom:12px;">
+      <div class="rh-original" style="font-size:1.4em;margin-bottom:14px;">
+        {{ item.original }}
       </div>
-
-      <div v-for="item in results" :key="item.original" class="rh-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:1.1em;font-weight:700;color:var(--text-h);margin-bottom:10px;">
-          {{ item.original }}
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <div
-            v-for="sub in item.subs"
-            :key="sub.chord + sub.label"
-            style="background:rgba(255,214,10,0.08);border:1px solid rgba(255,214,10,0.25);border-radius:8px;padding:6px 12px;cursor:default;"
-          >
-            <div style="font-weight:700;color:var(--accent);font-size:0.95em;">{{ sub.chord }}</div>
-            <div style="font-size:0.7em;color:#aaa;margin-top:2px;">{{ sub.label }}</div>
-          </div>
+      <div class="rh-subs">
+        <div
+          v-for="sub in item.subs"
+          :key="sub.chord + sub.label"
+          class="rh-sub-badge"
+          style="padding:10px 14px;min-width:110px;"
+        >
+          <div style="font-weight:700;color:var(--jd-amber);font-size:1.1em;">{{ sub.chord }}</div>
+          <small>{{ sub.label }}</small>
         </div>
       </div>
-
     </div>
   </div>
 </template>

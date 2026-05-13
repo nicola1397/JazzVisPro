@@ -18,14 +18,14 @@
       <div class="col-12 col-sm order-3 order-sm-2">
         <div class="row gx-2 gy-2 align-items-center">
           <div class="col-12 col-sm-2 col-lg-1">
-            <div class="nav-group"><label>Key</label>
+            <div class="nav-group"><label>{{ t('label.key') }}</label>
               <select :value="step.root" @change="$emit('update','root',$event.target.value)">
                 <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
               </select>
             </div>
           </div>
           <div class="col-12 col-sm-10 col-lg-4">
-            <div class="nav-group"><label>Scale</label>
+            <div class="nav-group"><label>{{ t('label.scale') }}</label>
               <select :value="step.scale" @change="$emit('update','scale',$event.target.value)">
                 <option v-for="s in scaleKeys" :key="s" :value="s">{{ s }}</option>
               </select>
@@ -34,17 +34,17 @@
           <div class="col-12 col-sm-7 col-lg-4">
             <div class="row g-1 bg-black bg-opacity-25 p-1 rounded m-0 w-100">
               <div class="col-4">
-                <div class="nav-group"><label>Bars</label>
+                <div class="nav-group"><label>{{ t('label.bars') }}</label>
                   <input type="text" :value="step.bars" @change="$emit('update','bars',+$event.target.value)">
                 </div>
               </div>
               <div class="col-4">
-                <div class="nav-group"><label>Beats</label>
+                <div class="nav-group"><label>{{ t('label.beats') }}</label>
                   <input type="number" :value="step.beats" @change="$emit('update','beats',+$event.target.value)">
                 </div>
               </div>
               <div class="col-4">
-                <div class="nav-group"><label>Den</label>
+                <div class="nav-group"><label>{{ t('label.den') }}</label>
                   <select :value="step.denominator" @change="$emit('update','denominator',+$event.target.value)">
                     <option value="2">2</option><option value="4">4</option>
                     <option value="8">8</option><option value="16">16</option>
@@ -56,13 +56,13 @@
           <div class="col-12 col-sm-5 col-lg-3">
             <div class="row g-1 m-0 w-100">
               <div class="col-8 p-0 pe-1">
-                <div class="nav-group"><label>Chord</label>
-                  <input type="text" :value="step.chordName" placeholder="Chord"
+                <div class="nav-group"><label>{{ t('label.chord') }}</label>
+                  <input type="text" :value="step.chordName" :placeholder="t('label.chord')"
                     @change="$emit('update','chordName',$event.target.value)">
                 </div>
               </div>
               <div class="col-4 p-0">
-                <div class="nav-group"><label>Oct</label>
+                <div class="nav-group"><label>{{ t('label.oct') }}</label>
                   <input type="number" :value="step.chordOctave"
                     @change="$emit('update','chordOctave',+$event.target.value)">
                 </div>
@@ -78,10 +78,12 @@
 <script setup>
 import { computed } from 'vue'
 import { NOTES, SCALES } from '../../utils/theory.js'
+import { useI18n } from '../../composables/useI18n.js'
 
 const props = defineProps({ step: Object, index: Number, active: Boolean })
 const emit  = defineEmits(['remove','update','select','reorder'])
 const scaleKeys = computed(() => Object.keys(SCALES))
+const { t } = useI18n()
 
 let dragSrcIdx = null
 function onDragStart(e) {

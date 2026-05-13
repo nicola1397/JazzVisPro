@@ -1,85 +1,103 @@
 <template>
-  <div id="view-interval-ear-training" class="view-panel active">
-    <div class="importer-area text-center" style="max-width:720px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title" data-i18n="iet.title">{{ t('iet.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="iet.subtitle">{{ t('iet.subtitle') }}</p>
-
-      <!-- Score & Streak -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div style="font-size:0.9em;"><span data-i18n="label.score">{{ t('label.score') }}</span>: <strong id="iet-score">{{ score }} / {{ total }}</strong></div>
-        <div id="iet-streak" style="font-size:0.9em;">🔥 {{ streak }}</div>
+  <div id="view-interval-ear-training" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">{{ t('label.eyebrow') }}</span>
+        <h1 class="jd-titlemark-name">{{ t('iet.title') }}</h1>
       </div>
+    </header>
 
-      <!-- Question Area -->
-      <div id="iet-question" style="text-align:center;font-size:2em;font-weight:900;color:var(--accent);min-height:54px;margin-bottom:16px;line-height:1.2;">
-        <span v-if="phase === 'idle' || phase === 'listening'">?</span>
-        <span v-else>{{ intervalName(currentSemitones) }}</span>
-      </div>
+    <section class="jd-console" :class="{ 'jd-playing': phase === 'listening' }">
+      <div class="jd-grain" aria-hidden="true"></div>
 
-      <!-- Action Buttons -->
-      <div style="display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
-        <button class="btn-icon btn-play" style="width:54px;height:54px;" @click="playInterval" :disabled="phase === 'listening'">
-          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <button class="btn-io" @click="replayInterval" :disabled="phase === 'idle'" data-i18n="btn.replay">{{ t('btn.replay') }}</button>
-        <button class="btn-reset" style="width:auto;padding:0 16px;" @click="resetGame" data-i18n="btn.reset-game">Reset</button>
-      </div>
-
-      <!-- Difficulty Options -->
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;">
-        <button
-          v-for="d in ['easy','medium','hard']"
-          :key="d"
-          class="iet-diff-btn"
-          :class="{ active: difficulty === d }"
-          @click="setDifficulty(d)"
-        >{{ t('et.' + d) }}</button>
-      </div>
-
-      <!-- Choices Grid -->
-      <div id="iet-choices" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;margin-bottom:16px;">
-        <button
-          v-for="semi in currentPool"
-          :key="semi"
-          class="et-choice-btn iet-choice-btn"
-          :class="{
-            correct: answered && semi === currentSemitones,
-            wrong:   answered && semi === answeredSemitones && semi !== currentSemitones,
-          }"
-          :disabled="answered || phase !== 'listening'"
-          @click="answerInterval(semi)"
-        >{{ intervalName(semi) }}</button>
-      </div>
-
-      <!-- Status text -->
-      <div id="iet-status" style="text-align:center;color:var(--secondary-text);font-size:0.9em;min-height:28px;">
-        {{ statusMsg || t('iet.ready') }}
-      </div>
-
-      <!-- History Panel -->
-      <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;">
-        <div id="et-history-panel" style="min-height:40px;">
-          <div v-if="historyStats.length > 0">
-            <div style="font-size:0.75em;text-transform:uppercase;color:#777;font-weight:700;margin-bottom:8px;">{{ t('et.history') }}</div>
-            <div v-for="stat in historyStats" :key="stat.name" class="et-stat-row">
-              <span class="et-stat-type">{{ stat.name }}</span>
-              <div class="et-stat-bar">
-                <div :style="{
-                  width: stat.pct + '%',
-                  background: stat.pct >= 75 ? '#2ecc71' : stat.pct >= 50 ? '#f39c12' : '#e74c3c',
-                  height:'100%',
-                  borderRadius:'4px'
-                }"></div>
-              </div>
-              <span class="et-stat-pct">{{ stat.pct }}%</span>
-              <span class="et-stat-cnt">{{ stat.correct }}/{{ stat.total }}</span>
-            </div>
-          </div>
-          <div v-else style="color:#666;font-size:0.85em;text-align:center;">{{ t('et.history') }}</div>
+      <div class="jd-master">
+        <div class="jd-score-badge">
+          <span class="jd-score-val">{{ score }} / {{ total }}</span>
+          <span class="jd-score-label">{{ t('label.score') }}</span>
         </div>
-        <button class="btn-reset" style="width:auto;padding:0 16px;margin-top:10px;font-size:0.8em;" @click="clearHistory">{{ t('et.clear-history') }}</button>
+        
+        <div class="jd-streak-badge">
+          <span class="jd-streak-val">🔥 {{ streak }}</span>
+          <span class="jd-streak-label">{{ t('label.streak') }}</span>
+        </div>
+
+        <div class="jd-transport">
+          <button class="jd-tbtn jd-tbtn--play" :disabled="phase === 'listening'" @click="playInterval" aria-label="Play">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="jd-tbtn jd-tbtn--replay" :disabled="phase === 'idle'" @click="replayInterval" aria-label="Replay">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+        </div>
+
+        <div class="jd-modes">
+          <button class="jd-toolbtn" @click="resetGame">{{ t('btn.reset-game') }}</button>
+        </div>
       </div>
 
+      <div class="jd-rule" aria-hidden="true"></div>
+
+      <div class="jd-question-box">
+        <div class="jd-question-text">
+          <span v-if="phase === 'idle' || phase === 'listening'">?</span>
+          <span v-else>{{ intervalName(currentSemitones) }}</span>
+        </div>
+        <div class="jd-question-hint">
+          {{ phase === 'listening' ? t('iet.listening') : (statusMsg || t('iet.ready')) }}
+        </div>
+      </div>
+    </section>
+
+    <div class="jd-section-label">
+      <span>{{ t('label.choices') }}</span>
+      <span class="jd-section-rule"></span>
+    </div>
+
+    <div class="jd-choices-grid">
+      <button
+        v-for="semi in currentPool"
+        :key="semi"
+        class="jd-choice-btn"
+        :class="{
+          correct: answered && semi === currentSemitones,
+          wrong:   answered && semi === answeredSemitones && semi !== currentSemitones,
+        }"
+        :disabled="answered || phase !== 'listening'"
+        @click="answerInterval(semi)"
+      >{{ intervalName(semi) }}</button>
+    </div>
+
+    <div class="jd-section-label">
+      <span>{{ t('et.difficulty') }}</span>
+      <span class="jd-section-rule"></span>
+    </div>
+    
+    <div class="jd-modes" style="padding: 0 20px 20px;">
+      <label v-for="d in ['easy','medium','hard']" :key="d" class="jd-mode" :class="{ on: difficulty === d }">
+        <input type="radio" :value="d" v-model="difficulty" @change="setDifficulty(d)" class="hidden-radio">
+        <span class="jd-mode-dot" aria-hidden="true"></span>
+        <span class="jd-mode-text">{{ t('et.' + d) }}</span>
+      </label>
+    </div>
+
+    <div class="jd-section-label">
+      <span>{{ t('et.history') }}</span>
+      <span class="jd-section-rule"></span>
+    </div>
+
+    <div class="jd-history-stats">
+      <div v-if="historyStats.length > 0" class="jd-stats-container">
+        <div v-for="stat in historyStats" :key="stat.name" class="jd-stat-row">
+          <span class="jd-stat-label" style="width:100px;">{{ stat.name }}</span>
+          <div class="jd-stat-progress">
+            <div class="jd-stat-bar" :style="{ width: stat.pct + '%', backgroundColor: getStatColor(stat.pct) }"></div>
+          </div>
+          <span class="jd-stat-val">{{ stat.pct }}%</span>
+          <span class="jd-stat-count">{{ stat.correct }}/{{ stat.total }}</span>
+        </div>
+        <button class="jd-toolbtn jd-toolbtn--reset" style="margin-top:15px;" @click="clearHistory">{{ t('et.clear-history') }}</button>
+      </div>
+      <div v-else class="jd-section-hint" style="padding: 0 20px;">{{ t('et.history-empty') }}</div>
     </div>
   </div>
 </template>
@@ -168,6 +186,12 @@ function clearTimers() {
   playTimers = []
 }
 
+function getStatColor(pct) {
+  if (pct >= 75) return '#2ecc71'
+  if (pct >= 50) return '#f39c12'
+  return '#e74c3c'
+}
+
 function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)] }
 
 async function scheduleIntervalPlay(root, semi) {
@@ -226,7 +250,7 @@ function answerInterval(semi) {
   answeredSemitones.value = semi
   answered.value          = true
   total.value++
-  phase.value             = 'answered'
+  phase.value         = 'answered'
 
   const isCorrect = semi === currentSemitones.value
   lastCorrect.value = isCorrect
@@ -266,3 +290,128 @@ function clearHistory() {
 
 onMounted(() => { loadStats() })
 </script>
+
+<style scoped>
+.jd-question-box {
+  background: rgba(255, 214, 10, 0.05);
+  border: 1px solid rgba(255, 214, 10, 0.15);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.jd-question-text {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--jd-amber);
+  letter-spacing: 1px;
+  min-height: 42px;
+}
+
+.jd-question-hint {
+  font-size: 14px;
+  color: var(--jd-muted);
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+.jd-choices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 0 20px 20px;
+}
+
+.jd-choice-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 12px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.jd-choice-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.jd-choice-btn.correct {
+  background: #2ecc71;
+  border-color: #2ecc71;
+}
+
+.jd-choice-btn.wrong {
+  background: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.jd-stats-container {
+  padding: 0 20px 20px;
+}
+
+.jd-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.jd-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--jd-muted);
+}
+
+.jd-stat-progress {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.jd-stat-bar {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.jd-stat-val {
+  font-size: 11px;
+  font-weight: 700;
+  width: 35px;
+  text-align: right;
+}
+
+.jd-stat-count {
+  font-size: 10px;
+  color: var(--jd-muted);
+  width: 35px;
+  text-align: right;
+}
+
+.jd-score-badge, .jd-streak-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 5px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--jd-line);
+}
+
+.jd-score-val, .jd-streak-val {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.jd-score-label, .jd-streak-label {
+  font-size: 9px;
+  color: var(--jd-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+</style>

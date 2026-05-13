@@ -1,35 +1,50 @@
 <template>
-  <div id="view-scale-navigator" class="view-panel active">
-    <div class="importer-area" style="max-width:860px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title" data-i18n="sn.title">{{ t('sn.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;">{{ t('sn.subtitle') }}</p>
+  <div id="view-scale-navigator" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">JAZZ · DECK</span>
+        <h1 class="jd-titlemark-name">{{ t('sn.title') }}</h1>
+      </div>
+    </header>
+
+    <div class="importer-area" style="max-width:860px; margin: 0 auto; width: 100%; padding-top: 20px;">
+      <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('sn.subtitle') }}</p>
 
       <!-- Selectors -->
-      <div class="control-row-aligned" style="gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-        <div class="nav-group" style="flex:1;min-width:90px;">
-          <label>{{ t('label.key') }}</label>
-          <select v-model="selectedRoot">
-            <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
-          </select>
+      <section class="jd-console sn-controls" style="margin-bottom: 25px; padding: 25px;">
+
+        <div class="jd-grain" aria-hidden="true"></div>
+        <div class="jd-master" style="gap: 20px;">
+          <div class="jd-feel" style="flex: 1; min-width: 100px;">
+            <span class="jd-feel-label">{{ t('label.key') }}</span>
+            <select v-model="selectedRoot" class="jd-select">
+              <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="jd-feel" style="flex: 2; min-width: 180px;">
+            <span class="jd-feel-label">{{ t('sn.chord-type') }}</span>
+            <select v-model="selectedChordType" class="jd-select">
+              <option value="maj7">maj7</option>
+              <option value="m7">m7</option>
+              <option value="7">7 (Dominant)</option>
+              <option value="7alt">7alt</option>
+              <option value="m7b5">m7b5</option>
+              <option value="dim7">dim7</option>
+              <option value="mMaj7">mMaj7</option>
+              <option value="maj7#11">maj7#11</option>
+            </select>
+          </div>
         </div>
-        <div class="nav-group" style="flex:2;min-width:140px;">
-          <label>{{ t('sn.chord-type') }}</label>
-          <select v-model="selectedChordType">
-            <option value="maj7">maj7</option>
-            <option value="m7">m7</option>
-            <option value="7">7 (Dominant)</option>
-            <option value="7alt">7alt</option>
-            <option value="m7b5">m7b5</option>
-            <option value="dim7">dim7</option>
-            <option value="mMaj7">mMaj7</option>
-            <option value="maj7#11">maj7#11</option>
-          </select>
-        </div>
-      </div>
+      </section>
 
       <!-- Results -->
-      <div v-if="!suggestions.length" style="color:#555;">{{ t('sn.no-results') }}</div>
-      <div v-else class="sn-results-list">
+      <div v-if="!suggestions.length" style="color:var(--jd-muted); font-family: var(--jd-mono); text-align: center; padding: 40px;">{{ t('sn.no-results') }}</div>
+      <div v-else class="sn-results-list jd-steps">
+        <div class="jd-section-label" style="margin-bottom: 15px;">
+          <span>{{ t('cf.results') }}</span>
+          <span class="jd-section-rule"></span>
+        </div>
+
         <div v-for="(sug, i) in suggestions" :key="i" class="sn-scale-card">
           <div class="sn-scale-info">
             <div class="sn-scale-name">{{ sug.scale }}</div>
@@ -38,9 +53,9 @@
           <div class="sn-scale-actions">
             <span
               class="sn-tension-badge"
-              :style="`background:${tColor(sug.tension)}22;color:${tColor(sug.tension)};border-color:${tColor(sug.tension)}55`"
+              :style="`background:${tColor(sug.tension)}22; color:${tColor(sug.tension)}; border-color:${tColor(sug.tension)}55`"
             >{{ tLabel(sug.tension) }}</span>
-            <button class="btn-io sn-load-btn" @click="loadScale(sug.scale)">{{ t('sn.load-btn') }}</button>
+            <button class="jd-toolbtn sn-load-btn" @click="loadScale(sug.scale)">{{ t('sn.load-btn') }}</button>
           </div>
         </div>
       </div>

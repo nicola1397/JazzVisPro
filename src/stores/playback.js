@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAudioStore } from './audio.js'
 import { useAppStore } from './app.js'
-import { NOTES, NOTES_FLAT, SCALES } from '../utils/theory.js'
+import { NOTES, NOTES_FLAT, SCALES, getNoteIdx } from '../utils/theory.js'
 import { parseChord, getChordIntervals, getChordScale, PRESET_PROGRESSIONS, detectKey } from '../utils/chordParser.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 
@@ -37,14 +37,189 @@ export const usePlaybackStore = defineStore('playback', () => {
   const isCountingDown  = ref(false)
   const countdownValue  = ref(0)
   const bpm             = ref(120)
+  const metroOn         = ref(true)
   const metroVol        = ref(0.5)
   const metroSound      = ref('Beep')
   const chordSound      = ref('Electric Piano')
-  const chordVol        = ref(0.1)
+  const chordVol        = ref(0.25)
   const playChords      = ref(true)
   const loopSelection   = ref(false)
   const swingEnabled    = ref(false)
-  const accompanimentStyle = ref('Standard') // 'Standard', 'Swing', 'Bossa'
+  const accompanimentStyle = ref('Standard') // 'Standard', 'Swing', 'Bossa' (legacy combined preset)
+  const improvOn        = ref(false) // when true, override scale & highlights with suggested chord-scale + guide tones
+
+  // Separate bass / drum controls (independent of accompanimentStyle)
+  const bassOn          = ref(false)
+  const drumsOn         = ref(false)
+  const bassStyle       = ref('walking')      // 'walking' | 'two_feel' | 'root_5' | 'pedal' | 'arpeggio'
+  const drumStyle       = ref('jazz')          // 'jazz' | 'bossa' | 'rock' | 'brushes' | 'latin' | 'funk' | 'shuffle'
+  const bassVol         = ref(0.45)
+  const drumVol         = ref(0.60)
+  const drumSwing       = ref(0.667)           // 0.50 = straight 8ths, 0.667 = triplet, 0.75 = hard shuffle
+  const drumVar         = ref(0.25)             // 0..1 humanize amount + ghost-note probability
+  const fillEvery       = ref(0)                // 0 = never, otherwise fill every N bars
+
+  // Defaults per style — used when style changes (the slider snaps to this value)
+  const DRUM_DEFAULT_SWING = {
+    jazz: 0.667, brushes: 0.667, shuffle: 0.72,
+    bossa: 0.5, rock: 0.5, latin: 0.5, funk: 0.55,
+  }
+
+  // Humanize helpers
+  const _hum = (vol, vary) => vary > 0
+    ? Math.max(0.04, vol * (1 + (Math.random() - 0.5) * vary * 0.9)) // increased variance
+    : vol
+  const _maybe = p => Math.random() < p
+
+  // Bar counter for fills
+  let _barCount = 0
+
+  // Scheduling helper: ghost notes based on variation
+  const _ghost = (time, vol, vary) => {
+    if (vary > 0.1 && _maybe(vary * 0.4)) {
+      audio.playDrum('snare', time, _hum(vol * 0.25, vary))
+    }
+  }
+
+  // Walking-bass style functions (return 4 note indices per bar; -1 = silence)
+  function _bassNotes(rootIdx, ints, nextRoot) {
+    const has = n => ints.includes(n)
+    const fifth = (rootIdx + (has(7) ? 7 : 6)) % 12
+    const third = (rootIdx + (has(4) ? 4 : 3)) % 12
+    const seventh = (rootIdx + (has(11) ? 11 : 10)) % 12
+    const approachBelow = (nextRoot - 1 + 12) % 12
+    switch (bassStyle.value) {
+      case 'two_feel': return [rootIdx, -1, fifth, -1]
+      case 'root_5':   return [rootIdx, fifth, rootIdx, fifth]
+      case 'pedal':    return [rootIdx, rootIdx, rootIdx, rootIdx]
+      case 'arpeggio': return [rootIdx, third, fifth, seventh]
+      case 'walking':
+      default:         return [rootIdx, third, fifth, approachBelow]
+    }
+  }
+
+  // Sub-beat scheduled drum patterns — each schedules multiple hits within one quarter
+  // using `time` (seconds, ctx.currentTime + offset) for sample-accurate timing.
+  //   beat:  0..3 (current quarter within bar)
+  //   dur:   seconds-per-quarter
+  //   time:  base time (sec) for this beat
+  //   swing: 0.50 → 0.75 ratio for the off-beat
+  function _playDrumFill(dur, time) {
+    const v = drumVol.value
+    const vary = drumVar.value
+    const step = dur / 4
+    for (let i = 0; i < 4; i++) {
+      const intensity = 0.5 + i * 0.15
+      audio.playDrum('snare', time + i * step, _hum(v * intensity, vary))
+    }
+    audio.playDrum('snare', time + 3.5 * step, _hum(v * 1.1, vary)) // accent
+    if (_maybe(0.7)) audio.playDrum('ride', time + dur * 0.95, _hum(v * 0.65, vary))
+  }
+
+  function _drumHit(beat, dur, time) {
+    const v = drumVol.value
+    const sw = drumSwing.value
+    const vary = drumVar.value
+    const ride  = (off, vol) => audio.playDrum('ride',  time + off, _hum(v * vol, vary))
+    const kick  = (off, vol) => audio.playDrum('snare', time + off, _hum(v * vol, vary))  // surrogate
+    const snare = (off, vol) => audio.playDrum('snare', time + off, _hum(v * vol, vary))
+
+    // Fill every N bars: when current beat is the last of a bar that crosses the fill threshold
+    if (fillEvery.value > 0 && beat === 3 && (_barCount % fillEvery.value === fillEvery.value - 1)) {
+      _playDrumFill(dur, time)
+      return
+    }
+
+    switch (drumStyle.value) {
+      case 'bossa':
+        // 8th-note hi-hat with bossa swing
+        ride(0,        0.35);
+        ride(dur*sw,   0.25);
+        // Bossa surdo: 1 + "and-of-2", 3 + "and-of-4"
+        if (beat === 0 || beat === 2) kick(0,         0.90)
+        if (beat === 1 || beat === 3) kick(dur*0.5,   0.75)
+        if (beat === 1 || beat === 3) snare(0,        0.40)
+        _ghost(time + dur*0.25, v, vary)
+        _ghost(time + dur*0.75, v, vary)
+        break
+      case 'rock':
+        ride(0,        0.50);
+        ride(dur*sw,   0.40);
+        if (beat === 0 || beat === 2) kick(0, 1.0)
+        if (beat === 1 || beat === 3) snare(0, 1.0)
+        _ghost(time + dur*0.5, v, vary)
+        break
+      case 'brushes':
+        ride(0,        0.45);
+        ride(dur*sw,   0.35);
+        ride(dur*0.33, 0.20);
+        if (beat === 1 || beat === 3) snare(0,        0.55)
+        if (beat === 0 || beat === 2) snare(dur*0.5,  0.25)
+        break
+      case 'latin':
+        ride(0,        0.45);
+        ride(dur*0.25, 0.30);
+        ride(dur*0.5,  0.40);
+        ride(dur*0.75, 0.30);
+        if (beat === 0)  kick(0,        0.95)
+        if (beat === 1)  kick(dur*0.5,  0.80)
+        if (beat === 2)  kick(0,        0.90)
+        if (beat === 3)  kick(dur*0.5,  0.80)
+        if (beat === 1 || beat === 3) snare(0, 0.50)
+        break
+      case 'funk':
+        ride(0,        0.55);
+        ride(dur*0.25, 0.35);
+        ride(dur*sw,   0.45);
+        ride(dur*0.75, 0.35);
+        if (beat === 0) kick(0,         1.0)
+        if (beat === 2) kick(0,         0.85)
+        if (beat === 2) kick(dur*0.75,  0.75)
+        if (beat === 1 || beat === 3) snare(0,         1.0)
+        _ghost(time + dur*0.5, v, vary)
+        break
+      case 'shuffle':
+        ride(0,        0.60);
+        ride(dur*sw,   0.45);
+        if (beat === 0 || beat === 2) kick(0,  1.0)
+        if (beat === 1 || beat === 3) snare(0, 1.0)
+        break
+      case 'jazz':
+      default:
+        // Canonical jazz ride
+        ride(0,        0.65);
+        ride(dur*sw,   0.50);
+        // Chick on 2 and 4
+        if (beat === 1 || beat === 3) snare(0, 0.45)
+        // Kick on 1 and 3
+        if (beat === 0 || beat === 2) kick(0,  0.65)
+        // Snare variations (comping) based on drumVar
+        if (_maybe(vary * 0.3)) {
+          snare(dur*sw, 0.3 * vary)
+        }
+        break
+    }
+  }
+
+  function _setDrumStyle(name) {
+    drumStyle.value = name
+    if (DRUM_DEFAULT_SWING[name] != null) drumSwing.value = DRUM_DEFAULT_SWING[name]
+  }
+
+  // Apply improv guide: change scale to suggested + highlight guide tones (3rd & 7th)
+  function _applyImprovGuide(step, nextStep) {
+    if (!step) return
+    const chordStr = step.chordName || step.root
+    const suggested = getChordScale(chordStr, nextStep ? (nextStep.chordName || nextStep.root) : null)
+    appStore.setScaleName(suggested)
+    const ints = getChordIntervals(chordStr) || []
+    const third = ints.find(i => i === 3 || i === 4)
+    const seventh = ints.find(i => i === 9 || i === 10 || i === 11)
+    const guides = new Set()
+    if (third != null) guides.add(third)
+    if (seventh != null) guides.add(seventh)
+    appStore.highlightedIntervals = guides
+  }
 
   let nextNoteTime    = 0
   let beatsRemaining  = 0
@@ -129,10 +304,6 @@ export const usePlaybackStore = defineStore('playback', () => {
   function transposeProgression(semitones) {
     const accidental = appStore.accidental
     const notes = accidental === '#' ? NOTES : NOTES_FLAT
-    const getNoteIdx = n => {
-      let i = NOTES.indexOf(n)
-      return i === -1 ? NOTES_FLAT.indexOf(n) : i
-    }
     const targets = steps.value.some(s => s.selected)
       ? steps.value.filter(s => s.selected)
       : steps.value
@@ -171,7 +342,7 @@ export const usePlaybackStore = defineStore('playback', () => {
     const { root, scaleName } = appStore
     const scale = SCALES[scaleName]
     if (!scale || scale.length < 4) return
-    const rootIdx = NOTES.indexOf(root)
+    const rootIdx = getNoteIdx(root)
     steps.value.forEach((step, i) => {
       const degIdx = i % Math.min(7, scale.length)
       const chordRoot = (rootIdx + scale[degIdx]) % 12
@@ -194,6 +365,7 @@ export const usePlaybackStore = defineStore('playback', () => {
     activeIndex.value   = -1
     beatsRemaining      = 0
     beatInBar           = 0
+    _barCount           = 0
     isCountingDown.value = true
     countdownValue.value = 4
     nextNoteTime        = Tone.now()
@@ -218,7 +390,11 @@ export const usePlaybackStore = defineStore('playback', () => {
     steps.value[idx].active = true
     activeIndex.value = idx
     appStore.setRoot(steps.value[idx].root)
-    appStore.setScaleName(steps.value[idx].scale)
+    if (improvOn.value) {
+      _applyImprovGuide(steps.value[idx], steps.value[(idx + 1) % steps.value.length])
+    } else {
+      appStore.setScaleName(steps.value[idx].scale)
+    }
     if (isPlaying.value) { beatsRemaining = 0; beatInBar = 0 }
   }
 
@@ -275,10 +451,15 @@ export const usePlaybackStore = defineStore('playback', () => {
       if (!step) { stop(); return }
 
       beatInBar = 0
+      _barCount++   // crossing into a new bar
       steps.value.forEach(s => s.active = false)
       step.active = true
       appStore.setRoot(step.root)
-      appStore.setScaleName(step.scale)
+      if (improvOn.value) {
+        _applyImprovGuide(step, steps.value[(activeIndex.value + 1) % steps.value.length])
+      } else {
+        appStore.setScaleName(step.scale)
+      }
       beatsRemaining = (step.bars || 1) * (step.beats || 4)
       if (playChords.value) _triggerChord(step, time)
     }
@@ -288,16 +469,34 @@ export const usePlaybackStore = defineStore('playback', () => {
     const den = currentStep?.denominator || 4
     const beatDur = (60.0 / bpm.value) * (4 / den)
 
-    // Algorithmic Accompaniment
+    // Algorithmic Accompaniment (legacy combined presets — kept for back-compat)
     if (accompanimentStyle.value === 'Swing') {
       _playSwing(time, currentStep, beatInBar, beatDur)
     } else if (accompanimentStyle.value === 'Bossa') {
       _playBossa(time, currentStep, beatInBar, beatDur)
-    } else {
+    } else if (metroOn.value) {
       audio.playClick(time, beatInBar === 0, metroVol.value, metroSound.value)
     }
 
-    if (swingEnabled.value && accompanimentStyle.value === 'Standard') {
+    // Independent Bass / Drums tracks (style + volume controlled separately)
+    if (bassOn.value && currentStep) {
+      const rootIdx = getNoteIdx(currentStep.root)
+      if (rootIdx !== -1) {
+        const ints = currentStep.chordName ? (getChordIntervals(currentStep.chordName) || [0,4,7,10]) : [0,4,7,10]
+        const nextIdx = (activeIndex.value + 1) % steps.value.length
+        const nextRoot = getNoteIdx(steps.value[nextIdx]?.root || currentStep.root)
+        const notes = _bassNotes(rootIdx, ints, nextRoot >= 0 ? nextRoot : rootIdx)
+        const note = notes[beatInBar % 4]
+        if (note != null && note >= 0) {
+          audio.playBass(note, time, beatDur * 0.9, bassVol.value)
+        }
+      }
+    }
+    if (drumsOn.value) {
+      _drumHit(beatInBar, beatDur, time)
+    }
+
+    if (metroOn.value && swingEnabled.value && accompanimentStyle.value === 'Standard') {
       audio.playClick(time + beatDur * 0.67, false, metroVol.value * 0.45, metroSound.value)
     }
 
@@ -307,12 +506,12 @@ export const usePlaybackStore = defineStore('playback', () => {
 
   function _playSwing(time, step, beat, dur) {
     // Walking Bass
-    const rootIdx = NOTES.indexOf(step.root)
+    const rootIdx = getNoteIdx(step.root)
     let bassNote = rootIdx
     if (beat === 3) {
       // Approach note to next chord
       const nextIdx = (activeIndex.value + 1) % steps.value.length
-      const nextRoot = NOTES.indexOf(steps.value[nextIdx].root)
+      const nextRoot = getNoteIdx(steps.value[nextIdx].root)
       bassNote = (nextRoot + (Math.random() > 0.5 ? 1 : -1) + 12) % 12
     } else if (beat === 1 || beat === 2) {
       // Scale degree
@@ -329,7 +528,7 @@ export const usePlaybackStore = defineStore('playback', () => {
   }
 
   function _playBossa(time, step, beat, dur) {
-    const rootIdx = NOTES.indexOf(step.root)
+    const rootIdx = getNoteIdx(step.root)
     // Root-Fifth bass
     const bassNote = (beat % 2 === 0) ? rootIdx : (rootIdx + 7) % 12
     audio.playBass(bassNote, time, dur * 0.8, 0.45)
@@ -361,7 +560,7 @@ export const usePlaybackStore = defineStore('playback', () => {
     }
 
     const dur = (step.bars || 1) * (step.beats || 4) * (60 / bpm.value) * (4 / (step.denominator || 4))
-    const rootNoteIdx = NOTES.indexOf(chordRoot)
+    const rootNoteIdx = getNoteIdx(chordRoot)
     audio.playChord(tones, rootNoteIdx >= 0 ? rootNoteIdx : 0, time, dur, chordVol.value, chordSound.value, step.chordOctave || 4)
   }
 
@@ -376,7 +575,17 @@ export const usePlaybackStore = defineStore('playback', () => {
       if (!chords.length) return
       const bars = 1.0 / chords.length
       chords.forEach((c, idx) => {
-        if (c === '%' || c === '•/•') return
+        if (c === '%' || c === '•/•') {
+          const last = steps.value[steps.value.length - 1]
+          if (last) {
+            addStep({
+              ...last,
+              id: Date.now() + steps.value.length,
+              bars
+            })
+          }
+          return
+        }
         const p = parseChord(c); if (!p) return
         const nextC = chords[idx + 1] || null
         allChords.push(c)
@@ -395,7 +604,7 @@ export const usePlaybackStore = defineStore('playback', () => {
   const voiceLeadingData = computed(() => {
     if (steps.value.length < 2) return []
     return steps.value.map(step => {
-      const ri = NOTES.indexOf(step.root)
+      const ri = getNoteIdx(step.root)
       const ints = getChordIntervals(step.chordName || step.root)
       const third   = ints.find(i => i === 3 || i === 4)
       const seventh = ints.find(i => i === 9 || i === 10 || i === 11)
@@ -411,8 +620,10 @@ export const usePlaybackStore = defineStore('playback', () => {
 
   return {
     steps, activeIndex, isPlaying, isCountingDown, countdownValue,
-    bpm, metroVol, metroSound, chordSound, chordVol,
-    playChords, loopSelection, swingEnabled, accompanimentStyle,
+    bpm, metroOn, metroVol, metroSound, chordSound, chordVol,
+    playChords, loopSelection, swingEnabled, accompanimentStyle, improvOn,
+    bassOn, drumsOn, bassStyle, drumStyle, bassVol, drumVol, drumSwing, drumVar, fillEvery,
+    setDrumStyle: _setDrumStyle,
     voiceLeadingData,
     scheduleSave, loadFromData,
     addStep, removeStep, updateStep, clearProgression,

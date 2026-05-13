@@ -1,22 +1,49 @@
 <template>
-  <div id="view-note-finder" class="view-panel active">
-    <div class="importer-area" style="max-width:600px;margin: 0 auto; width: 100%; text-align: center;">
-      <h2 class="area-title" data-i18n="nf.title">{{ t('nf.title') }}</h2>
-
-      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;background:rgba(50,215,75,0.05);padding:15px;border-radius:12px;border:1px solid rgba(50,215,75,0.2);">
-      <div class="h3 mb-0" style="color:#32d74b;font-weight:800;text-transform:uppercase;letter-spacing:2px;text-align:center;">
-        {{ questionText }}
+  <div id="view-note-finder" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">{{ t('label.eyebrow') }}</span>
+        <h1 class="jd-titlemark-name">{{ t('nf.title') }}</h1>
       </div>
-      <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap" style="margin-top:10px;">
-        <button class="btn-add-step w-auto" style="min-width:150px;" @click="start">{{ t('btn.start-next') }}</button>
-        <button class="btn-replay" @click="replay">{{ t('btn.replay') }}</button>
-        <button class="btn-reset w-auto" style="height:38px;" @click="reset">{{ t('btn.reset-game') }}</button>
-        <div class="h5 mb-0" style="background:rgba(255,255,255,0.1);padding:5px 15px;border-radius:20px;min-width:100px;text-align:center;">
-          {{ score }} / {{ total }}
+    </header>
+
+    <section class="jd-console">
+      <div class="jd-grain" aria-hidden="true"></div>
+
+      <div class="jd-master">
+        <div class="jd-score-badge">
+          <span class="jd-score-val">{{ score }} / {{ total }}</span>
+          <span class="jd-score-label">{{ t('label.score') }}</span>
+        </div>
+
+        <div class="jd-transport">
+          <button class="jd-tbtn jd-tbtn--play" @click="start" aria-label="Start / Next">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="jd-tbtn jd-tbtn--replay" @click="replay" :disabled="!active && targetNote === undefined" aria-label="Replay">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+        </div>
+
+        <div class="jd-modes">
+          <button class="jd-toolbtn" @click="reset">{{ t('btn.reset-game') }}</button>
         </div>
       </div>
-      <div class="small" style="color:#aaa;margin-top:6px;text-align:center;">{{ statusText }}</div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+
+      <div class="jd-question-box" style="background: rgba(50, 215, 75, 0.05); border-color: rgba(50, 215, 75, 0.15);">
+        <div class="jd-question-text" style="color: #32d74b;">
+          {{ questionText }}
+        </div>
+        <div class="jd-question-hint">
+          {{ statusText }}
+        </div>
       </div>
+    </section>
+
+    <div class="teoria-tip" style="margin-top: 20px;">
+      <strong>{{ t('label.pro-tip') }}:</strong> {{ t('nf.instructions') }}
     </div>
   </div>
 </template>
@@ -102,3 +129,49 @@ function onNoteClick(e) { checkAnswer(e.detail) }
 onMounted(() => { window.addEventListener('fretboard:noteClick', onNoteClick); clearBoard() })
 onUnmounted(() => { window.removeEventListener('fretboard:noteClick', onNoteClick); clearBoard() })
 </script>
+
+<style scoped>
+.jd-question-box {
+  background: rgba(50, 215, 75, 0.05);
+  border: 1px solid rgba(50, 215, 75, 0.15);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.jd-question-text {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.jd-question-hint {
+  font-size: 14px;
+  color: var(--jd-muted);
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+.jd-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 5px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--jd-line);
+}
+
+.jd-score-val {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.jd-score-label {
+  font-size: 9px;
+  color: var(--jd-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+</style>

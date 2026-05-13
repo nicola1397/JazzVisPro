@@ -1,86 +1,90 @@
 <template>
-  <div id="view-grade-learner" class="view-panel active">
-    <div class="importer-area text-center" style="max-width:720px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title" data-i18n="gl.title">{{ t('gl.title') }}</h2>
-
-      <!-- Unified Game Bar -->
-      <div id="grade-game-bar"
-        style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; background: rgba(255, 214, 10, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
-
-        <!-- Question Text -->
-        <div id="grade-question-text" class="h3 mb-0"
-          style="color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
-          <span v-if="active">{{ questionText }}</span>
-          <span v-else>{{ t('gl.ready') }}</span>
-        </div>
-
-        <!-- Action Buttons & Score -->
-        <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
-          <button class="btn-add-step w-auto" style="min-width: 150px;" @click="startNext"
-            :disabled="active && feedbackMsg === ''">{{ t('btn.start-next') }}</button>
-          <button class="btn-replay" @click="playRootNote" :disabled="!active">{{ t('btn.replay') }}</button>
-          <button class="btn-reset w-auto" style="height: 38px;" @click="resetGame">Reset</button>
-          <div id="grade-score-display" class="h5 mb-0"
-            style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; min-width: 100px; text-align: center;">
-            {{ score }} / {{ total }}
-          </div>
-        </div>
-
-        <!-- Root & Scale Selectors -->
-        <div v-if="!freeMode" id="gl-selectors"
-          class="d-flex align-items-center gap-2 flex-wrap justify-content-center mt-2">
-          <select v-model="fixedRoot" class="form-select form-select-sm"
-            style="width:auto;min-width:75px;background:#2c2c2e;color:#fff;border-color:#555;padding:4px 8px;border-radius:6px;">
-            <option v-for="n in GL_ROOTS" :key="n" :value="n">{{ n }}</option>
-          </select>
-          <select v-model="fixedScale" class="form-select form-select-sm"
-            style="width:auto;min-width:200px;background:#2c2c2e;color:#fff;border-color:#555;padding:4px 8px;border-radius:6px;">
-            <option v-for="s in scaleNames" :key="s" :value="s">{{ s }}</option>
-          </select>
-        </div>
-
-        <!-- Mode Toggles -->
-        <div class="d-flex align-items-center gap-3 flex-wrap justify-content-center mt-1">
-          <div class="d-flex align-items-center gap-2">
-            <input type="checkbox" id="gl-free-mode" v-model="freeMode" style="accent-color: var(--accent);">
-            <label for="gl-free-mode" style="color:var(--text);font-size:0.85em;cursor:pointer;">{{ t('gl.free-mode')
-              }}</label>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <input type="checkbox" id="gl-hard-mode" v-model="hardMode" style="accent-color: #ff9f0a;">
-            <label for="gl-hard-mode" style="color:#ff9f0a;font-size:0.85em;cursor:pointer;">{{ t('gl.hard-mode')
-              }}</label>
-          </div>
-        </div>
-
-        <!-- Feedback & Status -->
-        <div id="grade-game-status" class="small" style="color: #aaa; min-height: 20px;">
-          <span v-if="feedbackMsg" :style="{ color: feedbackOk ? '#22c55e' : '#ef4444', fontWeight: '700' }">{{
-            feedbackMsg }}</span>
-          <span v-else>{{ t('gl.status') }}</span>
-        </div>
+  <div id="view-grade-learner" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">{{ t('label.eyebrow') }}</span>
+        <h1 class="jd-titlemark-name">{{ t('gl.title') }}</h1>
       </div>
+    </header>
+
+    <div class="importer-area" style="max-width:720px; margin: 0 auto; width: 100%;">
+      <section class="jd-console" style="margin-bottom: 32px;">
+        <div class="jd-grain" aria-hidden="true"></div>
+        
+        <div class="jd-improv-banner" style="margin-bottom: 24px;">
+          <div class="jd-improv-bullet"></div>
+          <div>
+            <strong>{{ active ? t('gl.grade-label-short') || 'FIND GRADE' : t('gl.ready') }}</strong>
+            <div class="jd-improv-helper" style="font-size: 24px; color: var(--jd-text); margin-top:4px;">
+               <span v-if="active">{{ questionText }}</span>
+               <span v-else>{{ t('gl.ready') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="jd-master" style="margin-bottom: 24px;">
+          <div class="jd-bpm-frame" style="padding: 0 16px;">
+            <div class="jd-bpm-input" style="font-size:28px;">{{ score }}</div>
+            <div class="jd-bpm-unit">/ {{ total }}</div>
+          </div>
+          <div class="jd-transport" style="justify-content: flex-start; gap:12px;">
+            <button class="btn-add-step" style="height:44px; padding:0 24px; min-width:140px;" @click="startNext" :disabled="active && feedbackMsg === ''">{{ t('btn.start-next') }}</button>
+            <button class="btn-replay" @click="playRootNote" :disabled="!active" style="height:44px;">{{ t('btn.replay') }}</button>
+            <button class="jd-toolbtn jd-toolbtn--reset" @click="resetGame" style="height:44px; border-radius: 8px;">{{ t('btn.reset-game') }}</button>
+          </div>
+        </div>
+
+        <div v-if="!freeMode" class="jd-master" style="grid-template-columns: 120px 1fr; gap: 16px; margin-bottom: 24px;">
+          <div class="jd-feel">
+            <label class="jd-feel-label">{{ t('label.root') || 'ROOT' }}</label>
+            <select v-model="fixedRoot" class="jd-feel-select" style="width: 100%;">
+              <option v-for="n in GL_ROOTS" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="jd-feel">
+            <label class="jd-feel-label">{{ t('label.scale') || 'SCALE' }}</label>
+            <select v-model="fixedScale" class="jd-feel-select" style="width: 100%;">
+              <option v-for="s in scaleNames" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:16px; position:relative; z-index:1;">
+          <div class="jd-mode" :class="{ on: freeMode }" @click="freeMode = !freeMode">
+            <div class="jd-mode-dot"></div>
+            <span>{{ t('gl.free-mode') }}</span>
+          </div>
+          <div class="jd-mode" :class="{ on: hardMode }" @click="hardMode = !hardMode" style="--jd-amber: #ff9f0a;">
+            <div class="jd-mode-dot"></div>
+            <span>{{ t('gl.hard-mode') }}</span>
+          </div>
+        </div>
+
+        <div style="text-align:center; min-height:24px; position:relative; z-index:1;">
+          <span v-if="feedbackMsg" :style="{ color: feedbackOk ? 'var(--jd-green)' : 'var(--jd-red)', fontWeight: '700', fontFamily: 'var(--jd-mono)', fontSize: '12px', letterSpacing: '0.5px' }">{{
+            feedbackMsg }}</span>
+          <span v-else style="color:var(--jd-muted); font-family:var(--jd-mono); font-size:10px; text-transform:uppercase; letter-spacing:2px;">{{ t('gl.status') }}</span>
+        </div>
+      </section>
 
       <!-- Legend -->
       <div id="gl-legend" v-if="hardMode"
-        style="display:flex; justify-content:center; gap:16px; margin-top:4px; margin-bottom: 20px;">
+        style="display:flex; justify-content:center; gap:20px; margin-bottom: 20px; font-family:var(--jd-mono); font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--jd-muted);">
         <div class="d-flex align-items-center gap-2">
-          <div style="width:10px;height:10px;border-radius:50%;background:#2c2c2e;border:1.5px solid #555;"></div>
-          <span class="small text-secondary">{{ t('gl.sharp-outer') }}</span>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--jd-surface);border:1px solid var(--jd-muted);"></div>
+          <span>{{ t('gl.sharp-outer') }}</span>
         </div>
         <div class="d-flex align-items-center gap-2">
-          <div
-            style="width:10px;height:10px;border-radius:50%;background:rgba(48,209,88,.12);border:1.5px solid rgba(48,209,88,.4);">
-          </div>
-          <span class="small text-secondary">{{ t('gl.flat-inner') }}</span>
+          <div style="width:8px;height:8px;border-radius:50%;background:rgba(46,204,113,0.1);border:1px solid var(--jd-green);"></div>
+          <span>{{ t('gl.flat-inner') }}</span>
         </div>
       </div>
 
       <!-- Chromatic Circle -->
-      <div class="circle-container" style="position: relative; width: 320px; height: 320px; margin: 20px auto;">
-        <svg id="gl-rings-svg" width="320" height="320" style="position:absolute;top:0;left:0;pointer-events:none;">
-          <circle cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="1.5" />
-          <circle id="gl-inner-ring-svg" cx="160" cy="160" r="82" fill="none" stroke="rgba(255,214,10,.12)"
+      <div class="circle-container" style="position: relative; width: 340px; height: 340px; margin: 40px auto; background: radial-gradient(circle, rgba(255,214,10,0.02) 0%, transparent 70%);">
+        <svg width="340" height="340" style="position:absolute;top:0;left:0;pointer-events:none;">
+          <circle cx="170" cy="170" r="160" fill="none" stroke="var(--jd-line)" stroke-width="1" />
+          <circle cx="170" cy="170" r="92" fill="none" stroke="var(--jd-line-strong)"
             stroke-width="1" stroke-dasharray="4,4" :style="hardMode ? 'display:block;' : 'display:none;'" />
         </svg>
         <div id="note-circle-ui" class="note-circle-board" style="position: relative; width: 100%; height: 100%;">
@@ -88,8 +92,8 @@
           <!-- Outer ring -->
           <button v-for="n in noteButtons" :key="'outer-' + n.idx" class="circle-note"
             :class="[noteStates[n.idx], { root: n.isRoot }]" :style="{
-              left: n.x + 'px',
-              top: n.y + 'px',
+              left: (n.x + 10) + 'px',
+              top: (n.y + 10) + 'px',
               zIndex: 2,
             }" @click="onNoteClick(n.idx, false)">{{ n.label }}</button>
 
@@ -97,8 +101,8 @@
           <template v-if="hardMode">
             <button v-for="n in flatButtons" :key="'inner-' + n.idx" class="circle-note flat"
               :class="[flatStates[n.idx], { root: n.isRoot }]" :style="{
-                left: n.x + 'px',
-                top: n.y + 'px',
+                left: (n.x + 10) + 'px',
+                top: (n.y + 10) + 'px',
                 zIndex: 1,
               }" @click="onNoteClick(n.idx, true)">{{ n.label }}</button>
           </template>
@@ -183,16 +187,13 @@ const questionText = computed(() => {
 })
 
 const noteButtons = computed(() => {
-  const R = 135, CX = 160, CY = 160
+  const R = 150, CX = 160, CY = 160
   const curNotes = glExpectFlat(gameRoot.value) ? NOTES_FLAT : NOTES
   const isFlatRoot = glUsesFlat(gameRoot.value)
 
   return Array.from({ length: 12 }, (_, i) => {
     const angle = (i * 30 - 90) * Math.PI / 180
 
-    // Root highlight logic:
-    // In easy mode, highlight if index matches.
-    // In hard mode, only highlight if it's NOT a flat root (those go to inner ring).
     let isRoot = (i === gameRootIdx.value)
     if (hardMode.value && isFlatRoot) isRoot = false
 
@@ -207,15 +208,13 @@ const noteButtons = computed(() => {
 })
 
 const flatButtons = computed(() => {
-  const RI = 80, CX = 160, CY = 160
+  const RI = 82, CX = 160, CY = 160
   const isFlatRoot = glUsesFlat(gameRoot.value)
 
   return Array.from({ length: 12 }, (_, i) => {
     if (NOTES[i] === NOTES_FLAT[i]) return null
     const angle = (i * 30 - 90) * Math.PI / 180
 
-    // Root highlight logic:
-    // Only highlight if root uses flats.
     let isRoot = (i === gameRootIdx.value && isFlatRoot)
 
     return {

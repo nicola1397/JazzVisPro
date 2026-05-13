@@ -1,11 +1,11 @@
-import { A4_FREQ, A4_NOTE_IDX } from './constants.js'
+import { A4_FREQ, A4_NOTE_IDX, BASE_OCTAVES } from './constants.js'
 
 export const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
 export const NOTES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B']
 export const NOTES_ITA = ['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si']
 
 export const TUNINGS = {
-  'E Standard': [4,11,7,2,9,4],
+  'E Standard': [4,11,7,2,9,4], // Pitch classes of open strings
   'Drop D':     [4,11,7,2,9,2],
   'Eb Standard':[3,10,6,1,8,3],
   'D Standard': [2,9,5,0,7,2],
@@ -32,13 +32,23 @@ export const SCALES = {
   'Misolidio b13':        [0,2,4,5,7,8,10],
 }
 
-export const CAGED_SHAPES = {
+export const CAGED_SHAPES_MAJOR = {
   C: [{s:4,f:0},{s:3,f:-1},{s:2,f:-3},{s:1,f:-2},{s:0,f:-3}],
   A: [{s:4,f:0},{s:3,f:2},{s:2,f:2},{s:1,f:2},{s:0,f:0}],
   G: [{s:5,f:0},{s:4,f:-1},{s:3,f:-3},{s:2,f:-3},{s:1,f:-3},{s:0,f:0}],
   E: [{s:5,f:0},{s:4,f:2},{s:3,f:2},{s:2,f:1},{s:1,f:0},{s:0,f:0}],
   D: [{s:3,f:0},{s:2,f:2},{s:1,f:3},{s:0,f:2}],
 }
+
+export const CAGED_SHAPES_MINOR = {
+  C: [{s:4,f:0},{s:3,f:-2},{s:2,f:-3},{s:1,f:-2},{s:0,f:-4}],
+  A: [{s:4,f:0},{s:3,f:2},{s:2,f:2},{s:1,f:1},{s:0,f:0}],
+  G: [{s:5,f:0},{s:4,f:-2},{s:3,f:-3},{s:2,f:-3},{s:1,f:-3},{s:0,f:0}],
+  E: [{s:5,f:0},{s:4,f:2},{s:3,f:2},{s:2,f:0},{s:1,f:0},{s:0,f:0}],
+  D: [{s:3,f:0},{s:2,f:2},{s:1,f:3},{s:0,f:1}],
+}
+
+export const CAGED_SHAPES = CAGED_SHAPES_MAJOR
 
 export const INTERVAL_COLORS = {
   0:  { label:'Root',  color:'#e74c3c', short:'R'    },
@@ -55,10 +65,25 @@ export const INTERVAL_COLORS = {
   11: { label:'maj7', color:'#27ae60', short:'maj7' },
 }
 
-export function noteIndexToFrequency(noteIndex, octave = 4) {
-  return A4_FREQ * Math.pow(2, (noteIndex - A4_NOTE_IDX + (octave - 4) * 12) / 12)
+export function getNoteIdx(note) {
+  let i = NOTES.indexOf(note)
+  if (i !== -1) return i
+  return NOTES_FLAT.indexOf(note)
 }
 
-export function getNoteIndex(tuning, stringIdx, fretIdx) {
-  return (tuning[stringIdx] + fretIdx) % 12
+export function pitchToFrequency(midiNote) {
+  return A4_FREQ * Math.pow(2, (midiNote - (A4_NOTE_IDX + 12 * 5)) / 12)
+}
+
+export function getPitchClass(tuning, stringIdx, fretIdx) {
+  const t = Array.isArray(tuning) ? tuning : Array.from(tuning)
+  const openStringPitchClass = Number(t[Number(stringIdx)])
+  return (openStringPitchClass + Number(fretIdx)) % 12
+}
+
+export function getAbsoluteNote(tuning, stringIdx, fretIdx) {
+  const t = Array.isArray(tuning) ? tuning : Array.from(tuning)
+  const openStringPitchClass = Number(t[Number(stringIdx)])
+  const openStringOctave = Number(BASE_OCTAVES[Number(stringIdx)])
+  return (openStringPitchClass + (openStringOctave * 12)) + Number(fretIdx)
 }

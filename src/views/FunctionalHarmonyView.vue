@@ -1,76 +1,95 @@
 <template>
-  <div id="view-functional-harmony" class="view-panel active">
-    <div class="importer-area text-center" style="max-width:720px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title">{{ t('fh.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;">{{ t('fh.subtitle') }}</p>
-
-      <!-- Difficulty Selector -->
-      <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:20px;">
-        <button
-          v-for="d in ['easy', 'medium', 'hard']"
-          :key="d"
-          class="et-diff-btn"
-          :class="{ active: difficulty === d }"
-          @click="setDifficulty(d)"
-        >{{ t('et.' + d) }}</button>
+  <div id="view-functional-harmony" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">{{ t('label.eyebrow') }}</span>
+        <h1 class="jd-titlemark-name">{{ t('fh.title') }}</h1>
       </div>
+    </header>
 
-      <!-- Score & Streak -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div style="font-size:0.9em;"><span>{{ t('label.score') }}</span>: <strong>{{ score }} / {{ total }}</strong></div>
-        <div style="font-size:0.9em;">🔥 {{ streak }}</div>
-      </div>
+    <div class="importer-area text-center" style="max-width:720px; margin: 0 auto; width: 100%; padding-top: 20px;">
+      <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('fh.subtitle') }}</p>
 
-      <!-- Progression Display -->
-      <div style="background:rgba(255, 214, 10, 0.05);border:1px solid rgba(255, 214, 10, 0.2);border-radius:12px;padding:24px;margin-bottom:20px;">
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-          <div
-            v-for="(chord, idx) in currentProgression"
-            :key="idx"
-            style="padding:10px 15px; border-radius:8px; border:2px solid;"
-            :style="{
-              borderColor: idx === targetIdx ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
-              background: idx === targetIdx ? 'rgba(255,214,10,0.1)' : 'rgba(255,255,255,0.02)',
-              boxShadow: idx === targetIdx ? '0 0 15px rgba(255,214,10,0.2)' : 'none'
-            }"
-          >
-            <div style="font-size:1.4em;font-weight:800;color:var(--text-h);">{{ chord.name }}</div>
-            <div v-if="answered" style="font-size:0.8em;color:var(--accent);margin-top:4px;font-weight:700;">{{ chord.degree }}</div>
-            <div v-else-if="idx === targetIdx" style="font-size:0.8em;color:var(--accent);margin-top:4px;">?</div>
+      <section class="jd-console" style="padding: 25px; margin-bottom: 25px;">
+        <div class="jd-grain" aria-hidden="true"></div>
+        
+        <div class="jd-section-label">
+          <span>{{ t('quiz.difficulty') }}</span>
+          <span class="jd-section-rule"></span>
+        </div>
+
+        <!-- Difficulty Selector -->
+        <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:20px;">
+          <button
+            v-for="d in ['easy', 'medium', 'hard']"
+            :key="d"
+            class="et-diff-btn"
+            :class="{ active: difficulty === d }"
+            @click="setDifficulty(d)"
+          >{{ t('et.' + d) }}</button>
+        </div>
+
+        <div class="jd-rule" aria-hidden="true"></div>
+
+        <!-- Score & Streak -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; font-family: var(--jd-mono); font-size: 0.8em; letter-spacing: 1px;">
+          <div style="color: var(--jd-text-soft);">{{ t('label.score') }}: <strong style="color: var(--jd-text);">{{ score }} / {{ total }}</strong></div>
+          <div style="color: var(--jd-amber);">{{ t('label.streak') }}: <strong>{{ streak }}</strong></div>
+        </div>
+
+        <!-- Progression Display -->
+        <div class="jd-steps" style="padding: 20px; margin-bottom: 20px; background: var(--jd-bg-deep); border-radius: 12px; border: 1px solid var(--jd-line);">
+          <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <div
+              v-for="(chord, idx) in currentProgression"
+              :key="idx"
+              class="progression-step"
+              :class="{ 'active-step': idx === targetIdx }"
+              style="padding: 12px 20px; min-width: 80px; text-align: center;"
+            >
+              <div style="font-size:1.4em; font-weight:700; color:var(--jd-text);">{{ chord.name }}</div>
+              <div v-if="answered" style="font-size:0.8em; color:var(--jd-amber); margin-top:4px; font-weight:700; font-family: var(--jd-mono);">{{ chord.degree }}</div>
+              <div v-else-if="idx === targetIdx" style="font-size:0.8em; color:var(--jd-amber); margin-top:4px; font-family: var(--jd-mono);">?</div>
+            </div>
+          </div>
+          <div v-if="!active" style="margin-top:20px; color:var(--jd-muted); font-style:italic; font-family: var(--jd-mono); font-size: 0.8em;">
+            {{ t('fh.ready') }}
           </div>
         </div>
-        <div v-if="!active" style="margin-top:20px;color:var(--secondary-text);font-style:italic;">
-          {{ t('fh.ready') }}
+
+        <!-- Action Buttons -->
+        <div class="jd-toolbar" style="justify-content: center; margin-bottom: 25px;">
+          <button class="jd-toolbtn" style="min-width:180px;" @click="generateNew" :disabled="active && !answered">
+            {{ answered ? t('fh.next') : t('fh.start') }}
+          </button>
+          <button class="jd-toolbtn jd-toolbtn--reset" style="width:auto; padding:0 20px;" @click="resetGame">{{ t('btn.reset-game') }}</button>
         </div>
-      </div>
 
-      <!-- Action Buttons -->
-      <div class="d-flex gap-3 justify-content-center flex-wrap mb-4">
-        <button class="btn-add-step" style="min-width:180px;" @click="generateNew" :disabled="active && !answered">
-          {{ answered ? t('fh.next') : t('fh.start') }}
-        </button>
-        <button class="btn-reset" style="width:auto;padding:0 20px;" @click="resetGame">Reset</button>
-      </div>
+        <div class="jd-section-label">
+          <span>{{ t('cf.results') }}</span>
+          <span class="jd-section-rule"></span>
+        </div>
 
-      <!-- Answer Grid -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
-        <button
-          v-for="deg in currentDegrees"
-          :key="deg"
-          class="et-choice-btn"
-          :class="{
-            correct: answered && deg === currentProgression[targetIdx]?.degree,
-            wrong:   answered && deg === selectedAnswer && deg !== currentProgression[targetIdx]?.degree,
-          }"
-          :disabled="!active || answered"
-          @click="checkAnswer(deg)"
-        >{{ deg }}</button>
-      </div>
+        <!-- Answer Grid -->
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">
+          <button
+            v-for="deg in currentDegrees"
+            :key="deg"
+            class="et-choice-btn"
+            style="padding: 10px 4px; font-family: var(--jd-mono);"
+            :class="{
+              correct: answered && deg === currentProgression[targetIdx]?.degree,
+              wrong:   answered && deg === selectedAnswer && deg !== currentProgression[targetIdx]?.degree,
+            }"
+            :disabled="!active || answered"
+            @click="checkAnswer(deg)"
+          >{{ deg }}</button>
+        </div>
 
-      <div id="fh-status" style="text-align:center;font-size:0.9em;min-height:28px;" :style="{color: lastCorrect ? '#22c55e' : '#ef4444'}">
-        {{ statusMsg }}
-      </div>
-
+        <div id="fh-status" style="text-align:center; font-size:0.9em; min-height:28px; font-family: var(--jd-mono); font-weight: 700; letter-spacing: 0.5px;" :style="{color: lastCorrect ? 'var(--jd-improv)' : 'var(--jd-red)'}">
+          {{ statusMsg }}
+        </div>
+      </section>
     </div>
   </div>
 </template>

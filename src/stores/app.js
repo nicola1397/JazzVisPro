@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
-import { NOTES, NOTES_FLAT, SCALES, TUNINGS, INTERVAL_COLORS, CAGED_SHAPES } from '../utils/theory.js'
+import { NOTES, NOTES_FLAT, SCALES, TUNINGS, INTERVAL_COLORS, CAGED_SHAPES_MAJOR, CAGED_SHAPES_MINOR, getNoteIdx } from '../utils/theory.js'
 
 export const useAppStore = defineStore('app', () => {
   // ── Fretboard state ──────────────────────────────────────────────
@@ -21,6 +21,9 @@ export const useAppStore = defineStore('app', () => {
   const manualNotes        = ref(new Set())
   const customScaleNotes   = ref(new Set())
 
+  // ── Loading state ────────────────────────────────────────────────
+  const isLoaded = ref(false)
+
   // ── UI state ─────────────────────────────────────────────────────
   const lang          = ref('it')
   const sidebarOpen   = ref(false)
@@ -39,6 +42,11 @@ export const useAppStore = defineStore('app', () => {
     data.tuningName = tuningName.value
     data.notation   = notation.value
     data.accidental = accidental.value
+    data.add9       = add9.value
+    data.add11      = add11.value
+    data.add13      = add13.value
+    data.hideUnused = hideUnused.value
+    data.soloArp    = soloArp.value
     data.customScale = Array.from(customScaleNotes.value)
     writeStorage('jazzVizData', data)
   }
@@ -50,29 +58,80 @@ export const useAppStore = defineStore('app', () => {
     if (data.tuningName) tuningName.value = data.tuningName
     if (data.notation)   notation.value   = data.notation
     if (data.accidental) accidental.value = data.accidental
+    if (data.add9 !== undefined)       add9.value       = data.add9
+    if (data.add11 !== undefined)      add11.value      = data.add11
+    if (data.add13 !== undefined)      add13.value      = data.add13
+    if (data.hideUnused !== undefined) hideUnused.value = data.hideUnused
+    if (data.soloArp !== undefined)    soloArp.value    = data.soloArp
     if (data.customScale) customScaleNotes.value = new Set(data.customScale)
+    isLoaded.value = true // Set to true after loading
     return data
   }
 
   // ── Computed ─────────────────────────────────────────────────────
-  const currentTuning = computed(() => TUNINGS[tuningName.value] || TUNINGS['E Standard'])
-  const currentScale  = computed(() => SCALES[scaleName.value] || SCALES['Ionio (Maj7)'])
-  const rootIdx       = computed(() => NOTES.indexOf(root.value))
+  const currentTuning = computed(() => {
+    const raw = TUNINGS[tuningName.value] || TUNINGS['E Standard']
+    return [...raw]
+  })
+  const currentScale  = computed(() => {
+    const raw = SCALES[scaleName.value] || SCALES['Ionio (Maj7)']
+    return [...raw]
+  })
+  const rootIdx       = computed(() => getNoteIdx(root.value))
   const currentNotes  = computed(() => accidental.value === '#' ? NOTES : NOTES_FLAT)
+
+  // ── Scale Properties ─────────────────────────────────────────────
+  const scaleQuality = computed(() => {
+    const s = currentScale.value
+    if (!s || s.length === 0) return 'none'
+    
+    let hasMajor3 = false
+    let hasMinor3 = false
+    let hasPerfect5 = false
+    
+    for (let i = 0; i < s.length; i++) {
+      const val = parseInt(s[i])
+      if (val === 4) hasMajor3 = true
+      if (val === 3) hasMinor3 = true
+      if (val === 7) hasPerfect5 = true
+    }
+
+    if (!hasPerfect5) return 'none'
+    if (hasMajor3) return 'major'
+    if (hasMinor3) return 'minor'
+    return 'none'
+  })
+
+  const isCagedCompatible = computed(() => scaleQuality.value !== 'none')
 
   // ── CAGED highlight set ──────────────────────────────────────────
   const cagedHighlightSet = computed(() => {
     const result = new Set()
-    if (cagedShape.value === 'none') return result
-    const shape = CAGED_SHAPES[cagedShape.value]
+    if (cagedShape.value === 'none' || !isCagedCompatible.value) return result
+    
+    const quality = scaleQuality.value
+    const shapes = quality === 'minor' ? CAGED_SHAPES_MINOR : CAGED_SHAPES_MAJOR
+    const shape = shapes[cagedShape.value]
+    
     if (!shape) return result
+
     const tuning = currentTuning.value
-    const anchor = shape[0].s
+    const rootVal = Number(rootIdx.value)
+    
+    // Find the root position for the selected anchor string
+    const anchor = Number(shape[0].s)
+    const openPitch = Number(tuning[anchor])
+
+    // Search full 24-fret range to find all octaves of the shape
     for (let f = 0; f <= 24; f++) {
-      if ((tuning[anchor] + f) % 12 === rootIdx.value) {
+      if ((openPitch + f) % 12 === rootVal) {
+        // Found the anchor root at fret f. Apply offsets.
         shape.forEach(off => {
-          const fret = f + off.f
-          if (fret >= 0 && fret <= 24) result.add(`${off.s}-${fret}`)
+          const stringIdx = Number(off.s)
+          const fretIdx = f + Number(off.f)
+          if (fretIdx >= 0 && fretIdx <= 24) {
+            result.add(`${stringIdx}-${fretIdx}`)
+          }
         })
       }
     }
@@ -112,11 +171,21 @@ export const useAppStore = defineStore('app', () => {
 
   function setRoot(v)        { root.value = v;        scheduleSave() }
   function setScaleName(v)   { scaleName.value = v;   scheduleSave() }
-  function setTuningName(v)  { tuningName.value = v }
-  function setNotation(v)    { notation.value = v }
-  function setAccidental(v)  { accidental.value = v }
-  function setCagedShape(v)  { cagedShape.value = v }
-  function setExplorerMode(v){ explorerMode.value = v }
+  function setTuningName(v)  { tuningName.value = v;  scheduleSave() }
+  function setNotation(v)    { notation.value = v;    scheduleSave() }
+  function setAccidental(v)  { accidental.value = v;  scheduleSave() }
+  function setCagedShape(v)  { cagedShape.value = v;   scheduleSave() }
+  function setExplorerMode(v){
+    explorerMode.value = v
+    if (v === 'custom') {
+      customScaleNotes.value = new Set()
+      highlightedIntervals.value = new Set()
+      manualNotes.value = new Set()
+      cagedShape.value = 'none'
+      notation.value = 'note'
+    }
+    scheduleSave()
+  }
   function toggleLang()      { lang.value = lang.value === 'it' ? 'en' : 'it' }
   function toggleSidebar()   { sidebarOpen.value = !sidebarOpen.value }
   function closeSidebar()    { sidebarOpen.value = false }
@@ -125,12 +194,13 @@ export const useAppStore = defineStore('app', () => {
     root, scaleName, tuningName, notation, accidental, cagedShape,
     hideUnused, soloArp, add9, add11, add13,
     explorerMode, highlightedIntervals, manualNotes, customScaleNotes,
-    lang, sidebarOpen,
+    lang, sidebarOpen, isLoaded,
     currentTuning, currentScale, rootIdx, currentNotes, cagedHighlightSet,
     loadFromStorage, scheduleSave,
     toggleHighlightInterval, toggleManualNote, toggleCustomNote,
     clearCustomScale, resetFretboard,
     setRoot, setScaleName, setTuningName, setNotation, setAccidental,
     setCagedShape, setExplorerMode, toggleLang, toggleSidebar, closeSidebar,
+    scaleQuality, isCagedCompatible,
   }
 })

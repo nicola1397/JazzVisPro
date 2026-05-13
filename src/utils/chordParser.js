@@ -1,6 +1,4 @@
-import { NOTES, NOTES_FLAT, SCALES } from './theory.js'
-
-const ENHARMONIC_MAP = { Db:'C#', Eb:'D#', Gb:'F#', Ab:'G#', Bb:'A#' }
+import { NOTES, NOTES_FLAT, SCALES, getNoteIdx } from './theory.js'
 
 export const CHORD_INTERVALS = {
   'maj7':    [0,4,7,11],
@@ -41,8 +39,7 @@ const CHORD_TO_SCALE = {
 export function parseChord(chordStr) {
   const match = chordStr.trim().match(/^([A-G][#b]?)(.*)/)
   if (!match) return null
-  const rawRoot = match[1]
-  return { root: ENHARMONIC_MAP[rawRoot] || rawRoot, rest: match[2] }
+  return { root: match[1], rest: match[2] }
 }
 
 export function getChordIntervals(chordStr) {
@@ -53,6 +50,8 @@ export function getChordIntervals(chordStr) {
     if (rest === suffix || rest.toLowerCase() === suffix.toLowerCase()) return intervals
   }
   if (!rest || rest === 'maj' || rest === 'M') return CHORD_INTERVALS['maj']
+  if (rest.includes('sus4') || rest.includes('sus')) return CHORD_INTERVALS['sus4']
+  if (rest.includes('sus2')) return CHORD_INTERVALS['sus2']
   if (rest.includes('maj7')) return CHORD_INTERVALS['maj7']
   if (rest.includes('m7b5') || rest.includes('ø')) return CHORD_INTERVALS['m7b5']
   if (rest.includes('mMaj7') || rest.includes('mM7')) return CHORD_INTERVALS['mMaj7']
@@ -71,15 +70,17 @@ export function getChordScale(chordStr, nextChord = null, genre = 'jazz') {
   if (!p) return 'Ionio (Maj7)'
   const rest = p.rest.trim()
 
+  if (rest.includes('sus4') || rest.includes('sus')) return 'Misolidio (7)'
+
   // Genre-aware dominant scale selection
   if (rest === '7' || rest === '9' || rest === '13') {
     if (genre === 'blues') return 'Blues'
     if (nextChord) {
       const np = parseChord(nextChord)
       if (np) {
-        const curIdx  = NOTES.indexOf(p.root)
-        const nextIdx = NOTES.indexOf(np.root)
-        if (curIdx !== -1 && nextIdx !== -1 && ((curIdx + 7) % 12) === nextIdx) {
+        const curIdx  = getNoteIdx(p.root)
+        const nextIdx = getNoteIdx(np.root)
+        if (curIdx !== -1 && nextIdx !== -1 && ((curIdx + 5) % 12) === nextIdx) {
           return 'Altered (7alt)'
         }
       }
@@ -141,7 +142,7 @@ export function detectKey(chords) {
       let score = 0
       for (const c of chords) {
         const p = parseChord(c); if (!p) continue
-        const ci = NOTES.indexOf(p.root); if (ci === -1) continue
+        const ci = getNoteIdx(p.root); if (ci === -1) continue
         const deg = (ci - root + 12) % 12
         score += qualityMatch(chordQualityGroup(p.rest), scale[deg].q)
       }

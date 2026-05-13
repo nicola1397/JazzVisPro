@@ -1,89 +1,104 @@
 <template>
-  <div id="view-ear-training" class="view-panel active">
-    <div class="importer-area text-center" style="max-width:600px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title" data-i18n="et.title">{{ t('et.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;" data-i18n="et.subtitle">{{ t('et.subtitle') }}</p>
+  <div id="view-ear-training" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">{{ t('label.eyebrow') }}</span>
+        <h1 class="jd-titlemark-name">{{ t('et.title') }}</h1>
+      </div>
+    </header>
 
-      <!-- Score & Streak -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:20px;flex-wrap:wrap;">
-        <div id="et-score" style="background:rgba(255,255,255,0.1);padding:8px 20px;border-radius:20px;font-size:1.1em;">{{ score }} / {{ total }}</div>
-        <div id="et-streak" style="color:var(--accent);font-weight:700;font-size:1.1em;">🔥 {{ streak }}</div>
+    <section class="jd-console" :class="{ 'jd-playing': phase === 'listening' }">
+      <div class="jd-grain" aria-hidden="true"></div>
+
+      <div class="jd-master">
+        <div class="jd-score-badge">
+          <span class="jd-score-val">{{ score }} / {{ total }}</span>
+          <span class="jd-score-label">{{ t('label.score') }}</span>
+        </div>
+        
+        <div class="jd-streak-badge">
+          <span class="jd-streak-val">🔥 {{ streak }}</span>
+          <span class="jd-streak-label">{{ t('label.streak') }}</span>
+        </div>
+
+        <div class="jd-transport">
+          <button class="jd-tbtn jd-tbtn--play" :disabled="phase === 'listening'" @click="playChord" aria-label="Play">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="jd-tbtn jd-tbtn--replay" :disabled="phase === 'idle'" @click="replayChord" aria-label="Replay">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+        </div>
+
+        <div class="jd-modes">
+          <button class="jd-toolbtn" @click="resetGame">{{ t('btn.reset-game') }}</button>
+        </div>
       </div>
 
-      <!-- Question Box -->
-      <div style="background:rgba(255,214,10,0.05);border:1px solid rgba(255,214,10,0.2);border-radius:12px;padding:28px;margin-bottom:20px;">
-        <div id="et-question" class="h3 mb-0" style="color:var(--accent);font-weight:900;letter-spacing:2px;">
+      <div class="jd-rule" aria-hidden="true"></div>
+
+      <div class="jd-question-box">
+        <div class="jd-question-text">
           <span v-if="phase === 'idle'">{{ t('et.ready') }}</span>
           <span v-else-if="phase === 'listening'">?</span>
           <span v-else>{{ currentChordDisplay }}</span>
         </div>
-        <div id="et-root-hint" style="color:var(--secondary-text);font-size:0.85em;margin-top:8px;min-height:20px;">
-          {{ phase === 'listening' ? (appStore.lang === 'it' ? '(Ascolta con attenzione...)' : '(Listen carefully...)') : '' }}
+        <div class="jd-question-hint">
+          {{ phase === 'listening' ? t('et.listening') : (statusMsg || '') }}
         </div>
       </div>
+    </section>
 
-      <!-- Action Buttons -->
-      <div class="d-flex gap-3 justify-content-center flex-wrap mb-4">
-        <button class="btn-add-step" style="min-width:150px;" @click="playChord" :disabled="phase === 'listening'">{{ t('btn.play-chord') }}</button>
-        <button class="btn-replay" @click="replayChord" :disabled="phase === 'idle'">{{ t('btn.replay') }}</button>
-        <button class="btn-reset" style="height:38px;width:auto;padding:0 20px;" @click="resetGame">{{ t('btn.reset-game') }}</button>
-      </div>
+    <div class="jd-section-label">
+      <span>{{ t('label.choices') }}</span>
+      <span class="jd-section-rule"></span>
+    </div>
 
-      <!-- Choices Grid -->
-      <div id="et-choices" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
-        <button
-          v-for="chord in currentSet"
-          :key="chord"
-          class="et-choice-btn"
-          :class="{
-            correct: answered && chord === currentChord,
-            wrong:   answered && chord === answeredChord && chord !== currentChord,
-          }"
-          :disabled="answered || phase !== 'listening'"
-          @click="answer(chord)"
-        >{{ chord }}</button>
-      </div>
+    <div class="jd-choices-grid">
+      <button
+        v-for="chord in currentSet"
+        :key="chord"
+        class="jd-choice-btn"
+        :class="{
+          correct: answered && chord === currentChord,
+          wrong:   answered && chord === answeredChord && chord !== currentChord,
+        }"
+        :disabled="answered || phase !== 'listening'"
+        @click="answer(chord)"
+      >{{ chord }}</button>
+    </div>
 
-      <!-- Difficulty Options -->
-      <div style="margin-top:15px;">
-        <div style="font-size:0.8em;color:var(--secondary-text);margin-bottom:8px;" data-i18n="et.difficulty">{{ t('et.difficulty') }}</div>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-          <button
-            v-for="d in ['easy','medium','hard']"
-            :key="d"
-            class="et-diff-btn"
-            :class="{ active: difficulty === d }"
-            @click="setDifficulty(d)"
-          >{{ t('et.' + d) }}</button>
-        </div>
-      </div>
+    <div class="jd-section-label">
+      <span>{{ t('et.difficulty') }}</span>
+      <span class="jd-section-rule"></span>
+    </div>
+    
+    <div class="jd-modes" style="padding: 0 20px 20px;">
+      <label v-for="d in ['easy','medium','hard']" :key="d" class="jd-mode" :class="{ on: difficulty === d }">
+        <input type="radio" :value="d" v-model="difficulty" @change="setDifficulty(d)" class="hidden-radio">
+        <span class="jd-mode-dot" aria-hidden="true"></span>
+        <span class="jd-mode-text">{{ t('et.' + d) }}</span>
+      </label>
+    </div>
 
-      <div id="et-status" class="small" style="color:#aaa;margin-top:15px;">{{ statusMsg || t('et.status') }}</div>
+    <div class="jd-section-label">
+      <span>{{ t('et.history') }}</span>
+      <span class="jd-section-rule"></span>
+    </div>
 
-      <!-- History Panel -->
-      <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;">
-        <div id="et-history-panel" style="min-height:40px;">
-          <div v-if="historyStats.length > 0">
-            <div style="font-size:0.75em;text-transform:uppercase;color:#777;font-weight:700;margin-bottom:8px;">{{ t('et.history') }}</div>
-            <div v-for="stat in historyStats" :key="stat.chord" class="et-stat-row">
-              <span class="et-stat-type">{{ stat.chord }}</span>
-              <div class="et-stat-bar">
-                <div :style="{
-                  width: stat.pct + '%',
-                  background: stat.pct >= 75 ? '#2ecc71' : stat.pct >= 50 ? '#f39c12' : '#e74c3c',
-                  height:'100%',
-                  borderRadius:'4px'
-                }"></div>
-              </div>
-              <span class="et-stat-pct">{{ stat.pct }}%</span>
-              <span class="et-stat-cnt">{{ stat.correct }}/{{ stat.total }}</span>
-            </div>
+    <div class="jd-history-stats">
+      <div v-if="historyStats.length > 0" class="jd-stats-container">
+        <div v-for="stat in historyStats" :key="stat.chord" class="jd-stat-row">
+          <span class="jd-stat-label">{{ stat.chord }}</span>
+          <div class="jd-stat-progress">
+            <div class="jd-stat-bar" :style="{ width: stat.pct + '%', backgroundColor: getStatColor(stat.pct) }"></div>
           </div>
-          <div v-else style="color:#666;font-size:0.85em;text-align:center;">{{ t('et.history') }}</div>
+          <span class="jd-stat-val">{{ stat.pct }}%</span>
+          <span class="jd-stat-count">{{ stat.correct }}/{{ stat.total }}</span>
         </div>
-        <button class="btn-reset" style="width:auto;padding:0 16px;margin-top:10px;font-size:0.8em;" @click="clearHistory">{{ t('et.clear-history') }}</button>
+        <button class="jd-toolbtn jd-toolbtn--reset" style="margin-top:15px;" @click="clearHistory">{{ t('et.clear-history') }}</button>
       </div>
-
+      <div v-else class="jd-section-hint" style="padding: 0 20px;">{{ t('et.history-empty') }}</div>
     </div>
   </div>
 </template>
@@ -163,6 +178,12 @@ function saveStats() {
   try { localStorage.setItem('et_stats', JSON.stringify(rawStats.value)) } catch {}
 }
 
+function getStatColor(pct) {
+  if (pct >= 75) return '#2ecc71'
+  if (pct >= 50) return '#f39c12'
+  return '#e74c3c'
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────────
 function setDifficulty(level) {
   difficulty.value = level
@@ -179,7 +200,7 @@ async function playChord() {
   answered.value      = false
   answeredChord.value = null
   phase.value         = 'listening'
-  statusMsg.value     = t('et.listening')
+  statusMsg.value     = ''
   lastCorrect.value   = false
 
   audio.playChord(tones, currentRoot.value, 0, 1.5, 0.25, 'Electric Piano', 4)
@@ -237,3 +258,131 @@ function clearHistory() {
 
 onMounted(() => { loadStats() })
 </script>
+
+<style scoped>
+.jd-question-box {
+  background: rgba(255, 214, 10, 0.05);
+  border: 1px solid rgba(255, 214, 10, 0.15);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.jd-question-text {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--jd-amber);
+  letter-spacing: 2px;
+}
+
+.jd-question-hint {
+  font-size: 14px;
+  color: var(--jd-muted);
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+.jd-choices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 0 20px 20px;
+}
+
+.jd-choice-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 15px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.jd-choice-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.jd-choice-btn.correct {
+  background: #2ecc71;
+  border-color: #2ecc71;
+  color: white;
+}
+
+.jd-choice-btn.wrong {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: white;
+}
+
+.jd-stats-container {
+  padding: 0 20px 20px;
+}
+
+.jd-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.jd-stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  width: 60px;
+  color: var(--jd-muted);
+}
+
+.jd-stat-progress {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.jd-stat-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.jd-stat-val {
+  font-size: 12px;
+  font-weight: 700;
+  width: 40px;
+  text-align: right;
+}
+
+.jd-stat-count {
+  font-size: 10px;
+  color: var(--jd-muted);
+  width: 40px;
+  text-align: right;
+}
+
+.jd-score-badge, .jd-streak-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 5px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--jd-line);
+}
+
+.jd-score-val, .jd-streak-val {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.jd-score-label, .jd-streak-label {
+  font-size: 9px;
+  color: var(--jd-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+</style>

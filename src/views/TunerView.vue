@@ -1,84 +1,101 @@
 <template>
-  <div id="view-tuner" class="view-panel active">
-    <div class="importer-area" style="max-width:520px;margin: 0 auto; width: 100%; text-align:center;">
+  <div id="view-tuner" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">JAZZ · DECK</span>
+        <h1 class="jd-titlemark-name">{{ t('tuner.title') }}</h1>
+      </div>
+    </header>
 
-      <h2 class="area-title">{{ t('tuner.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:24px;">{{ t('tuner.subtitle') }}</p>
-
+    <div class="importer-area" style="max-width:560px; margin: 0 auto; width: 100%; text-align:center;">
       <!-- SVG Tuner Meter -->
-      <div class="tuner-card">
-        <svg class="tuner-arc-svg" viewBox="0 32 300 138" xmlns="http://www.w3.org/2000/svg">
-          <!-- Arc dots -->
-          <g v-for="(dot, i) in arcDots" :key="i">
-            <circle
-              :cx="dot.x" :cy="dot.y"
-              :r="i === 12 ? 7 : 4.5"
-              :fill="dotFill(i)"
-              :opacity="dotOpacity(i)"
-              class="tuner-dot"
-            />
-          </g>
-          <!-- ♭ / ♯ labels -->
-          <text x="23"  y="150" fill="rgba(255,255,255,0.22)" font-size="13" text-anchor="middle" font-family="sans-serif">♭</text>
-          <text x="277" y="150" fill="rgba(255,255,255,0.22)" font-size="13" text-anchor="middle" font-family="sans-serif">♯</text>
-          <!-- Note name -->
-          <text
-            x="150" y="122"
-            text-anchor="middle"
-            :fill="tuner.tuneColor.value"
-            font-size="32" font-weight="900" letter-spacing="-1"
-            font-family="system-ui,-apple-system,sans-serif"
-            style="transition:fill 0.15s;"
-          >{{ tuner.detectedNote.value || '–' }}</text>
-          <!-- Cents label -->
-          <text
-            x="150" y="142"
-            text-anchor="middle"
-            :fill="tuner.tuneColor.value"
-            font-size="13" font-weight="700"
-            font-family="system-ui,-apple-system,sans-serif"
-            style="transition:fill 0.15s;"
-          >{{ centsLabel }}</text>
-          <!-- Frequency -->
-          <text
-            x="150" y="157"
-            text-anchor="middle"
-            fill="#666" font-size="11"
-            font-family="system-ui,-apple-system,sans-serif"
-          >{{ tuner.detectedFreq.value ? tuner.detectedFreq.value + ' Hz' : '' }}</text>
-        </svg>
-      </div>
+      <section class="jd-console" style="padding-bottom:20px; margin-bottom:24px;">
+        <div class="jd-grain" aria-hidden="true"></div>
+        <div class="jd-section-label">
+          <span>{{ t('tuner.subtitle') }}</span>
+          <div class="jd-section-rule"></div>
+        </div>
 
-      <!-- Start / Stop button -->
-      <div style="margin:20px 0 10px;">
-        <button
-          class="btn-add-step"
-          style="min-width:160px;font-size:1.05em;"
-          :style="tuner.isActive.value ? 'background:rgba(231,76,60,0.25);border-color:#e74c3c;color:#e74c3c;' : ''"
-          @click="toggleTuner"
-        >{{ tuner.isActive.value ? t('tuner.stop') : t('tuner.start') }}</button>
-      </div>
+        <div class="tuner-card" style="margin-top:10px;">
+          <svg class="tuner-arc-svg" viewBox="0 32 300 138" xmlns="http://www.w3.org/2000/svg">
+            <!-- Arc dots -->
+            <g v-for="(dot, i) in arcDots" :key="i">
+              <circle
+                :cx="dot.x" :cy="dot.y"
+                :r="i === 12 ? 7 : 4.5"
+                :fill="dotFill(i)"
+                :opacity="dotOpacity(i)"
+                class="tuner-dot"
+              />
+            </g>
+            <!-- ♭ / ♯ labels -->
+            <text x="23"  y="150" fill="var(--jd-line-strong)" font-size="14" text-anchor="middle" font-family="var(--jd-mono)">♭</text>
+            <text x="277" y="150" fill="var(--jd-line-strong)" font-size="14" text-anchor="middle" font-family="var(--jd-mono)">♯</text>
+            
+            <!-- Note name -->
+            <text
+              x="150" y="122"
+              text-anchor="middle"
+              :fill="tuner.tuneColor.value"
+              font-size="44" font-weight="400" font-family="var(--jd-display)" font-style="italic"
+              style="transition:fill 0.15s; letter-spacing:-0.02em;"
+            >{{ tuner.detectedNote.value || '–' }}</text>
+            
+            <!-- Cents label -->
+            <text
+              x="150" y="146"
+              text-anchor="middle"
+              :fill="tuner.tuneColor.value"
+              font-size="11" font-weight="700" font-family="var(--jd-mono)"
+              style="transition:fill 0.15s; letter-spacing:1px; text-transform:uppercase;"
+            >{{ centsLabel }}</text>
+            
+            <!-- Frequency -->
+            <text
+              x="150" y="159"
+              text-anchor="middle"
+              fill="var(--jd-muted)" font-size="9" font-family="var(--jd-mono)"
+              style="letter-spacing:0.5px;"
+            >{{ tuner.detectedFreq.value ? tuner.detectedFreq.value + ' Hz' : '' }}</text>
+          </svg>
+        </div>
 
-      <!-- Status text -->
-      <div class="tuner-instr">{{ tuner.statusText.value || t('tuner.status') }}</div>
+        <!-- Start / Stop button -->
+        <div style="margin:24px 0 12px; display:flex; justify-content:center; position:relative; z-index:1;">
+          <button
+            class="btn-add-step"
+            style="min-width:180px;"
+            :style="tuner.isActive.value ? 'background:rgba(255,69,58,0.1) !important; border-color:var(--jd-red) !important; color:var(--jd-red) !important;' : ''"
+            @click="toggleTuner"
+          >{{ tuner.isActive.value ? t('tuner.stop') : t('tuner.start') }}</button>
+        </div>
+
+        <!-- Status text -->
+        <div class="tuner-instr" style="color:var(--jd-muted); font-family:var(--jd-mono); font-size:10px; text-transform:uppercase; letter-spacing:2px; position:relative; z-index:1;">
+          {{ tuner.statusText.value || t('tuner.status') }}
+        </div>
+      </section>
 
       <!-- Reference strings -->
-      <div style="margin-top:28px;">
-        <div style="font-size:0.75em;text-transform:uppercase;color:#555;font-weight:700;margin-bottom:10px;">
-          {{ t('tuner.ref') }}
+      <section class="jd-console" style="padding-top:20px;">
+        <div class="jd-grain" aria-hidden="true"></div>
+        <div class="jd-section-label">
+          <span>{{ t('tuner.ref') }}</span>
+          <div class="jd-section-rule"></div>
         </div>
-        <div class="tuner-strings-grid">
+        <div class="tuner-strings-grid" style="position:relative; z-index:1; margin-top:4px;">
           <div
             v-for="s in STRINGS"
             :key="s.name"
             class="tuner-string-btn"
+            style="padding:12px 6px;"
             @click="playRef(s.freq)"
           >
             <span class="ts-name">{{ s.name }}</span>
             <span class="ts-freq">{{ s.str }} · {{ s.hz }} Hz</span>
           </div>
         </div>
-      </div>
+      </section>
 
     </div>
   </div>
@@ -138,7 +155,7 @@ function dotBaseColor(i) {
 
 function dotFill(i) {
   const active = activeDotIndex.value
-  if (active < 0) return '#333'
+  if (active < 0) return 'var(--jd-mute-deep)'
   if (i === active) return tuner.tuneColor.value
   if (i === 12 && active >= 0) return active === 12 ? tuner.tuneColor.value : '#2ecc71'
   return dotBaseColor(i)
@@ -171,8 +188,5 @@ function playRef(freq) {
   audioStore.playRef(freq)
 }
 
-function onTunerStop() { tuner.stop() }
-
-onMounted(()   => window.addEventListener('tuner:stop', onTunerStop))
-onUnmounted(() => { window.removeEventListener('tuner:stop', onTunerStop); tuner.stop() })
+onUnmounted(() => { tuner.stop() })
 </script>

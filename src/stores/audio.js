@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { noteIndexToFrequency } from '../utils/theory.js'
+import { pitchToFrequency } from '../utils/theory.js' // UPDATED IMPORT
 
 export const useAudioStore = defineStore('audio', () => {
   // Use plain variables for Tone objects to avoid Proxy issues
@@ -8,6 +8,7 @@ export const useAudioStore = defineStore('audio', () => {
   let _pianoSampler = null
   let _bassSynth = null
   let _drumSynth = null
+  let _metronomeSynth = null
   let _isInitialized = false
   let _currentPreset = null
   let _currentOscillators = []
@@ -56,8 +57,14 @@ export const useAudioStore = defineStore('audio', () => {
       _drumSynth = new Tone.NoiseSynth({
         noise: { type: 'white' },
         envelope: { attack: 0.001, decay: 0.05, sustain: 0 },
-        volume: -20
+        volume: -8
       }).connect(compressor)
+
+      _metronomeSynth = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
+        volume: -10
+      }).toDestination()
 
       _pianoSampler = new Tone.Sampler({
         urls: { A1:'A1.mp3', A2:'A2.mp3' },
@@ -94,6 +101,7 @@ export const useAudioStore = defineStore('audio', () => {
     try { if (_chordSynth) _chordSynth.releaseAll() } catch {}
     try { if (_pianoSampler) _pianoSampler.releaseAll() } catch {}
     try { if (_bassSynth) _bassSynth.triggerRelease() } catch {}
+    try { if (_metronomeSynth) _metronomeSynth.triggerRelease() } catch {}
     _currentOscillators.forEach(({ osc, gain }) => {
       try {
         const now = Tone.now()
@@ -105,7 +113,7 @@ export const useAudioStore = defineStore('audio', () => {
     _currentOscillators = []
   }
 
-  async function playNoteImmediate(noteIdx, duration, vol, soundName, octave) {
+  async function playNoteImmediate(midiNote, duration, vol, soundName) { // UPDATED PARAMS
     await init()
     if (!_isInitialized || !_chordSynth) return
     try {
@@ -115,8 +123,7 @@ export const useAudioStore = defineStore('audio', () => {
         _chordSynth.volume.cancelScheduledValues(Tone.now())
         _chordSynth.volume.rampTo(db, 0.01)
       }
-      const nIdx = ((noteIdx % 12) + 12) % 12
-      const freq = noteIndexToFrequency(nIdx, octave)
+      const freq = pitchToFrequency(midiNote) // UPDATED
       if (isFinite(freq)) {
         const note = Tone.Frequency(freq).toNote()
         _chordSynth.triggerAttackRelease(note, duration, Tone.now() + 0.01)
@@ -124,7 +131,7 @@ export const useAudioStore = defineStore('audio', () => {
     } catch (e) { console.warn('playNoteImmediate error:', e) }
   }
 
-  async function playChord(tones, rootNoteIdx, time, duration, vol, soundName, baseOctave) {
+  async function playChord(tones, rootMidiNote, time, duration, vol, soundName, octave = 4) { // UPDATED PARAMS
     await init()
     if (!_isInitialized) return
     stopAll()
@@ -143,43 +150,42 @@ export const useAudioStore = defineStore('audio', () => {
         synth.volume.rampTo(db, 0.1)
       }
       
-      let oct = baseOctave, prevNIdx = rootNoteIdx
-      const notes = tones.map((interval, i) => {
-        const nIdx = (rootNoteIdx + interval) % 12
-        if (i > 0 && nIdx <= prevNIdx) oct++
-        prevNIdx = nIdx
-        return Tone.Frequency(noteIndexToFrequency(nIdx, oct)).toNote()
+      const baseMidi = (rootMidiNote < 12) ? rootMidiNote + (octave * 12) : rootMidiNote
+      const notes = tones.map(interval => {
+        const absoluteNote = baseMidi + interval
+        return Tone.Frequency(pitchToFrequency(absoluteNote)).toNote()
       })
       synth.triggerAttackRelease(notes, duration, startTime)
     } catch (e) { console.warn('playChord error:', e) }
   }
 
   function playClick(time, isDownbeat, vol, soundName, multiplier = 1.0) {
-    if (!_isInitialized) return
+    if (!_isInitialized || !_metronomeSynth) return
     const now = Tone.now()
     const startTime = (time && time > now) ? time : now + 0.01
     try {
-      const osc = new Tone.Oscillator().toDestination()
       const sound = METRONOME_SAMPLES[soundName] || METRONOME_SAMPLES.Beep
-      osc.type = sound.shape || 'sine'
-      osc.frequency.value = isDownbeat ? sound.freqDown : sound.freqUp
-      osc.volume.value = Tone.gainToDb(vol * multiplier)
-      osc.start(startTime).stop(startTime + 0.05)
-      // Node will be GC'd after stopping
+      const freq = isDownbeat ? sound.freqDown : sound.freqUp
+      
+      _metronomeSynth.oscillator.type = sound.shape || 'sine'
+      _metronomeSynth.volume.value = Tone.gainToDb(vol * multiplier)
+      _metronomeSynth.triggerAttackRelease(freq, 0.05, startTime)
     } catch {}
   }
 
-  function playBass(noteIdx, time, dur, vol = 0.5) {
+  function playBass(midiNote, time, dur, vol = 0.5) { // UPDATED PARAMS
     if (!_bassSynth) return
     const now = Tone.now()
     const startTime = (time && time > now) ? time : now + 0.01
     try {
-      const freq = noteIndexToFrequency(noteIdx, 2)
+      // If midiNote is just a pitch class (0-11), shift it to an audible bass octave
+      const absoluteNote = midiNote < 12 ? midiNote + 36 : midiNote
+      const freq = pitchToFrequency(absoluteNote)
       _bassSynth.triggerAttackRelease(freq, dur, startTime, vol)
     } catch(e) {}
   }
 
-  function playDrum(type, time, vol = 0.3) {
+  async function playDrum(type, time, vol = 0.3) {
     if (!_drumSynth) return
     const now = Tone.now()
     const startTime = (time && time > now) ? time : now + 0.01
@@ -203,8 +209,10 @@ export const useAudioStore = defineStore('audio', () => {
     } catch {}
   }
 
+  const context = computed(() => typeof Tone !== 'undefined' ? Tone.context : null)
+
   return {
-    isInitialized, METRONOME_SAMPLES, CHORD_SOUNDS,
+    isInitialized, METRONOME_SAMPLES, CHORD_SOUNDS, context,
     init, stopAll, playNoteImmediate, playChord, playClick, playRef,
     playBass, playDrum
   }

@@ -1,12 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root {
   color-scheme: dark;
-  --bg: #000000;
-  --sidebar: rgba(28, 28, 30, 0.85);
-  --panel: rgba(44, 44, 46, 0.5);
-  --accent: #FFD60A; /* Apple System Yellow */
+
+  /* ─── JazzDeck design tokens (vintage analog console) ─────────── */
+  --jd-bg-deep:      #0a0908;
+  --jd-bg:           #0e0d0b;
+  --jd-surface:      #161412;
+  --jd-surface-alt:  #1f1c19;
+  --jd-line:         rgba(255, 214, 10, 0.08);
+  --jd-line-strong:  rgba(255, 214, 10, 0.20);
+  --jd-text:         #ede8df;
+  --jd-text-soft:    #a39d92;
+  --jd-muted:        #6f6a60;
+  --jd-mute-deep:    #4a463f;
+  --jd-amber:        #FFD60A;
+  --jd-amber-soft:   #fff3a0;
+  --jd-bass:         #9c5cff;
+  --jd-drums:        #ff6d00;
+  --jd-improv:       #22c55e;
+  --jd-synth:        #3a9ad9;
+  --jd-red:          #ff453a;
+  --jd-green:        #2ecc71;
+  --jd-display:      'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --jd-mono:         'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* ─── Legacy tokens harmonized with JazzDeck ──────────────────── */
+  --bg: var(--jd-bg);
+  --sidebar: rgba(13, 12, 10, 0.92);
+  --panel: var(--jd-surface);
+  --accent: var(--jd-amber);
   --wood: #1c1c1e;
-  --text: #ffffff;
-  --secondary-text: #8E8E93;
+  --text: var(--jd-text);
+  --secondary-text: var(--jd-muted);
   --sidebar-width: clamp(250px, 20dvw, 300px);
   --fret-width: 44px;
   --nut-width: 50px;
@@ -282,11 +308,12 @@ select {
 .viewport {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 25px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
+  flex-grow: 1;
 }
 
 /* Interval Legend */
@@ -798,8 +825,11 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .interval-desc { color: #aaa; flex: 1; line-height: 1.4; }
 
 /* Scale grid */
-.scale-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin-top: 10px; }
-.scale-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 12px; }
+.scale-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin-top: 10px; justify-content: center; }
+.scale-item {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center;
+}
 .scale-item-name { font-weight: 800; color: var(--accent); font-size: 0.88em; margin-bottom: 3px; }
 .scale-item-chord { font-size: 0.78em; color: #bbb; margin-bottom: 5px; }
 .scale-item-desc { font-size: 0.78em; color: var(--secondary-text); line-height: 1.5; margin-bottom: 8px; }
@@ -825,7 +855,7 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .load-prog-btn:hover { background: rgba(50,215,75,0.28); transform: none !important; }
 
 /* CAGED system */
-.caged-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+.caged-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; justify-content: center; }
 .caged-shape { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 8px; text-align: center; }
 .caged-shape-letter { font-size: 2em; font-weight: 900; color: var(--accent); line-height: 1; }
 .caged-shape-chord { font-size: 0.72em; color: #aaa; margin-top: 4px; }
@@ -1240,3 +1270,1581 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 
 /* ===== TAB MODAL ===== */
 #lb-tab-output { user-select: all; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   JAZZDECK OVERRIDES — coherent vintage-console aesthetic across views.
+   Loaded AFTER the legacy rules so cascade wins. Keep at file end.
+═══════════════════════════════════════════════════════════════════ */
+
+body { background: var(--jd-bg); color: var(--jd-text); }
+
+/* ─── Sidebar ────────────────────────────────────────────────── */
+.sidebar {
+  background:
+    linear-gradient(180deg, rgba(255,214,10,0.018) 0%, transparent 200px),
+    var(--sidebar);
+  border-right: 1px solid var(--jd-line);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.logo {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.95em;
+  letter-spacing: -0.02em;
+  color: var(--jd-text);
+  padding: 18px 22px 6px;
+  line-height: 1;
+}
+.logo span {
+  color: var(--jd-amber);
+}
+.logo::after {
+  content: 'jazz · deck · 01';
+  display: block;
+  font-family: var(--jd-mono);
+  font-style: normal;
+  font-size: 0.34em;
+  font-weight: 500;
+  letter-spacing: 4px;
+  color: var(--jd-muted);
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+.sidebar-controls {
+  border-top: 1px solid var(--jd-line);
+  padding: 18px 20px;
+  gap: 12px;
+}
+.sidebar-group { margin: 0; }
+.sidebar-group-header {
+  padding: 10px 22px 6px;
+  font-family: var(--jd-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--jd-mute-deep);
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.sidebar-group-header:hover { color: var(--jd-text-soft); }
+.sidebar-group-arrow { transform: scale(1.1); color: var(--jd-mute-deep); }
+
+.nav-item {
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--jd-text-soft);
+  padding: 9px 22px;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.nav-item:hover {
+  background: rgba(255, 214, 10, 0.04);
+  color: var(--jd-text);
+  border-left-color: var(--jd-line-strong);
+}
+a.nav-item.router-link-active,
+a.nav-item.router-link-exact-active {
+  background: linear-gradient(90deg, rgba(255,214,10,0.12) 0%, rgba(255,214,10,0) 80%);
+  color: var(--jd-amber);
+  border-left-color: var(--jd-amber);
+}
+
+/* ─── Navbar ─────────────────────────────────────────────────── */
+.navbar {
+  background: rgba(13, 12, 10, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--jd-line);
+  padding: 0 28px;
+  height: 64px;
+}
+#view-title {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-size: 1.7em !important;
+  font-weight: 400 !important;
+  color: var(--jd-text);
+  letter-spacing: -0.01em;
+  position: relative;
+  padding-left: 14px;
+}
+#view-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 22px;
+  background: var(--jd-amber);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 214, 10, 0.5);
+}
+.lang-toggle {
+  font-family: var(--jd-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border-color: var(--jd-line);
+  border-radius: 6px;
+  height: 30px;
+  color: var(--jd-text-soft);
+}
+.lang-toggle:hover {
+  background: rgba(255, 214, 10, 0.06);
+  border-color: var(--jd-amber);
+  color: var(--jd-amber);
+}
+.nav-toggle {
+  border: 1px solid var(--jd-line-strong);
+  border-radius: 8px;
+  color: var(--jd-amber);
+  background: transparent;
+}
+
+/* ─── Form primitives ────────────────────────────────────────── */
+button {
+  font-family: var(--jd-mono);
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  background: var(--jd-surface-alt);
+  border: 1px solid var(--jd-line);
+  color: var(--jd-text);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+button:hover {
+  background: #2a2622;
+  border-color: var(--jd-line-strong);
+  color: var(--jd-amber);
+  transform: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+button:active { transform: translateY(1px); }
+
+select {
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+  font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.32);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6a60' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-position: right 10px center;
+  background-size: 12px;
+  border: 1px solid var(--jd-line);
+  border-radius: 8px;
+  color: var(--jd-text);
+  letter-spacing: 0.4px;
+  padding-right: 32px;
+  box-shadow: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+select:hover {
+  border-color: var(--jd-line-strong);
+  background-color: rgba(0, 0, 0, 0.45);
+  color: var(--jd-amber);
+  transform: none;
+  box-shadow: none;
+}
+select:focus {
+  outline: 1px solid var(--jd-amber);
+  outline-offset: 1px;
+}
+select option {
+  background: #1a1815;
+  color: var(--jd-text);
+}
+
+input[type="text"],
+input[type="number"],
+textarea {
+  font-family: var(--jd-mono);
+  font-size: 0.85em;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid var(--jd-line);
+  color: var(--jd-text);
+  border-radius: 8px;
+  letter-spacing: 0.3px;
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--jd-amber);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.10);
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--jd-mute-deep);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+input[type="checkbox"]:hover {
+  border-color: var(--jd-amber);
+}
+input[type="checkbox"]:checked {
+  background: var(--jd-amber);
+  border-color: var(--jd-amber);
+  box-shadow: 0 0 8px rgba(255, 214, 10, 0.35);
+}
+input[type="checkbox"]:checked::after {
+  left: 4px; top: 0px;
+  width: 4px; height: 9px;
+  border-color: #0a0908;
+  border-width: 0 2px 2px 0;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  background: transparent;
+  height: 32px;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg,
+    var(--jd-amber) 0%,
+    var(--jd-amber) var(--p, 0%),
+    rgba(255,255,255,0.07) var(--p, 0%),
+    rgba(255,255,255,0.07) 100%);
+  border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--jd-amber);
+  border: 2px solid var(--jd-bg-deep);
+  margin-top: -5px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px var(--jd-amber),
+    0 0 8px rgba(255, 214, 10, 0.4);
+  transition: transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.18); }
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--jd-amber);
+  border: 2px solid var(--jd-bg-deep);
+  cursor: pointer;
+}
+
+/* ─── Labels & nav-group ─────────────────────────────────────── */
+.nav-group label {
+  font-family: var(--jd-mono);
+  font-size: 0.62em;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--jd-muted);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* ─── Viewport ───────────────────────────────────────────────── */
+.viewport {
+  padding: 20px 28px;
+  background:
+    radial-gradient(ellipse 1400px 500px at 50% -100px, rgba(255,214,10,0.025), transparent 70%),
+    var(--jd-bg);
+}
+
+/* ─── Player area / area header ──────────────────────────────── */
+.progression-player-area {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 16px;
+  padding: 22px;
+  background-image:
+    radial-gradient(ellipse 1200px 380px at 50% -8%, rgba(255, 214, 10, 0.05), transparent 60%),
+    linear-gradient(180deg, var(--jd-surface) 0%, #100e0c 100%);
+}
+.area-header {
+  border-bottom: 1px solid var(--jd-line);
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+.area-title {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.7em;
+  color: var(--jd-text);
+  letter-spacing: -0.02em;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn-io {
+  background: transparent;
+  border: 1px solid var(--jd-line);
+  color: var(--jd-text-soft);
+  font-family: var(--jd-mono);
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  padding: 0 14px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+.btn-io:hover {
+  background: rgba(255, 214, 10, 0.06);
+  color: var(--jd-amber);
+  border-color: var(--jd-line-strong);
+  transform: none;
+  box-shadow: none;
+}
+.btn-io:disabled { opacity: 0.4; }
+
+.btn-add-step {
+  background: var(--jd-amber) !important;
+  color: var(--jd-bg-deep) !important;
+  font-family: var(--jd-mono);
+  font-size: 0.74em;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  border: 1px solid var(--jd-amber);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  padding: 0 16px;
+}
+.btn-add-step:hover {
+  background: var(--jd-amber-soft) !important;
+  color: var(--jd-bg-deep) !important;
+  box-shadow: 0 0 16px rgba(255, 214, 10, 0.35);
+  transform: none;
+}
+
+.btn-reset {
+  background: transparent;
+  border: 1px solid rgba(255, 69, 58, 0.35);
+  color: #ff7a73;
+  font-family: var(--jd-mono);
+  font-size: 0.74em;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 0 14px;
+  box-shadow: none;
+}
+.btn-reset:hover {
+  background: rgba(255, 69, 58, 0.10);
+  border-color: rgba(255, 69, 58, 0.7);
+  color: var(--jd-red);
+  transform: none;
+  box-shadow: none;
+}
+.btn-snapshot {
+  background: var(--jd-amber);
+  color: var(--jd-bg-deep);
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-size: 0.72em;
+  border: none;
+}
+.btn-snapshot:hover {
+  background: var(--jd-amber-soft);
+  color: var(--jd-bg-deep);
+  transform: none;
+  box-shadow: 0 0 14px rgba(255,214,10,0.3);
+}
+
+.btn-tap {
+  background: transparent;
+  border: 1.5px solid var(--jd-line-strong);
+  color: var(--jd-amber);
+  font-family: var(--jd-mono);
+  letter-spacing: 2.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  font-size: 12px;
+  height: 44px;
+  width: 64px;
+  box-shadow: none;
+}
+.btn-tap:hover {
+  background: rgba(255, 214, 10, 0.06);
+  color: var(--jd-amber);
+  transform: none;
+  box-shadow: 0 0 16px rgba(255, 214, 10, 0.20);
+}
+
+/* ─── Quick controls bar (used in some views) ────────────────── */
+.quick-controls {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 14px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Transport / icon buttons ───────────────────────────────── */
+.btn-icon {
+  background: linear-gradient(180deg, #2c2826 0%, #1c1a18 100%);
+  border: 1px solid var(--jd-mute-deep);
+  color: var(--jd-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.btn-icon:hover {
+  background: linear-gradient(180deg, #3a3633 0%, #252220 100%);
+  color: var(--jd-amber);
+  border-color: var(--jd-line-strong);
+  transform: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.55);
+}
+.btn-play {
+  background: linear-gradient(180deg, #ffe245 0%, #d4af00 100%);
+  color: var(--jd-bg-deep);
+  border-color: #aa8a00;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 16px rgba(255, 214, 10, 0.40);
+}
+.btn-play:hover {
+  background: linear-gradient(180deg, #fff080 0%, #e6c200 100%);
+  color: var(--jd-bg-deep);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 6px 22px rgba(255, 214, 10, 0.55);
+}
+.btn-play.active {
+  background: linear-gradient(180deg, #ff8b3d 0%, #d96b1c 100%);
+  border-color: #b8520f;
+  color: var(--jd-bg-deep);
+}
+.btn-stop {
+  background: linear-gradient(180deg, #2c2826 0%, #1c1a18 100%);
+  color: var(--jd-text);
+  border-color: var(--jd-mute-deep);
+}
+
+/* ─── Control sections (used in several views) ───────────────── */
+.control-section {
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid var(--jd-line);
+  border-radius: 12px;
+  padding: 16px;
+  gap: 12px;
+}
+.control-section-header {
+  font-family: var(--jd-mono);
+  font-size: 0.65em;
+  font-weight: 700;
+  letter-spacing: 3.5px;
+  color: var(--jd-text-soft);
+  text-transform: uppercase;
+}
+
+/* ─── Checkbox group ─────────────────────────────────────────── */
+.checkbox-group {
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.checkbox-container {
+  font-family: var(--jd-mono);
+  font-size: 0.74em;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  color: var(--jd-text-soft);
+  height: 34px;
+  cursor: pointer;
+}
+.checkbox-container label { cursor: pointer; }
+
+/* ─── Section label utility ──────────────────────────────────── */
+.controls {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 14px;
+  padding: 12px 22px;
+}
+
+/* ─── Progression step (jazz card list) ──────────────────────── */
+.progression-step {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.progression-step:hover { background: rgba(255, 255, 255, 0.035); }
+.progression-step.selected {
+  border-color: var(--jd-amber);
+  background: rgba(255, 214, 10, 0.06);
+}
+.progression-step.active-step {
+  box-shadow: 0 0 0 2px var(--jd-amber), 0 0 18px rgba(255, 214, 10, 0.25);
+}
+.step-label {
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── List cards (Real Book / Scale Navigator / etc.) ────────── */
+.sn-scale-card,
+.rb-standard-card,
+.snapshot-card {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 12px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.sn-scale-card:hover,
+.rb-standard-card:hover,
+.snapshot-card:hover {
+  background: var(--jd-surface-alt);
+  border-color: var(--jd-line-strong);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.sn-scale-name,
+.rb-standard-title,
+.snapshot-meta h3 {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.22em;
+  color: var(--jd-text);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.snapshot-meta h3 { color: var(--jd-amber); }
+.sn-scale-note,
+.rb-standard-meta {
+  font-family: var(--jd-mono);
+  font-size: 0.74em;
+  letter-spacing: 0.5px;
+  color: var(--jd-muted);
+}
+.rb-standard-chords {
+  font-family: var(--jd-mono);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--jd-line);
+  letter-spacing: 1px;
+  color: var(--jd-text-soft);
+  border-radius: 6px;
+}
+
+/* ─── Pill-style chips (categories, difficulties) ────────────── */
+.iet-diff-btn,
+.et-diff-btn,
+.rb-cat-btn,
+.preset-prog-btn {
+  background: transparent;
+  border: 1px solid var(--jd-line);
+  color: var(--jd-text-soft);
+  font-family: var(--jd-mono);
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 6px 14px;
+  height: auto;
+  box-shadow: none;
+}
+.iet-diff-btn:hover,
+.et-diff-btn:hover,
+.rb-cat-btn:hover,
+.preset-prog-btn:hover {
+  border-color: var(--jd-amber);
+  color: var(--jd-amber);
+  background: rgba(255, 214, 10, 0.04);
+  transform: none;
+  box-shadow: none;
+}
+.iet-diff-btn.active,
+.et-diff-btn.active,
+.rb-cat-btn.active {
+  background: rgba(255, 214, 10, 0.12);
+  border-color: var(--jd-amber);
+  color: var(--jd-amber);
+  box-shadow: 0 0 14px rgba(255, 214, 10, 0.18);
+}
+.rb-style-tag {
+  background: rgba(255, 214, 10, 0.10);
+  color: var(--jd-amber);
+  border: 1px solid rgba(255, 214, 10, 0.25);
+  font-family: var(--jd-mono);
+  font-size: 0.68em;
+  letter-spacing: 1px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* ─── Note picker buttons (Chord Finder) ─────────────────────── */
+.cf-note-btn {
+  background: var(--jd-surface);
+  border: 1.5px solid var(--jd-mute-deep);
+  color: var(--jd-text-soft);
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.3px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.cf-note-btn:hover {
+  background: rgba(255, 214, 10, 0.06);
+  border-color: var(--jd-amber);
+  color: var(--jd-amber);
+  transform: none;
+  box-shadow: 0 0 14px rgba(255, 214, 10, 0.18);
+}
+.cf-note-btn.selected {
+  background: var(--jd-amber);
+  color: var(--jd-bg-deep);
+  border-color: var(--jd-amber);
+  box-shadow: 0 0 16px rgba(255, 214, 10, 0.4);
+}
+.cf-result-item {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+  font-family: var(--jd-mono);
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--jd-text);
+  transition: background 0.15s, border-color 0.15s;
+}
+.cf-result-item:hover {
+  background: var(--jd-surface-alt);
+  border-color: var(--jd-line-strong);
+}
+
+/* ─── Ear training choice buttons ────────────────────────────── */
+.et-choice-btn {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-mute-deep);
+  color: var(--jd-text);
+  font-family: var(--jd-mono);
+  font-size: 0.88em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 12px;
+  padding: 16px 10px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.05s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.3);
+}
+.et-choice-btn:hover:not(:disabled) {
+  background: rgba(255, 214, 10, 0.08);
+  border-color: var(--jd-amber);
+  color: var(--jd-amber);
+  transform: none;
+  box-shadow: 0 0 18px rgba(255, 214, 10, 0.18);
+}
+
+/* ─── Groove cells ───────────────────────────────────────────── */
+.gt-cell {
+  background: var(--jd-surface);
+  border: 1.5px solid var(--jd-line);
+  border-radius: 8px;
+}
+.gt-cell:hover { background: var(--jd-surface-alt); border-color: var(--jd-line-strong); }
+.gt-cell-on {
+  background: rgba(255, 214, 10, 0.18) !important;
+  border-color: var(--jd-amber) !important;
+  box-shadow: inset 0 0 16px rgba(255, 214, 10, 0.18);
+}
+.gt-cell-active {
+  background: rgba(255, 214, 10, 0.45) !important;
+  box-shadow: 0 0 16px rgba(255, 214, 10, 0.45);
+}
+
+/* ─── Chord voicing badges ───────────────────────────────────── */
+.cv-int-dot { font-family: var(--jd-mono); }
+
+/* ─── Tuner card ─────────────────────────────────────────────── */
+.tuner-card {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 18px;
+  background-image:
+    radial-gradient(ellipse 600px 200px at 50% -8%, rgba(255,214,10,0.06), transparent 60%),
+    linear-gradient(180deg, var(--jd-surface) 0%, #100e0c 100%);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.6);
+}
+.tuner-note-name {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+}
+.tuner-string-btn {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+  font-family: var(--jd-mono);
+}
+.tuner-string-btn:hover {
+  background: rgba(255, 214, 10, 0.06);
+  border-color: var(--jd-amber);
+}
+.tuner-string-btn .ts-name {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.5em;
+}
+.tuner-string-btn .ts-freq {
+  font-family: var(--jd-mono);
+  letter-spacing: 0.5px;
+}
+
+/* ─── Scale grid / chord table / harmony ─────────────────────── */
+.scale-item {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+}
+.scale-item-name {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1em;
+  color: var(--jd-amber);
+  letter-spacing: -0.01em;
+}
+.scale-item-chord, .scale-item-desc {
+  font-family: var(--jd-mono);
+  font-size: 0.72em;
+  letter-spacing: 0.3px;
+}
+.scale-int-badge {
+  font-family: var(--jd-mono);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--jd-line);
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+}
+.chord-table th {
+  font-family: var(--jd-mono);
+  letter-spacing: 1.5px;
+  border-bottom-color: var(--jd-line);
+}
+.chord-symbol {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+}
+.chord-formula {
+  font-family: var(--jd-mono);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--jd-line);
+  border-radius: 5px;
+}
+.harmony-triad {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+}
+.harmony-name {
+  font-family: var(--jd-mono);
+  letter-spacing: 2px;
+  color: var(--jd-amber);
+}
+.harmony-note-box {
+  background: var(--jd-surface-alt);
+  border-radius: 5px;
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+}
+
+/* ─── Theory tip / progression preset / load button ──────────── */
+.teoria-tip {
+  background: rgba(255, 214, 10, 0.05);
+  border: 1px solid rgba(255, 214, 10, 0.18);
+  border-left: 3px solid var(--jd-amber);
+  border-radius: 8px;
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+  line-height: 1.7;
+  color: var(--jd-text-soft);
+}
+.teoria-tip strong {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-size: 1.15em;
+  color: var(--jd-amber);
+  font-weight: 400;
+}
+.teoria-card {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 14px;
+}
+.teoria-card.open {
+  border-color: var(--jd-line-strong);
+  background: linear-gradient(180deg, rgba(255,214,10,0.025), transparent 60%), var(--jd-surface);
+}
+.teoria-header {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.25em;
+  letter-spacing: -0.01em;
+  color: var(--jd-text);
+}
+.teoria-arrow {
+  font-family: var(--jd-mono);
+  font-style: normal;
+}
+.teoria-intro {
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+  letter-spacing: 0.3px;
+  color: var(--jd-text-soft);
+}
+.prog-teoria-item {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 12px;
+}
+.prog-teoria-name {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.15em;
+  letter-spacing: -0.01em;
+}
+.prog-teoria-tag {
+  font-family: var(--jd-mono);
+  background: rgba(255,214,10,0.10);
+  border: 1px solid rgba(255,214,10,0.25);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 0.65em;
+}
+.prog-example {
+  font-family: var(--jd-mono);
+  background: var(--jd-bg-deep);
+  border: 1px solid var(--jd-line);
+  border-left: 3px solid var(--jd-amber);
+  letter-spacing: 1.2px;
+  color: var(--jd-text-soft);
+  border-radius: 8px;
+}
+.load-prog-btn {
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-size: 0.7em;
+  background: rgba(46, 204, 113, 0.10);
+  border: 1px solid rgba(46, 204, 113, 0.35);
+  color: #2ecc71;
+  border-radius: 6px;
+}
+.load-prog-btn:hover {
+  background: rgba(46, 204, 113, 0.20);
+  border-color: var(--jd-green);
+  color: var(--jd-green);
+  transform: none;
+}
+
+/* ─── Reharmonizer cards ─────────────────────────────────────── */
+.rh-card {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 12px;
+}
+.rh-original {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.rh-sub-badge {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--jd-line);
+  border-radius: 8px;
+  font-family: var(--jd-mono);
+  letter-spacing: 0.5px;
+  color: var(--jd-text);
+}
+.rh-sub-badge:hover {
+  background: rgba(255,214,10,0.06);
+  border-color: var(--jd-amber);
+}
+.rh-sub-badge small {
+  font-family: var(--jd-mono);
+  color: var(--jd-muted);
+}
+
+/* ─── Lick builder pills ─────────────────────────────────────── */
+.lb-note-pill {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line-strong);
+  border-radius: 8px;
+}
+.lb-note-pill:hover { background: rgba(255,214,10,0.10); }
+.lb-note-pill span { font-family: var(--jd-mono); }
+
+/* ─── CAGED grid ─────────────────────────────────────────────── */
+.caged-shape {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line);
+  border-radius: 10px;
+}
+.caged-shape-letter {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--jd-amber);
+}
+.caged-shape-chord, .caged-shape-desc {
+  font-family: var(--jd-mono);
+  letter-spacing: 0.3px;
+}
+
+/* ─── Voice leading table refinements ────────────────────────── */
+.vl-table {
+  background: var(--jd-bg-deep);
+  border: 1px solid var(--jd-line);
+}
+.vl-table th {
+  background: var(--jd-surface);
+  font-family: var(--jd-mono);
+  letter-spacing: 1.8px;
+  color: var(--jd-text-soft);
+  border-bottom: 1px solid var(--jd-line);
+}
+.vl-table td {
+  border-top-color: var(--jd-line);
+  font-family: var(--jd-mono);
+}
+.vl-chord {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.1em;
+}
+
+/* ─── Color-option swatches (interval legend) ────────────────── */
+.color-option .label {
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-size: 0.65em;
+}
+
+/* ─── Help icon ──────────────────────────────────────────────── */
+.help-icon {
+  background: var(--jd-surface);
+  border-color: var(--jd-line-strong);
+  color: var(--jd-amber);
+  font-family: var(--jd-mono);
+}
+
+/* ─── Free mode badge ────────────────────────────────────────── */
+.free-mode-badge {
+  background: rgba(255, 165, 0, 0.10);
+  border: 1px solid rgba(255, 165, 0, 0.35);
+  color: #ffb347;
+  font-family: var(--jd-mono);
+  letter-spacing: 1px;
+}
+
+/* ─── Snapshot area ──────────────────────────────────────────── */
+.snapshot-card { padding: 16px 18px; gap: 18px; }
+
+/* ─── Fretboard scaffolding (preserve, just refine ring) ──────── */
+.fretboard-container {
+  border-color: var(--jd-line);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.02) inset;
+}
+
+/* ─── Replay button ──────────────────────────────────────────── */
+.btn-replay {
+  background: transparent;
+  border: 1px solid var(--jd-line-strong);
+  color: var(--jd-text-soft);
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.btn-replay:hover {
+  background: rgba(255, 214, 10, 0.06);
+  border-color: var(--jd-amber);
+  color: var(--jd-amber);
+}
+
+/* ─── Modal ──────────────────────────────────────────────────── */
+.modal-content {
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line-strong);
+  border-radius: 16px;
+  background-image:
+    radial-gradient(ellipse 800px 300px at 50% -8%, rgba(255,214,10,0.08), transparent 70%),
+    linear-gradient(180deg, var(--jd-surface) 0%, #100e0c 100%);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
+}
+
+/* ─── Countdown ──────────────────────────────────────────────── */
+.countdown-overlay {
+  font-family: var(--jd-display);
+  font-style: italic;
+  background: rgba(10, 9, 8, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+/* ─── Tip list ───────────────────────────────────────────────── */
+.tip-num {
+  font-family: var(--jd-mono);
+  background: var(--jd-amber);
+  color: var(--jd-bg-deep);
+}
+.tip-list li {
+  font-family: var(--jd-mono);
+  font-size: 0.78em;
+  line-height: 1.7;
+  letter-spacing: 0.3px;
+}
+
+/* ─── Btn-group-stretched (transpose etc.) ───────────────────── */
+.btn-group-stretched button {
+  background: linear-gradient(180deg, #211e1b 0%, #161412 100%);
+  border: 1px solid var(--jd-mute-deep);
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  font-size: 0.85em;
+  border-radius: 7px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.btn-group-stretched button:hover {
+  background: linear-gradient(180deg, #2c2824 0%, #211e1b 100%);
+  color: var(--jd-amber);
+  border-color: var(--jd-line-strong);
+  transform: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 12px rgba(255, 214, 10, 0.15);
+}
+
+/* ─── Prevent generic button hover transform on hover styles ─── */
+button.tap-feedback,
+.lang-toggle, .nav-toggle,
+.btn-snapshot, .btn-replay {
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s !important;
+}
+
+/* ─── Legacy width clamp ─────────────────────────────────────── */
+#bpm-input {
+  width: clamp(60px, 10dvw, 80px);
+  font-family: var(--jd-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   JAZZDECK UI LIBRARY — reusable console components
+═══════════════════════════════════════════════════════════════════ */
+
+.jd-view {
+  font-family: var(--jd-mono);
+  color: var(--jd-text);
+  padding: 28px 24px 60px;
+  max-width: 1240px;
+  margin: 0 auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.jd-titlebar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 4px 18px;
+  border-bottom: 1px solid var(--jd-line);
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.jd-titlemark { min-width: 0; }
+.jd-titlemark-eyebrow {
+  font-family: var(--jd-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 5px;
+  color: var(--jd-amber);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+.jd-titlemark-name {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-size: 56px;
+  font-weight: 400;
+  margin: 0;
+  color: var(--jd-text);
+  line-height: 0.92;
+  letter-spacing: -0.025em;
+}
+.jd-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.jd-iconbtn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--jd-line);
+  border-radius: 8px;
+  color: var(--jd-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  padding: 0;
+  box-shadow: none;
+}
+.jd-iconbtn:hover {
+  color: var(--jd-amber);
+  border-color: var(--jd-line-strong);
+  background: rgba(255, 214, 10, 0.04);
+}
+.jd-iconbtn svg { width: 18px; height: 18px; fill: currentColor; }
+.jd-toolbar-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--jd-line);
+  margin: 0 4px;
+}
+.jd-toolbtn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-family: var(--jd-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.jd-toolbtn--add {
+  background: var(--jd-amber);
+  color: #0a0908;
+}
+.jd-toolbtn--add:hover {
+  background: var(--jd-amber-soft);
+  box-shadow: 0 0 16px rgba(255, 214, 10, 0.35);
+}
+.jd-toolbtn--reset {
+  background: transparent;
+  border-color: rgba(255, 69, 58, 0.35);
+  color: #ff7a73;
+}
+.jd-toolbtn--reset:hover {
+  background: rgba(255, 69, 58, 0.10);
+  border-color: rgba(255, 69, 58, 0.7);
+  color: #ff453a;
+}
+
+.jd-improv-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(90deg, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0) 70%);
+  border: 1px solid rgba(34, 197, 94, 0.30);
+  border-left-width: 3px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  font-family: var(--jd-mono);
+  font-size: 12px;
+  color: #c1f0cf;
+}
+.jd-improv-banner strong {
+  color: var(--jd-improv);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.jd-improv-helper {
+  font-style: italic;
+  font-family: var(--jd-display);
+  font-size: 15px;
+  color: #c1f0cf;
+}
+.jd-improv-bullet {
+  width: 8px;
+  height: 8px;
+  background: var(--jd-improv);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--jd-improv);
+  animation: jd-pulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.jd-console {
+  position: relative;
+  background: var(--jd-surface);
+  border: 1px solid rgba(255, 214, 10, 0.10);
+  border-radius: 18px;
+  padding: 26px 30px;
+  margin-bottom: 28px;
+  background-image:
+    radial-gradient(ellipse 1200px 380px at 50% -8%, rgba(255, 214, 10, 0.06), transparent 60%),
+    linear-gradient(180deg, var(--jd-surface) 0%, #100e0c 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 30px 80px -30px rgba(0, 0, 0, 0.8),
+    0 4px 20px rgba(0, 0, 0, 0.30);
+  overflow: hidden;
+  isolation: isolate;
+}
+.jd-console::before {
+  display: none; /* disable for now, perf was rough on some devices */;
+  content: 'JD·01';
+  position: absolute;
+  bottom: 12px;
+  right: 18px;
+  font-family: var(--jd-mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--jd-mute-deep);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.jd-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: repeating-linear-gradient(
+    0deg, transparent 0, transparent 2px,
+    rgba(255, 255, 255, 0.5) 2px, rgba(255, 255, 255, 0.5) 3px
+  );
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
+.jd-section-label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--jd-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--jd-text-soft);
+  font-weight: 700;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.jd-section-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--jd-line);
+}
+.jd-section-hint {
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--jd-muted);
+  text-transform: none;
+}
+
+.jd-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--jd-line-strong) 50%, transparent 100%);
+  margin: 24px -30px;
+  position: relative;
+  z-index: 1;
+}
+
+.jd-master {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 26px;
+  align-items: center;
+}
+
+.jd-bpm { display: flex; align-items: stretch; gap: 12px; }
+.jd-bpm-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #060604;
+  border: 1px solid #2a2620;
+  border-radius: 12px;
+  padding: 0 20px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(255, 214, 10, 0.04), 0 1px 0 rgba(255, 255, 255, 0.04);
+  gap: 12px;
+  height: 56px;
+  box-sizing: border-box;
+}
+.jd-bpm-led {
+  width: 7px; height: 7px; border-radius: 50%; background: #2a2620;
+  flex-shrink: 0; transition: background 0.2s, box-shadow 0.2s;
+  margin-top: 1px;
+}
+.jd-bpm-led.on {
+  background: var(--jd-amber); box-shadow: 0 0 10px var(--jd-amber);
+  animation: jd-blink 0.55s ease infinite alternate;
+}
+.jd-bpm-input {
+  background: transparent; border: none; width: 78px; font-family: var(--jd-mono); font-size: 32px;
+  font-weight: 700; color: var(--jd-amber); text-align: center; letter-spacing: -1px;
+  padding: 0; height: auto; line-height: 1; text-shadow: 0 0 14px rgba(255, 214, 10, 0.45);
+  font-variant-numeric: tabular-nums; box-shadow: none;
+}
+.jd-bpm-input:focus { outline: none; background: rgba(255, 214, 10, 0.05); border-radius: 4px; }
+.jd-bpm-unit { font-family: var(--jd-mono); font-size: 13px; letter-spacing: 1.5px; color: var(--jd-muted); font-weight: 700; text-transform: uppercase; margin-top: 2px; }
+
+.jd-tap {
+  height: auto; min-width: 68px; padding: 8px 16px; background: transparent; border: 1.5px solid var(--jd-line-strong);
+  color: var(--jd-amber); border-radius: 10px; font-family: var(--jd-mono); cursor: pointer;
+  transition: background 0.1s, box-shadow 0.1s, transform 0.05s; box-shadow: none;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1;
+}
+.jd-tap:hover { background: rgba(255, 214, 10, 0.06); box-shadow: 0 0 16px rgba(255, 214, 10, 0.20); }
+.jd-tap:active { transform: scale(0.96); }
+
+.jd-transport { display: flex; gap: 8px; align-items: center; justify-self: center; }
+.jd-tbtn {
+  width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(180deg, #2c2826 0%, #1c1a18 100%);
+  border: 1px solid #2a2620; color: var(--jd-text); display: inline-flex; align-items: center;
+  justify-content: center; cursor: pointer; transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.45); padding: 0;
+}
+.jd-tbtn svg { width: 18px; height: 18px; fill: currentColor; }
+.jd-tbtn:hover { background: linear-gradient(180deg, #3a3633 0%, #252220 100%); color: var(--jd-amber); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.55); }
+.jd-tbtn--play {
+  width: 56px; height: 56px; background: linear-gradient(180deg, #ffe245 0%, #d4af00 100%);
+  color: #0a0908; border-color: #aa8a00; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 16px rgba(255, 214, 10, 0.40);
+}
+.jd-tbtn--play.jd-tbtn--playing { background: linear-gradient(180deg, #ff8b3d 0%, #d96b1c 100%); border-color: #b8520f; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 18px rgba(255, 109, 0, 0.55); }
+
+.jd-modes { display: flex; gap: 8px; flex-wrap: wrap; justify-self: center; align-items: center; }
+.jd-mode {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+  background: transparent; border: 1px solid #2a2620; border-radius: 999px;
+  font-family: var(--jd-mono); font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.6px; color: var(--jd-muted); cursor: pointer; transition: all 0.15s;
+  user-select: none; height: 34px; box-sizing: border-box;
+}
+.jd-mode input { position: absolute; opacity: 0; pointer-events: none; }
+.jd-mode-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a2620; transition: all 0.2s; }
+.jd-mode.on { background: rgba(255, 214, 10, 0.08); border-color: var(--jd-amber); color: var(--jd-amber); }
+.jd-mode.on .jd-mode-dot { background: var(--jd-amber); box-shadow: 0 0 8px var(--jd-amber); }
+.jd-mode--improv.on { background: rgba(34, 197, 94, 0.10); border-color: var(--jd-improv); color: var(--jd-improv); }
+.jd-mode--improv.on .jd-mode-dot { background: var(--jd-improv); box-shadow: 0 0 8px var(--jd-improv); }
+
+.jd-feel { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; align-self: center; }
+.jd-feel-label { font-family: var(--jd-mono); font-size: 9px; letter-spacing: 2.5px; color: var(--jd-muted); font-weight: 500; text-transform: uppercase; margin-left: 2px; }
+.jd-feel-select {
+  background: transparent; border: 1px solid var(--jd-line); border-radius: 6px; height: 34px;
+  padding: 0 28px 0 10px; font-family: var(--jd-mono); font-size: 11px; font-weight: 600;
+  color: var(--jd-text); letter-spacing: 0.5px; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6a60' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
+  box-shadow: none; width: auto; min-width: 110px; box-sizing: border-box;
+}
+
+.jd-engines { display: flex; flex-direction: column; position: relative; z-index: 1; }
+.jd-channel {
+  --engine-color: var(--jd-amber);
+  display: flex; align-items: center; gap: 14px; padding: 11px 14px 11px 12px;
+  border: 1px solid transparent; border-radius: 10px; margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.012); transition: all 0.2s; position: relative; min-width: 0;
+  min-height: 56px; box-sizing: border-box;
+}
+.jd-channel.on { background: rgba(255, 255, 255, 0.025); border-color: rgba(255, 255, 255, 0.06); }
+.jd-channel--synth { --engine-color: var(--jd-synth); }
+.jd-channel--bass  { --engine-color: var(--jd-bass);  }
+.jd-channel--drums { --engine-color: var(--jd-drums); }
+
+.jd-switch {
+  width: 40px; height: 22px; border-radius: 999px; background: #1c1a18; border: 1px solid #2a2620;
+  position: relative; cursor: pointer; padding: 0; transition: all 0.2s; flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.jd-switch-thumb {
+  position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: linear-gradient(180deg, #585249 0%, #38332e 100%);
+  transition: left 0.25s cubic-bezier(.4,0,.2,1), background 0.25s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+}
+.jd-switch.on { border-color: var(--engine-color); }
+.jd-switch.on .jd-switch-thumb { left: 20px; background: linear-gradient(180deg, var(--engine-color) 0%, color-mix(in srgb, var(--engine-color) 65%, #000) 100%); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 10px var(--engine-color); }
+
+.jd-channel-monitor { width: 4px; align-self: stretch; display: flex; align-items: stretch; flex-shrink: 0; }
+.jd-channel-led { width: 4px; flex: 1; border-radius: 2px; background: #1a1815; transition: all 0.3s; }
+.jd-channel.on .jd-channel-led { background: var(--engine-color); box-shadow: 0 0 10px var(--engine-color), inset 0 0 6px rgba(255, 255, 255, 0.30); }
+
+.jd-channel-id { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 140px; max-width: 200px; }
+.jd-channel-name { font-family: var(--jd-mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--jd-text-soft); }
+.jd-channel.on .jd-channel-name { color: var(--jd-text); }
+.jd-channel-tag { font-family: var(--jd-display); font-style: italic; font-size: 12px; color: var(--jd-muted); line-height: 1.2; }
+.jd-channel.on .jd-channel-tag { color: var(--engine-color); opacity: 0.82; }
+
+.jd-select {
+  appearance: none; background-color: rgba(0, 0, 0, 0.32); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px; height: 34px; padding: 0 28px 0 10px; font-family: var(--jd-mono); font-size: 11px;
+  font-weight: 600; color: var(--jd-text); letter-spacing: 0.3px; cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6a60' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
+  flex: 0 0 auto; width: auto; box-sizing: border-box; line-height: 1;
+}
+
+/* Specific view overrides for selects to prevent "quadratoni" */
+.explorer-mode-group .jd-select,
+.jd-feel .jd-select,
+.sn-controls .jd-select,
+.gt-controls .jd-select {
+  width: 100%;
+  max-width: 220px;
+}
+
+.jd-fader { display: flex; align-items: center; gap: 10px; flex: 1 1 0; min-width: 100px; }
+.jd-fader-value { font-family: var(--jd-mono); font-size: 11px; font-weight: 700; color: var(--jd-muted); width: 26px; text-align: right; font-variant-numeric: tabular-nums; }
+.jd-channel.on .jd-fader-value { color: var(--engine-color); }
+
+.jd-range {
+  -webkit-appearance: none; flex: 1; height: 4px; border-radius: 2px; outline: none; margin: 0; padding: 0; border: none;
+  background: linear-gradient(90deg, var(--engine-color) 0%, var(--engine-color) var(--p, 0%), rgba(255, 255, 255, 0.07) var(--p, 0%), rgba(255, 255, 255, 0.07) 100%);
+}
+.jd-range::-webkit-slider-runnable-track { height: 4px; background: transparent; border: none; }
+.jd-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--engine-color);
+  border: 2px solid #0a0908; margin-top: -5px; cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 0 0 1px var(--engine-color), 0 0 8px color-mix(in srgb, var(--engine-color) 50%, transparent);
+}
+
+.jd-substrip {
+  display: flex; flex-direction: column; gap: 9px; padding: 13px 16px 13px 30px; margin: 4px 0 8px 24px;
+  background: linear-gradient(90deg, rgba(255, 109, 0, 0.05) 0%, rgba(255, 109, 0, 0) 100%);
+  border-left: 2px solid rgba(255, 109, 0, 0.55); border-radius: 0 8px 8px 0; position: relative;
+}
+.jd-subrow { display: grid; grid-template-columns: 90px 1fr 110px; align-items: center; gap: 14px; }
+.jd-sublabel { font-family: var(--jd-mono); font-size: 9px; font-weight: 700; letter-spacing: 2.2px; color: rgba(255, 109, 0, 0.75); text-transform: uppercase; }
+.jd-subvalue { font-family: var(--jd-mono); font-size: 10px; font-weight: 600; color: var(--jd-text); letter-spacing: 0.5px; text-align: right; }
+
+.jd-pitch-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.jd-pitch-group { display: flex; flex-direction: column; gap: 8px; }
+.jd-pitch-label { font-family: var(--jd-mono); font-size: 10px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase; color: var(--jd-text-soft); }
+.jd-pitch-keys { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+
+/* ─── Training Scoreboards balance ─── */
+#view-interval-ear-training .jd-bpm-input,
+#view-ear-training .jd-bpm-input,
+#view-note-finder .jd-bpm-input,
+#view-interval-learner .jd-bpm-input {
+  font-size: 22px !important;
+}
+#view-interval-ear-training .jd-bpm-unit,
+#view-ear-training .jd-bpm-unit,
+#view-note-finder .jd-bpm-unit,
+#view-interval-learner .jd-bpm-unit {
+  font-size: 12px !important;
+  opacity: 0.8;
+}
+
+/* ─── Chord Voicing Interval Badges ─── */
+.cv-int-badge {
+  padding: 8px 10px 8px 10px !important;
+  gap: 12px !important;
+  border-radius: 30px !important;
+  background: var(--jd-surface-alt) !important;
+  border: 1.5px solid var(--jd-line-strong) !important;
+}
+.cv-int-dot {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+.cv-int-badge span {
+  font-family: var(--jd-mono);
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--jd-text);
+}
+
+.jd-voiceleading { padding: 16px 22px 18px; background: rgba(255, 255, 255, 0.018); border: 1px solid var(--jd-line); border-radius: 12px; }
+.jd-vl-header { font-family: var(--jd-mono); font-size: 10px; letter-spacing: 3.5px; color: var(--jd-text-soft); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: baseline; gap: 10px; }
+.jd-vl-header em { font-family: var(--jd-display); font-style: italic; font-size: 16px; color: var(--jd-amber); }
+
+@keyframes jd-blink { from { opacity: 1; } to { opacity: 0.35; } }
+@keyframes jd-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+.jd-fade-enter-active, .jd-fade-leave-active { transition: all 0.3s ease; }
+.jd-fade-enter-from, .jd-fade-leave-to { opacity: 0; transform: translateY(-6px); }
+
+.jd-collapse-enter-active, .jd-collapse-leave-active { transition: all 0.32s cubic-bezier(.4,0,.2,1); overflow: hidden; }
+.jd-collapse-enter-from, .jd-collapse-leave-to { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
+
+@media (max-width: 1024px) {
+  .jd-master { grid-template-columns: 1fr 1fr; gap: 18px; }
+  .jd-bpm, .jd-transport { grid-column: 1 / -1; justify-content: center; }
+  .jd-channel { flex-wrap: wrap; }
+  .jd-channel-id { flex: 1 1 50%; }
+  .jd-select, .jd-fader { flex: 1 1 100%; }
+}
+@media (max-width: 700px) {
+  .jd-titlemark-name { font-size: 40px; }
+  .jd-console { padding: 18px 16px; }
+  .jd-pitch-grid { grid-template-columns: 1fr; }
+}
+

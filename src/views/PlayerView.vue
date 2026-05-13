@@ -1,57 +1,345 @@
 <template>
-  <div id="view-player" class="view-panel active">
-    <div class="quick-controls">
-      <button class="btn-tap tap-feedback" id="tap-btn" @click="pb.tapTempo()">TAP</button>
-      <button class="btn-icon" @click="pb.navigate(-1)">
-        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-      </button>
-      <button class="btn-icon btn-play" :class="{ active: pb.isPlaying }" @click="pb.toggle()">
-        <svg viewBox="0 0 24 24">
-          <path v-if="!pb.isPlaying" d="M8 5v14l11-7z"/>
-          <path v-else d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-        </svg>
-      </button>
-      <button class="btn-icon btn-stop" @click="pb.stop()">
-        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-      </button>
-      <button class="btn-icon" @click="pb.navigate(1)">
-        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-      </button>
+  <div id="view-player" class="view-panel active jd-view">
+    <!-- ───── TITLE BAR ─────────────────────────────────────────── -->
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">{{ t('label.eyebrow') }}</span>
+        <h1 class="jd-titlemark-name">{{ t('player.title') }}</h1>
+      </div>
+      <nav class="jd-toolbar" aria-label="Player actions">
+        <button class="jd-iconbtn" @click="exportProgression" :title="t('btn.export-json')" aria-label="Export progression">
+          <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+        </button>
+        <button class="jd-iconbtn" @click="$refs.importFile.click()" :title="t('btn.import-json')" aria-label="Import progression">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-4V7H9v6H5l7 7 7-7zM5 4v2h14V4H5z" transform="rotate(180 12 12)"/></svg>
+        </button>
+        <input ref="importFile" type="file" accept=".json" hidden @change="importProgression">
+        <span class="jd-toolbar-sep"></span>
+        <button class="jd-toolbtn jd-toolbtn--add" @click="pb.addStep()">
+          <span aria-hidden="true">＋</span> {{ t('btn.add-step') }}
+        </button>
+        <button class="jd-toolbtn jd-toolbtn--reset" @click="pb.clearProgression()">{{ t('btn.clear-all') }}</button>
+      </nav>
+    </header>
+
+    <Transition name="jd-fade">
+      <div v-if="pb.improvOn" class="jd-improv-banner" role="status">
+        <span class="jd-improv-bullet" aria-hidden="true"></span>
+        <strong>{{ t('imp.mode') }}</strong>
+        <span class="jd-improv-helper">{{ t('imp.helper') }}</span>
+      </div>
+    </Transition>
+
+    <!-- ───── CONSOLE ─────────────────────────────────────────────── -->
+    <section class="jd-console" :class="{ 'jd-playing': pb.isPlaying }">
+      <div class="jd-grain" aria-hidden="true"></div>
+
+      <!-- MASTER ROW: BPM · Transport · Modes · Feel ──────────── -->
+      <div class="jd-master">
+        <div class="jd-bpm">
+          <div class="jd-bpm-frame">
+            <span class="jd-bpm-led" :class="{ on: pb.isPlaying }" aria-hidden="true"></span>
+            <input type="text" inputmode="numeric" pattern="[0-9]*"
+                   class="jd-bpm-input"
+                   v-model="bpmInput"
+                   @blur="commitBpm"
+                   @keydown.enter="commitBpm($event); $event.target.blur()"
+                   :aria-label="t('label.bpm')">
+            <span class="jd-bpm-unit">{{ t('label.bpm') }}</span>
+          </div>
+          <button class="jd-tap" @click="pb.tapTempo()" aria-label="Tap tempo">
+            <span class="jd-tap-text">{{ t('label.tap') }}</span>
+            <span class="jd-tap-sub">{{ t('label.tempo') }}</span>
+          </button>
+        </div>
+
+        <div class="jd-transport">
+          <button class="jd-tbtn" @click="pb.navigate(-1)" aria-label="Previous step">
+            <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button class="jd-tbtn jd-tbtn--play" :class="{ 'jd-tbtn--playing': pb.isPlaying }"
+                  @click="pb.toggle()" :aria-label="pb.isPlaying ? 'Pause' : 'Play'">
+            <svg v-if="!pb.isPlaying" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg v-else viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          <button class="jd-tbtn" @click="pb.stop()" aria-label="Stop">
+            <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+          <button class="jd-tbtn" @click="pb.navigate(1)" aria-label="Next step">
+            <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+        </div>
+
+        <div class="jd-modes">
+          <label class="jd-mode" :class="{ on: pb.loopSelection }">
+            <input type="checkbox" :checked="pb.loopSelection" @change="pb.loopSelection = $event.target.checked">
+            <span class="jd-mode-dot" aria-hidden="true"></span>
+            <span class="jd-mode-text">{{ t('label.loop') }}</span>
+          </label>
+          <label class="jd-mode" :class="{ on: pb.swingEnabled }">
+            <input type="checkbox" :checked="pb.swingEnabled" @change="pb.swingEnabled = $event.target.checked">
+            <span class="jd-mode-dot" aria-hidden="true"></span>
+            <span class="jd-mode-text">{{ t('label.swing') }}</span>
+          </label>
+          <label class="jd-mode jd-mode--improv" :class="{ on: pb.improvOn }">
+            <input type="checkbox" :checked="pb.improvOn" @change="pb.improvOn = $event.target.checked">
+            <span class="jd-mode-dot" aria-hidden="true"></span>
+            <span class="jd-mode-text">{{ t('imp.mode') }}</span>
+          </label>
+        </div>
+
+        <div class="jd-feel">
+          <span class="jd-feel-label">{{ t('label.feel') }}</span>
+          <select v-model="pb.accompanimentStyle" class="jd-feel-select" aria-label="Accompaniment style">
+            <option value="Standard">{{ t('opt.standard') }}</option>
+            <option value="Swing">{{ t('opt.swing') }}</option>
+            <option value="Bossa">{{ t('opt.bossa') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+
+      <!-- ENGINE STACK ────────────────────────────────────────── -->
+      <div class="jd-engines">
+        <div class="jd-section-label">
+          <span>{{ t('label.engines') }}</span>
+          <span class="jd-section-rule"></span>
+          <span class="jd-section-hint" v-if="!pb.playChords && !pb.bassOn && !pb.drumsOn">{{ t('label.flip-switch') }}</span>
+        </div>
+
+        <!-- METRO (monitor + control) -->
+        <div class="jd-channel jd-channel--metro" :class="{ on: pb.metroOn }">
+          <button class="jd-switch" :class="{ on: pb.metroOn }"
+                  @click="pb.metroOn = !pb.metroOn"
+                  :aria-label="(pb.metroOn ? 'Disable' : 'Enable') + ' metronome'"
+                  :aria-pressed="pb.metroOn">
+            <span class="jd-switch-thumb"></span>
+          </button>
+          <div class="jd-channel-monitor" aria-hidden="true">
+            <span class="jd-channel-led"></span>
+          </div>
+          <div class="jd-channel-id">
+            <span class="jd-channel-icon" aria-hidden="true">⏱</span>
+            <div class="jd-channel-meta">
+              <span class="jd-channel-name">{{ t('label.metronome') }}</span>
+              <span class="jd-channel-tag">{{ pb.metroOn ? pb.metroSound : 'muted' }}</span>
+            </div>
+          </div>
+          <select class="jd-select" :value="pb.metroSound" @change="pb.metroSound = $event.target.value"
+                  :disabled="!pb.metroOn" :aria-label="t('label.click')">
+            <option v-for="s in metroSounds" :key="s" :value="s">{{ s }}</option>
+          </select>
+          <div class="jd-fader">
+            <input type="range" min="0" max="1" step="0.05" :value="pb.metroVol"
+                   @input="pb.metroVol = +$event.target.value"
+                   class="jd-range"
+                   :style="{ '--p': (pb.metroVol*100) + '%' }"
+                   :disabled="!pb.metroOn"
+                   :aria-label="`Metronome ${t('label.vol')}`">
+            <span class="jd-fader-value">{{ Math.round(pb.metroVol * 100) }}</span>
+          </div>
+          <span class="jd-channel-extra-spacer" aria-hidden="true"></span>
+        </div>
+
+        <!-- SYNTH -->
+        <div class="jd-channel jd-channel--synth" :class="{ on: pb.playChords }">
+          <button class="jd-switch" :class="{ on: pb.playChords }"
+                  @click="pb.playChords = !pb.playChords"
+                  :aria-label="(pb.playChords ? 'Disable' : 'Enable') + ' chord synth'"
+                  :aria-pressed="pb.playChords">
+            <span class="jd-switch-thumb"></span>
+          </button>
+          <div class="jd-channel-monitor" aria-hidden="true">
+            <span class="jd-channel-led"></span>
+          </div>
+          <div class="jd-channel-id">
+            <span class="jd-channel-icon" aria-hidden="true">🎹</span>
+            <div class="jd-channel-meta">
+              <span class="jd-channel-name">{{ t('label.chord-synth') }}</span>
+              <span class="jd-channel-tag">{{ pb.playChords ? pb.chordSound : 'idle' }}</span>
+            </div>
+          </div>
+          <select class="jd-select" :value="pb.chordSound" @change="pb.chordSound = $event.target.value"
+                  :disabled="!pb.playChords" :aria-label="t('label.sound')">
+            <option v-for="s in chordSounds" :key="s" :value="s">{{ s }}</option>
+          </select>
+          <div class="jd-fader">
+            <input type="range" min="0" max="0.5" step="0.025" :value="pb.chordVol"
+                   @input="pb.chordVol = +$event.target.value"
+                   class="jd-range"
+                   :style="{ '--p': (pb.chordVol/0.5*100) + '%' }"
+                   :disabled="!pb.playChords"
+                   :aria-label="`Chord ${t('label.vol')}`">
+            <span class="jd-fader-value">{{ Math.round(pb.chordVol/0.5 * 100) }}</span>
+          </div>
+          <button class="jd-extra" :disabled="!pb.playChords" @click="pb.autoAssignChords()"
+                  :title="t('btn.auto-chords')">
+            AUTO
+          </button>
+        </div>
+
+        <!-- BASS -->
+        <div class="jd-channel jd-channel--bass" :class="{ on: pb.bassOn }">
+          <button class="jd-switch" :class="{ on: pb.bassOn }"
+                  @click="pb.bassOn = !pb.bassOn"
+                  :aria-label="(pb.bassOn ? 'Disable' : 'Enable') + ' bass'"
+                  :aria-pressed="pb.bassOn">
+            <span class="jd-switch-thumb"></span>
+          </button>
+          <div class="jd-channel-monitor" aria-hidden="true">
+            <span class="jd-channel-led"></span>
+          </div>
+          <div class="jd-channel-id">
+            <span class="jd-channel-icon" aria-hidden="true">🎸</span>
+            <div class="jd-channel-meta">
+              <span class="jd-channel-name">{{ t('label.walking-bass') }}</span>
+              <span class="jd-channel-tag">{{ pb.bassOn ? bassStyleLabel : 'idle' }}</span>
+            </div>
+          </div>
+          <select class="jd-select" v-model="pb.bassStyle" :disabled="!pb.bassOn" aria-label="Bass style">
+            <option value="walking">{{ t('opt.walking') }}</option>
+            <option value="two_feel">{{ t('opt.two_feel') }}</option>
+            <option value="root_5">{{ t('opt.root_5') }}</option>
+            <option value="pedal">{{ t('opt.pedal') }}</option>
+            <option value="arpeggio">{{ t('opt.arpeggio') }}</option>
+          </select>
+          <div class="jd-fader">
+            <input type="range" min="0" max="1" step="0.01" v-model.number="pb.bassVol"
+                   class="jd-range"
+                   :style="{ '--p': (pb.bassVol*100) + '%' }"
+                   :disabled="!pb.bassOn"
+                   aria-label="Bass volume">
+            <span class="jd-fader-value">{{ Math.round(pb.bassVol * 100) }}</span>
+          </div>
+          <span class="jd-channel-extra-spacer" aria-hidden="true"></span>
+        </div>
+
+        <!-- DRUMS -->
+        <div class="jd-channel jd-channel--drums" :class="{ on: pb.drumsOn }">
+          <button class="jd-switch" :class="{ on: pb.drumsOn }"
+                  @click="pb.drumsOn = !pb.drumsOn"
+                  :aria-label="(pb.drumsOn ? 'Disable' : 'Enable') + ' drums'"
+                  :aria-pressed="pb.drumsOn">
+            <span class="jd-switch-thumb"></span>
+          </button>
+          <div class="jd-channel-monitor" aria-hidden="true">
+            <span class="jd-channel-led"></span>
+          </div>
+          <div class="jd-channel-id">
+            <span class="jd-channel-icon" aria-hidden="true">🥁</span>
+            <div class="jd-channel-meta">
+              <span class="jd-channel-name">{{ t('label.drum-kit') }}</span>
+              <span class="jd-channel-tag">{{ pb.drumsOn ? drumStyleLabel : 'idle' }}</span>
+            </div>
+          </div>
+          <select class="jd-select" :value="pb.drumStyle" @change="pb.setDrumStyle($event.target.value)"
+                  :disabled="!pb.drumsOn" aria-label="Drum style">
+            <option value="jazz">{{ t('opt.jazz-swing') }}</option>
+            <option value="bossa">{{ t('opt.bossa-nova') }}</option>
+            <option value="rock">{{ t('opt.rock-8ths') }}</option>
+            <option value="brushes">{{ t('opt.brushes') }}</option>
+            <option value="latin">Latin (Songo)</option>
+            <option value="funk">Funk 16ths</option>
+            <option value="shuffle">Shuffle</option>
+          </select>
+          <div class="jd-fader">
+            <input type="range" min="0" max="1" step="0.01" v-model.number="pb.drumVol"
+                   class="jd-range"
+                   :style="{ '--p': (pb.drumVol*100) + '%' }"
+                   :disabled="!pb.drumsOn"
+                   aria-label="Drum volume">
+            <span class="jd-fader-value">{{ Math.round(pb.drumVol * 100) }}</span>
+          </div>
+          <span class="jd-channel-extra-spacer" aria-hidden="true"></span>
+        </div>
+
+        <!-- DRUM SUB-STRIP — swing / variation / fill -->
+        <Transition name="jd-collapse">
+          <div v-if="pb.drumsOn" class="jd-substrip">
+            <div class="jd-subrow">
+              <span class="jd-sublabel">SWING</span>
+              <input type="range" min="0.5" max="0.75" step="0.005" v-model.number="pb.drumSwing"
+                     class="jd-range jd-range--drums"
+                     :style="{ '--p': ((pb.drumSwing-0.5)/0.25*100) + '%' }"
+                     aria-label="Swing ratio">
+              <span class="jd-subvalue jd-subvalue--accent">{{ swingLabel }}</span>
+            </div>
+            <div class="jd-subrow">
+              <span class="jd-sublabel">VARIATION</span>
+              <input type="range" min="0" max="1" step="0.01" v-model.number="pb.drumVar"
+                     class="jd-range jd-range--drums"
+                     :style="{ '--p': (pb.drumVar*100) + '%' }"
+                     aria-label="Drum variation">
+              <span class="jd-subvalue jd-subvalue--accent">{{ varLabel }}</span>
+            </div>
+            <div class="jd-subrow">
+              <span class="jd-sublabel">FILL</span>
+              <select v-model.number="pb.fillEvery" class="jd-select jd-select--sub" aria-label="Fill every N bars">
+                <option :value="0">— off —</option>
+                <option :value="2">every 2 bars</option>
+                <option :value="4">every 4 bars</option>
+                <option :value="8">every 8 bars</option>
+                <option :value="16">every 16 bars</option>
+              </select>
+              <span class="jd-subvalue">&nbsp;</span>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+
+      <!-- PITCH LAB ───────────────────────────────────────────── -->
+      <div class="jd-pitch">
+        <div class="jd-section-label">
+          <span>PITCH LAB</span>
+          <span class="jd-section-rule"></span>
+        </div>
+        <div class="jd-pitch-grid">
+          <div class="jd-pitch-group">
+            <span class="jd-pitch-label">{{ t('label.prog-transpose') }}</span>
+            <div class="jd-pitch-keys jd-pitch-keys--four">
+              <button @click="pb.transposeProgression(2)"><span>+1</span></button>
+              <button @click="pb.transposeProgression(1)"><span>+½</span></button>
+              <button @click="pb.transposeProgression(-1)"><span>−½</span></button>
+              <button @click="pb.transposeProgression(-2)"><span>−1</span></button>
+            </div>
+          </div>
+          <div class="jd-pitch-group">
+            <span class="jd-pitch-label">{{ t('label.synth-octave') }}</span>
+            <div class="jd-pitch-keys jd-pitch-keys--two">
+              <button @click="pb.transposeOctave(1)"><span>+1</span></button>
+              <button @click="pb.transposeOctave(-1)"><span>−1</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── PROGRESSION ─────────────────────────────────────── -->
+    <div id="progression-steps" class="progression-steps-container jd-steps">
+      <ProgressionStep
+        v-for="(step, idx) in pb.steps"
+        :key="step.id"
+        :step="step"
+        :index="idx"
+        :active="step.active"
+        @remove="pb.removeStep(idx)"
+        @update="(f,v) => pb.updateStep(idx, f, v)"
+        @select="(sh,ct) => pb.selectStep(idx, sh, ct)"
+      />
     </div>
 
-    <div class="progression-player-area">
-      <div class="area-header">
-        <h2 class="area-title">{{ t('player.title') }}</h2>
-        <div class="area-actions">
-          <button class="btn-io" @click="exportProgression">{{ t('btn.export-json') }}</button>
-          <button class="btn-io" @click="$refs.importFile.click()">{{ t('btn.import-json') }}</button>
-          <input ref="importFile" type="file" style="display:none" accept=".json" @change="importProgression">
-          <button class="btn-add-step" @click="pb.addStep()">{{ t('btn.add-step') }}</button>
-          <button class="btn-reset" @click="pb.clearProgression()">{{ t('btn.clear-all') }}</button>
-        </div>
+    <!-- VOICE LEADING -->
+    <div v-if="pb.voiceLeadingData.length >= 2" class="jd-voiceleading">
+      <div class="jd-vl-header">
+        <span>VOICE LEADING</span>
+        <em>guide tones</em>
       </div>
-
-      <!-- Steps -->
-      <div id="progression-steps" class="progression-steps-container">
-        <ProgressionStep
-          v-for="(step, idx) in pb.steps"
-          :key="step.id"
-          :step="step"
-          :index="idx"
-          :active="step.active"
-          @remove="pb.removeStep(idx)"
-          @update="(f,v) => pb.updateStep(idx, f, v)"
-          @select="(sh,ct) => pb.selectStep(idx, sh, ct)"
-        />
-      </div>
-
-      <!-- Voice leading -->
-      <div v-if="pb.voiceLeadingData.length >= 2" style="overflow-x:auto;margin-bottom:10px;">
-        <div style="font-size:0.72em;text-transform:uppercase;color:#555;font-weight:700;margin-bottom:6px;letter-spacing:0.5px;">
-          Voice Leading — Guide Tones
-        </div>
+      <div class="jd-vl-scroll">
         <table class="vl-table">
-          <thead><tr><th>Accordo</th><th>3ª</th><th>Δ</th><th>7ª</th><th>Δ</th></tr></thead>
+          <thead><tr><th>{{ t('label.chord') }}</th><th>3ª</th><th>Δ</th><th>7ª</th><th>Δ</th></tr></thead>
           <tbody>
             <tr v-for="(d, i) in pb.voiceLeadingData" :key="i">
               <td class="vl-chord">{{ d.chord }}</td>
@@ -63,135 +351,12 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Controls -->
-      <div class="progression-controls row g-3 m-0 w-100">
-        <!-- Playback -->
-        <div class="col-12 col-md-6 col-xl-3">
-          <div class="control-section h-100">
-            <div class="control-section-header">{{ t('section.playback') }}</div>
-            <div class="row g-2 align-items-end mt-0">
-              <div class="col-3 col-xl-auto" style="min-width:70px;">
-                <div class="nav-group"><label>{{ t('label.bpm') }}</label>
-                  <input type="number" :value="pb.bpm" @change="pb.bpm = +$event.target.value" style="width:70px;">
-                </div>
-              </div>
-              <div class="col-9 col-xl">
-                <div class="nav-group"><label>{{ t('label.vol') }}</label>
-                  <input type="range" :value="pb.metroVol" @input="pb.metroVol = +$event.target.value" min="0" max="1" step="0.1">
-                </div>
-              </div>
-              <div class="col-12 col-xl">
-                <div class="nav-group"><label>{{ t('label.click') }}</label>
-                  <select :value="pb.metroSound" @change="pb.metroSound = $event.target.value">
-                    <option v-for="s in metroSounds" :key="s" :value="s">{{ s }}</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-12 col-xl">
-                <div class="nav-group"><label>{{ t('label.style') }}</label>
-                  <select v-model="pb.accompanimentStyle">
-                    <option>Standard</option>
-                    <option>Swing</option>
-                    <option>Bossa</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Chord Synth -->
-        <div class="col-12 col-md-6 col-xl-3">
-          <div class="control-section h-100">
-            <div class="control-section-header">{{ t('section.chord-synth') }}</div>
-            <div class="row g-2 align-items-end mt-0">
-              <div class="col-6 col-xl">
-                <div class="nav-group"><label>{{ t('label.sound') }}</label>
-                  <select :value="pb.chordSound" @change="pb.chordSound = $event.target.value">
-                    <option v-for="s in chordSounds" :key="s" :value="s">{{ s }}</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-6 col-xl">
-                <div class="nav-group"><label>{{ t('label.vol') }}</label>
-                  <input type="range" :value="pb.chordVol" @input="pb.chordVol = +$event.target.value" min="0" max="0.5" step="0.05">
-                </div>
-              </div>
-              <div class="col-12 col-xl-auto d-flex gap-2 flex-wrap">
-                <div class="checkbox-container">
-                  <input type="checkbox" id="play-chords-toggle" :checked="pb.playChords" @change="pb.playChords=$event.target.checked">
-                  <label for="play-chords-toggle">{{ t('label.synth') }}</label>
-                </div>
-                <div class="checkbox-container">
-                  <input type="checkbox" id="loop-selection" :checked="pb.loopSelection" @change="pb.loopSelection=$event.target.checked">
-                  <label for="loop-selection">{{ t('label.loop') }}</label>
-                </div>
-                <div class="checkbox-container">
-                  <input type="checkbox" id="swing-toggle" :checked="pb.swingEnabled" @change="pb.swingEnabled=$event.target.checked">
-                  <label for="swing-toggle">{{ t('label.swing') }}</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <button class="btn-io" style="width:100%;" @click="pb.autoAssignChords()">{{ t('btn.auto-chords') }}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Transposition -->
-        <div class="col-12 col-md-6 col-xl-3">
-          <div class="control-section h-100">
-            <div class="control-section-header">{{ t('section.transposition') }}</div>
-            <div class="row g-2 mt-0">
-              <div class="col-12">
-                <div class="nav-group"><label>{{ t('label.prog-transpose') }}</label>
-                  <div class="btn-group-stretched">
-                    <button class="btn-io transpose-btn" @click="pb.transposeProgression(2)">&plus;1</button>
-                    <button class="btn-io transpose-btn" @click="pb.transposeProgression(1)">&plus;&frac12;</button>
-                    <button class="btn-io transpose-btn" @click="pb.transposeProgression(-1)">&minus;&frac12;</button>
-                    <button class="btn-io transpose-btn" @click="pb.transposeProgression(-2)">&minus;1</button>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="nav-group"><label>{{ t('label.synth-octave') }}</label>
-                  <div class="btn-group-stretched">
-                    <button class="btn-io transpose-btn" @click="pb.transposeOctave(1)">+1</button>
-                    <button class="btn-io transpose-btn" @click="pb.transposeOctave(-1)">-1</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Transport -->
-        <div class="col-12 col-md-6 col-xl-3">
-          <div class="control-section h-100">
-            <div class="control-section-header">{{ t('section.playback') }}</div>
-            <div class="row g-2 justify-content-center align-items-center flex-grow-1 mt-0">
-              <div class="col-auto"><button class="btn-icon" @click="pb.navigate(-1)"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button></div>
-              <div class="col-auto">
-                <button class="btn-icon btn-play" @click="pb.toggle()">
-                  <svg viewBox="0 0 24 24">
-                    <path v-if="!pb.isPlaying" d="M8 5v14l11-7z"/>
-                    <path v-else d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                  </svg>
-                </button>
-              </div>
-              <div class="col-auto"><button class="btn-icon btn-stop" @click="pb.stop()"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></button></div>
-              <div class="col-auto"><button class="btn-icon" @click="pb.navigate(1)"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { usePlaybackStore } from '../stores/playback.js'
 import { useAudioStore }    from '../stores/audio.js'
 import { useI18n }          from '../composables/useI18n.js'
@@ -201,8 +366,49 @@ const pb    = usePlaybackStore()
 const audio = useAudioStore()
 const { t } = useI18n()
 
+// BPM input as a string buffer — committed only on blur/Enter so the user
+// can clear the field and retype freely.
+const bpmInput = ref(String(pb.bpm))
+watch(() => pb.bpm, v => { bpmInput.value = String(v) })
+function commitBpm() {
+  const n = parseInt(bpmInput.value, 10)
+  if (Number.isFinite(n) && n >= 30 && n <= 300) {
+    pb.bpm = n
+  } else {
+    bpmInput.value = String(pb.bpm)
+  }
+}
+
 const metroSounds = computed(() => Object.keys(audio.METRONOME_SAMPLES))
 const chordSounds = computed(() => Object.keys(audio.CHORD_SOUNDS))
+
+const swingLabel = computed(() => {
+  const s = pb.drumSwing
+  if (s <= 0.51)  return 'Straight'
+  if (s <= 0.58)  return 'Soft'
+  if (s <= 0.68)  return 'Triplet'
+  if (s <= 0.72)  return 'Swing'
+  return 'Shuffle'
+})
+const varLabel = computed(() => {
+  const v = pb.drumVar
+  if (v <= 0.05) return 'Robotic'
+  if (v <= 0.30) return t('opt.sottile') || 'Sottile'
+  if (v <= 0.55) return t('opt.naturale') || 'Naturale'
+  if (v <= 0.80) return t('opt.live') || 'Live'
+  return t('opt.wild') || 'Wild'
+})
+
+// Pretty-print the engine's current "tag" line under the channel name
+const BASS_LABELS = computed(() => ({
+  walking: t('opt.walking'), two_feel: t('opt.two_feel'), root_5: t('opt.root_5'), pedal: t('opt.pedal'), arpeggio: t('opt.arpeggio')
+}))
+const DRUM_LABELS = computed(() => ({
+  jazz: t('opt.jazz-swing'), bossa: t('opt.bossa-nova'), rock: t('opt.rock-8ths'),
+  brushes: t('opt.brushes'), latin: 'Latin (Songo)', funk: 'Funk 16ths', shuffle: 'Shuffle'
+}))
+const bassStyleLabel = computed(() => BASS_LABELS.value[pb.bassStyle] || pb.bassStyle)
+const drumStyleLabel = computed(() => DRUM_LABELS.value[pb.drumStyle] || pb.drumStyle)
 
 function deltaStr(curr, prev) {
   if (curr == null || prev == null) return '–'
@@ -247,3 +453,7 @@ function importProgression(event) {
   event.target.value = ''
 }
 </script>
+
+<style scoped>
+/* Redundant .jd- classes removed; now inherited from global assets/style.css */
+</style>

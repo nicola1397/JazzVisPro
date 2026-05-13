@@ -1,74 +1,87 @@
 <template>
-  <div id="view-chord-finder" class="view-panel active">
-    <div class="importer-area" style="max-width:600px;margin: 0 auto; width: 100%;">
-      <h2 class="area-title">{{ t('cf.title') }}</h2>
-      <p style="color:var(--secondary-text);font-size:0.85em;margin-bottom:20px;">{{ t('cf.subtitle') }}</p>
+  <div id="view-chord-finder" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">JAZZ · DECK</span>
+        <h1 class="jd-titlemark-name">{{ t('cf.title') }}</h1>
+      </div>
+    </header>
+
+    <div class="importer-area" style="max-width:600px; margin: 0 auto; width: 100%; padding-top: 20px;">
+      <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('cf.subtitle') }}</p>
 
       <!-- Note selector -->
-      <div style="margin-bottom:20px;">
-        <div style="font-size:0.75em;text-transform:uppercase;color:#777;font-weight:700;margin-bottom:10px;letter-spacing:0.5px;">
-          {{ t('cf.select-notes') }}
+      <section class="jd-console" style="margin-bottom:25px; padding: 25px;">
+        <div class="jd-grain" aria-hidden="true"></div>
+        <div class="jd-section-label">
+          <span>{{ t('cf.select-notes') }}</span>
+          <span class="jd-section-rule"></span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;justify-items:center;margin-bottom:20px;">
+
+        <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:12px; justify-items:center; margin-bottom:20px; padding: 10px 0;">
           <button
             v-for="(note, idx) in NOTES"
             :key="note"
             class="cf-note-btn"
             :class="{ selected: selectedNotes.has(idx) }"
             @click="toggleNote(idx)"
-            style="width:50px;height:50px;border-radius:50%;font-weight:700;border:2px solid #444;background:#2c2c2e;color:var(--text-h);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;font-size:0.95em;"
-            :style="selectedNotes.has(idx) ? 'background:var(--accent);color:#000;border-color:#fff;box-shadow: 0 0 15px rgba(255,214,10,0.3);' : ''"
           >{{ note }}</button>
         </div>
-        <button class="btn-reset" style="width:auto;padding:0 20px;margin-bottom:20px;" @click="clearSelection">
-          × {{ t('btn.reset-display') }}
-        </button>
-      </div>
+
+        <div class="jd-toolbar" style="justify-content: center;">
+          <button class="jd-toolbtn jd-toolbtn--reset" style="width:auto; padding:0 20px;" @click="clearSelection">
+            {{ t('btn.reset-display') }}
+          </button>
+        </div>
+      </section>
 
       <!-- Results -->
-      <div v-if="matches.length">
-        <div style="font-size:0.75em;text-transform:uppercase;color:#888;font-weight:700;margin-bottom:8px;letter-spacing:0.5px;">
-          {{ t('cf.results') }}
+      <div v-if="matches.length" class="jd-steps">
+        <div class="jd-section-label" style="margin-bottom: 12px;">
+          <span>{{ t('cf.results') }}</span>
+          <span class="jd-section-rule"></span>
         </div>
-        <div v-for="(m, idx) in matches" :key="m.name" style="margin-bottom:4px;">
+
+        <div v-for="(m, idx) in matches" :key="m.name" style="margin-bottom:8px; width: 100%;">
           <div
             class="cf-result-item"
+            :class="{ expanded: expandedIdx === idx }"
             @click="toggleDiagram(idx)"
-            style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;"
-            :style="expandedIdx === idx ? 'border-color:var(--accent);' : ''"
           >
-            <span style="font-weight:600;color:var(--text-h);">
+            <span style="font-weight:600;">
               {{ m.name }}
-              <span v-if="m.missing.length" style="color:#777;font-size:0.8em;">
+              <span v-if="m.missing.length" style="color:var(--jd-muted); font-size:0.8em; margin-left: 8px;">
                 ({{ appStore.lang === 'it' ? 'manca' : 'missing' }}: {{ m.missing.map(n=>NOTES[n]).join(', ') }})
               </span>
             </span>
-            <span style="color:#aaa;">{{ expandedIdx === idx ? '▴' : '▾' }}</span>
+            <span class="cf-result-arrow">{{ expandedIdx === idx ? '▲' : '▼' }}</span>
           </div>
-          <div v-if="expandedIdx === idx" style="padding:12px 14px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,214,10,0.2);border-top:none;border-radius:0 0 8px 8px;">
-            <div v-if="!loaded" style="color:#666;font-size:0.85em;">
-              {{ appStore.lang === 'it' ? 'Caricamento diteggiature...' : 'Loading fingerings...' }}
-            </div>
-            <div v-else>
-              <div v-if="getDiagrams(m).length" style="display:flex;flex-wrap:wrap;gap:8px;">
-                <div
-                  v-for="(d, di) in getDiagrams(m)"
-                  :key="di"
-                  style="text-align:center;"
-                >
-                  <div v-html="renderSVG(d.frets, d.fingers, d.baseFret)"></div>
-                  <div style="font-size:0.75em;color:#aaa;margin-top:2px;">{{ d.label }}</div>
+          <Transition name="jd-collapse">
+            <div v-if="expandedIdx === idx" class="cf-diagram-panel open">
+              <div v-if="!loaded" style="color:var(--jd-muted); font-size:0.85em; padding: 20px; text-align: center; font-family: var(--jd-mono);">
+                {{ appStore.lang === 'it' ? 'Caricamento diteggiature...' : 'Loading fingerings...' }}
+              </div>
+              <div v-else style="padding: 15px;">
+                <div v-if="getDiagrams(m).length" style="display:flex; flex-wrap:wrap; gap:12px; justify-content: center;">
+                  <div
+                    v-for="(d, di) in getDiagrams(m)"
+                    :key="di"
+                    class="chord-diagram-wrap"
+                  >
+                    <div v-html="renderSVG(d.frets, d.fingers, d.baseFret)"></div>
+                    <div class="chord-diagram-label" style="font-family: var(--jd-mono); font-size: 10px;">{{ d.label }}</div>
+                  </div>
+                </div>
+                <div v-else style="color:var(--jd-muted); font-size:0.85em; padding: 10px; text-align: center; font-family: var(--jd-mono);">
+                  {{ appStore.lang === 'it' ? 'Nessuna diteggiatura disponibile.' : 'No voicings available.' }}
                 </div>
               </div>
-              <div v-else style="color:#666;font-size:0.85em;">
-                {{ appStore.lang === 'it' ? 'Nessuna diteggiatura disponibile.' : 'No voicings available.' }}
-              </div>
             </div>
-          </div>
+          </Transition>
         </div>
       </div>
 
-      <div v-else-if="selectedNotes.size >= 2" style="color:#666;text-align:center;padding:20px;">
+      <div v-else-if="selectedNotes.size >= 2" style="color:var(--jd-muted); text-align:center; padding:40px; font-family: var(--jd-mono); font-size: 0.9em;">
         {{ appStore.lang === 'it' ? 'Nessun accordo trovato.' : 'No chord found.' }}
       </div>
 

@@ -1,14 +1,20 @@
 <template>
-  <div id="view-teoria" class="view-panel active">
-    <div class="importer-area" style="max-width:860px;margin:0 auto;width:100%;">
-      <h2 class="area-title">{{ t('tj.title') }}</h2>
-      <p style="color:var(--secondary-text,#888);font-size:0.85em;margin-bottom:20px;line-height:1.5;">{{ t('tj.subtitle') }}</p>
+  <div id="view-teoria" class="view-panel active jd-view">
+    <header class="jd-titlebar">
+      <div class="jd-titlemark">
+        <span class="jd-titlemark-eyebrow">JAZZ · DECK</span>
+        <h1 class="jd-titlemark-name">{{ t('tj.title') }}</h1>
+      </div>
+    </header>
 
-      <div class="teoria-container">
+    <p class="jd-intro">{{ t('tj.subtitle') }}</p>
 
-        <!-- 1. I 12 Intervalli -->
-        <div class="teoria-card" :class="{ open: open[0] }">
-          <button class="teoria-header" @click="toggle(0)"><span>{{ t('th.jazz1') }}</span><span class="teoria-arrow">▸</span></button>
+    <div class="teoria-container">
+
+      <!-- 1. I 12 Intervalli -->
+      <div class="teoria-card" :class="{ open: open[0] }">
+        <button class="teoria-header" @click="toggle(0)"><span>{{ t('th.jazz1') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
           <div class="teoria-body" v-show="open[0]">
             <p class="teoria-intro">Gli intervalli sono la distanza in semitoni tra due note. Imparare a riconoscerli ad orecchio è la chiave dell'improvvisazione.</p>
             <div class="interval-grid">
@@ -19,11 +25,13 @@
               </div>
             </div>
           </div>
-        </div>
+        </Transition>
+      </div>
 
-        <!-- 2. Le Scale Jazz -->
-        <div class="teoria-card" :class="{ open: open[1] }">
-          <button class="teoria-header" @click="toggle(1)"><span>{{ t('th.jazz2') }}</span><span class="teoria-arrow">▸</span></button>
+      <!-- 2. Le Scale Jazz -->
+      <div class="teoria-card" :class="{ open: open[1] }">
+        <button class="teoria-header" @click="toggle(1)"><span>{{ t('th.jazz2') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
           <div class="teoria-body" v-show="open[1]">
             <p class="teoria-intro">Ogni accordo ha una o più scale associate. Imparare quale scala usare è il segreto dell'improvvisazione jazz.</p>
             <div class="scale-grid">
@@ -37,49 +45,59 @@
               </div>
             </div>
           </div>
-        </div>
+        </Transition>
+      </div>
 
-        <!-- 3. Gli Accordi Jazz -->
-        <div class="teoria-card" :class="{ open: open[2] }">
-          <button class="teoria-header" @click="toggle(2)"><span>{{ t('th.jazz3') }}</span><span class="teoria-arrow">▸</span></button>
+      <!-- 3. Gli Accordi Jazz -->
+      <div class="teoria-card" :class="{ open: open[2] }">
+        <button class="teoria-header" @click="toggle(2)"><span>{{ t('th.jazz3') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
           <div class="teoria-body" v-show="open[2]">
             <p class="teoria-intro">Nel jazz si usano quasi sempre accordi di settima o estesi. La triade semplice è rara.</p>
-            <table class="chord-table">
-              <thead><tr><th>Simbolo</th><th>Nome</th><th>Formula</th><th>Scale</th><th>Carattere</th></tr></thead>
-              <tbody>
-                <tr v-for="c in jazzChords" :key="c.sym">
-                  <td><span class="chord-symbol">{{ c.sym }}</span></td>
-                  <td>{{ c.name }}</td>
-                  <td><span class="chord-formula">{{ c.formula }}</span></td>
-                  <td>{{ c.scales }}</td>
-                  <td>{{ c.char }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 4. Progressioni Fondamentali -->
-        <div class="teoria-card" :class="{ open: open[3] }">
-          <button class="teoria-header" @click="toggle(3)"><span>{{ t('th.jazz4') }}</span><span class="teoria-arrow">▸</span></button>
-          <div class="teoria-body" v-show="open[3]">
-            <p class="teoria-intro">Queste progressioni sono il DNA del jazz. Impararle in tutte le tonalità è il primo passo.</p>
-            <div v-for="prog in fundamentalProgs" :key="prog.name" class="prog-teoria-item">
-              <div class="prog-teoria-name">{{ prog.name }} <span class="prog-teoria-tag">{{ prog.tag }}</span></div>
-              <div class="prog-example">{{ prog.chords }}</div>
-              <div class="prog-teoria-desc">{{ prog.desc }}</div>
-              <button class="load-prog-btn" @click="loadProg(prog.key)">
-                {{ lang === 'it' ? 'Carica nel Player' : 'Load in Player' }}
-              </button>
+            <div class="vl-scroll">
+              <table class="chord-table">
+                <thead><tr><th>Simbolo</th><th>Nome</th><th>Formula</th><th>Scale</th><th>Carattere</th></tr></thead>
+                <tbody>
+                  <tr v-for="c in jazzChords" :key="c.sym">
+                    <td><span class="chord-symbol">{{ c.sym }}</span></td>
+                    <td style="font-family:var(--jd-mono); font-size:0.75em;">{{ c.name }}</td>
+                    <td><span class="chord-formula">{{ c.formula }}</span></td>
+                    <td style="font-family:var(--jd-mono); font-size:0.72em;">{{ c.scales }}</td>
+                    <td style="font-family:var(--jd-display); font-style:italic;">{{ c.char }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        </Transition>
+      </div>
 
-        <!-- 5. CAGED -->
-        <div class="teoria-card" :class="{ open: open[4] }">
-          <button class="teoria-header" @click="toggle(4)"><span>{{ t('th.jazz5') }}</span><span class="teoria-arrow">▸</span></button>
+      <!-- 4. Progressioni Fondamentali -->
+      <div class="teoria-card" :class="{ open: open[3] }">
+        <button class="teoria-header" @click="toggle(3)"><span>{{ t('th.jazz4') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
+          <div class="teoria-body" v-show="open[3]">
+            <p class="teoria-intro">Queste progressioni sono il DNA del jazz. Impararle in tutte le tonalità è il primo passo.</p>
+            <div class="progs-grid">
+              <div v-for="prog in fundamentalProgs" :key="prog.name" class="prog-teoria-item">
+                <div class="prog-teoria-name">{{ prog.name }} <span class="prog-teoria-tag">{{ prog.tag }}</span></div>
+                <div class="prog-example">{{ prog.chords }}</div>
+                <div class="prog-teoria-desc">{{ prog.desc }}</div>
+                <button class="load-prog-btn" @click="loadProg(prog.key)">
+                  {{ lang === 'it' ? 'Carica nel Player' : 'Load in Player' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- 5. CAGED -->
+      <div class="teoria-card" :class="{ open: open[4] }">
+        <button class="teoria-header" @click="toggle(4)"><span>{{ t('th.jazz5') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
           <div class="teoria-body" v-show="open[4]">
-            <p class="teoria-intro">CAGED divide il manico in 5 zone, ognuna basata su una forma di accordo aperto. Usa il selettore CAGED nella sidebar per visualizzarle!</p>
+            <p class="teoria-intro">CAGED divide il manico in 5 zone, ognuna basata su una forma di accordo aperto.</p>
             <div class="caged-grid">
               <div v-for="shape in cagedShapes" :key="shape.letter" class="caged-shape">
                 <div class="caged-shape-letter">{{ shape.letter }}</div>
@@ -87,94 +105,54 @@
                 <div class="caged-shape-desc">{{ shape.desc }}</div>
               </div>
             </div>
-            <div class="teoria-tip" style="margin-top:15px;"><strong>Come usarlo:</strong> Se devi suonare Cmaj7 all'8° tasto, usa la forma E shape (barre). Le 5 forme si collegano fluendo lungo il manico.</div>
+            <div class="teoria-tip mt-3"><strong>Come usarlo:</strong> Se devi suonare Cmaj7 all'8° tasto, usa la forma E shape (barre). Le 5 forme si collegano fluendo lungo il manico.</div>
           </div>
-        </div>
+        </Transition>
+      </div>
 
-        <!-- 6. Come Improvvisare -->
-        <div class="teoria-card" :class="{ open: open[5] }">
-          <button class="teoria-header" @click="toggle(5)"><span>{{ t('th.jazz6') }}</span><span class="teoria-arrow">▸</span></button>
+      <!-- 6. Come Improvvisare -->
+      <div class="teoria-card" :class="{ open: open[5] }">
+        <button class="teoria-header" @click="toggle(5)"><span>{{ t('th.jazz6') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
           <div class="teoria-body" v-show="open[5]">
             <p class="teoria-intro">L'improvvisazione jazz si impara gradualmente. Ecco un percorso pratico.</p>
             <ul class="tip-list">
-              <li v-for="(tip, i) in improvTips" :key="i"><span class="tip-num">{{ i+1 }}</span><span v-html="tip"></span></li>
+              <li v-for="(tip, i) in improvTips" :key="i">
+                <span class="tip-num">{{ i+1 }}</span>
+                <div class="tip-content" v-html="tip"></div>
+              </li>
             </ul>
           </div>
-        </div>
-
-        <!-- 7. Note Guida -->
-        <div class="teoria-card" :class="{ open: open[6] }">
-          <button class="teoria-header" @click="toggle(6)"><span>{{ t('th.jazz7') }}</span><span class="teoria-arrow">▸</span></button>
-          <div class="teoria-body" v-show="open[6]">
-            <p class="teoria-intro">Le <strong>Guide Tones</strong> (note guida) sono la 3ª e la 7ª di un accordo. Queste due note definiscono il suono armonico e guidano il movimento da un accordo all'altro.</p>
-            <ul class="tip-list">
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>3ª:</strong> Definisce se l'accordo è maggiore o minore. È la nota più caratteristica.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>7ª:</strong> Aggiunge il colore jazz. Distingue un accordo di settima dal semplice triade.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Movimento contrario:</strong> Nel ii-V-I la 3ª di Dm7 (F) diventa la 7ª di G7, e la 7ª di G7 (F) risolve alla 3ª di Cmaj7 (E). Questo è il voice leading jazzistico.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Pratica:</strong> Impara a suonare linee usando solo le note guida sui cambi di accordo. È il fondamento dell'improvvisazione bebop.</div></li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- 8. Sostituzione del Tritono -->
-        <div class="teoria-card" :class="{ open: open[7] }">
-          <button class="teoria-header" @click="toggle(7)"><span>{{ t('th.jazz8') }}</span><span class="teoria-arrow">▸</span></button>
-          <div class="teoria-body" v-show="open[7]">
-            <p class="teoria-intro">La <strong>sostituzione del tritono</strong> è una delle tecniche di rearmonia più usate nel jazz. Un accordo dominante può essere sostituito dal dominante a distanza di tritono.</p>
-            <ul class="tip-list">
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Esempio:</strong> G7 → Db7 (6 semitoni di distanza = tritono). Entrambi risolvono su Cmaj7.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Perché funziona:</strong> G7 ha note guida B e F. Db7 ha note guida F e Cb (enarmonia di B). Le note guida sono le stesse, invertite!</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Uso:</strong> Crea movimento cromatico nel basso (G → Db → C) invece del salto di quinta. Più fluido e moderno.</div></li>
-            </ul>
-            <div class="prog-example">| Dm7 | G7 | Cmaj7 |
-→ | Dm7 | Db7 | Cmaj7 | (tritone sub)</div>
-          </div>
-        </div>
-
-        <!-- 9. Cromatismo -->
-        <div class="teoria-card" :class="{ open: open[8] }">
-          <button class="teoria-header" @click="toggle(8)"><span>{{ t('th.jazz9') }}</span><span class="teoria-arrow">▸</span></button>
-          <div class="teoria-body" v-show="open[8]">
-            <p class="teoria-intro">Il <strong>cromatismo</strong> è l'uso di note fuori dalla scala per creare tensione, colore e movimento melodico.</p>
-            <ul class="tip-list">
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Note di approccio diatoniche:</strong> Una nota diatonica vicina che si muove per semitono verso la nota bersaglio.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Note di approccio cromatiche:</strong> Note a un semitono sopra o sotto la nota bersaglio, fuori dalla scala.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Doppio approccio:</strong> Due note di approccio (una sopra, una sotto) prima della nota bersaglio. Tipico del bebop.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Regola d'oro:</strong> Le note cromatiche sono di passaggio — stai sul debole del tempo, atterrare sul forte con una nota della scala.</div></li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- 10. Scale Bebop -->
-        <div class="teoria-card" :class="{ open: open[9] }">
-          <button class="teoria-header" @click="toggle(9)"><span>{{ t('th.jazz10') }}</span><span class="teoria-arrow">▸</span></button>
-          <div class="teoria-body" v-show="open[9]">
-            <p class="teoria-intro">Le <strong>scale bebop</strong> aggiungono una nota cromatica alle scale modali, creando scale di 8 note che permettono di atterrare sulle note dell'accordo sui tempi forti.</p>
-            <div class="scale-grid">
-              <div class="scale-item"><div class="scale-item-name">Bebop Dominante</div><div class="scale-item-chord">Su: G7, dominanti</div><div class="scale-item-desc">Misolidio + 7a maggiore: 1-2-3-4-5-6-b7-7. La 7a maggiore è la nota cromatica aggiunta.</div></div>
-              <div class="scale-item"><div class="scale-item-name">Bebop Maggiore</div><div class="scale-item-chord">Su: Cmaj7, Fmaj7</div><div class="scale-item-desc">Ionio + #5: 1-2-3-4-5-#5-6-7. Aggiunge un passaggio cromatico tra 5 e 6.</div></div>
-              <div class="scale-item"><div class="scale-item-name">Bebop Dorico</div><div class="scale-item-chord">Su: Dm7, accordi min7</div><div class="scale-item-desc">Dorico + 3a maggiore: 1-2-b3-3-4-5-6-b7. Nota cromatica tra b3 e 4.</div></div>
-            </div>
-            <div class="teoria-tip mt-3"><strong>Il trucco:</strong> Con 8 note in una scala, suonando crome in modo continuo, le note dell'accordo cadono sempre sui tempi forti. È la grammatica ritmica del bebop.</div>
-          </div>
-        </div>
-
-        <!-- 11. Modal Interchange -->
-        <div class="teoria-card" :class="{ open: open[10] }">
-          <button class="teoria-header" @click="toggle(10)"><span>{{ t('th.jazz11') }}</span><span class="teoria-arrow">▸</span></button>
-          <div class="teoria-body" v-show="open[10]">
-            <p class="teoria-intro">Il <strong>modal interchange</strong> (o "prestito modale") consiste nell'usare accordi presi dal minore parallelo (o da altri modi) in un brano maggiore, e viceversa.</p>
-            <ul class="tip-list">
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Esempio comune:</strong> In Do Maggiore, usare Fm7 o Abmaj7 (dal Do minore). Crea un contrasto emotivo immediato.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>bVII7:</strong> In Do, Bb7 (dal Do misolidio/minore). "Backdoor dominant" — risolve su I senza il tritono tradizionale.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>bVI maj7:</strong> In Do, Abmaj7 (dal Do minore). Colore malinconico, molto usato nel jazz moderno e nel pop.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>IV minore:</strong> In Do, Fm7 → Cmaj7. Il IV minore crea tensione che risolve dolcemente sulla tonica.</div></li>
-              <li><span class="tip-bullet">•</span><div class="tip-content"><strong>Per improvvisare:</strong> Quando appare un accordo preso in prestito, usa la scala del modo da cui proviene (es. su Abmaj7, usa Lidio).</div></li>
-            </ul>
-          </div>
-        </div>
-
+        </Transition>
       </div>
+
+      <!-- 7. Note Guida -->
+      <div class="teoria-card" :class="{ open: open[6] }">
+        <button class="teoria-header" @click="toggle(6)"><span>{{ t('th.jazz7') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
+          <div class="teoria-body" v-show="open[6]">
+            <p class="teoria-intro">Le <strong>Guide Tones</strong> sono la 3ª e la 7ª di un accordo. Queste due note definiscono il suono armonico e guidano il movimento.</p>
+            <ul class="tip-list">
+              <li><span class="tip-num">01</span><div class="tip-content"><strong>3ª:</strong> Definisce se l'accordo è maggiore o minore.</div></li>
+              <li><span class="tip-num">02</span><div class="tip-content"><strong>7ª:</strong> Aggiunge il colore jazz. Distingue un accordo di settima.</div></li>
+              <li><span class="tip-num">03</span><div class="tip-content"><strong>Voice Leading:</strong> Nel ii-V-I la 3ª di Dm7 (F) diventa la 7ª di G7, e la 7ª di G7 (F) risolve alla 3ª di Cmaj7 (E).</div></li>
+            </ul>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- 8. Sostituzione del Tritono -->
+      <div class="teoria-card" :class="{ open: open[7] }">
+        <button class="teoria-header" @click="toggle(7)"><span>{{ t('th.jazz8') }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
+          <div class="teoria-body" v-show="open[7]">
+            <p class="teoria-intro">Un accordo dominante può essere sostituito dal dominante a distanza di tritono (6 semitoni).</p>
+            <div class="prog-example">| Dm7 | G7 | Cmaj7 |<br>→ | Dm7 | Db7 | Cmaj7 | (tritone sub)</div>
+            <div class="teoria-tip mt-3"><strong>Perché funziona:</strong> G7 ha note guida B e F. Db7 ha note guida F e Cb (enarmonia di B). Le note guida sono le stesse, invertite!</div>
+          </div>
+        </Transition>
+      </div>
+
     </div>
   </div>
 </template>
@@ -274,14 +252,52 @@ const cagedShapes = [
 
 const improvTips = [
   'Inizia con la <strong>pentatonica minore</strong>. 5 note semplici, sempre efficaci su backing track blues.',
-  'Aggiungi la <strong>blue note (b5)</strong> per la scala blues. Un suono che trasforma completamente il feeling.',
-  'Impara il <strong>ii-V-I in C</strong> a memoria. Suonaci sopra ogni giorno, poi trasportalo in tutte le tonalità.',
-  'Studia le <strong>note guida</strong>: la 3ª e la 7ª degli accordi. Definiscono il suono di ogni accordo jazz.',
-  'Passa a <strong>Dorico e Misolidio</strong>. Dorico sul ii (Dm7), Misolidio sul V (G7). Senti la differenza.',
-  'Ascolta tanto jazz: <em>Kind of Blue</em> (Miles Davis), <em>Waltz for Debby</em> (Bill Evans), <em>A Love Supreme</em> (Coltrane).',
-  '<strong>Trascrivi lick</strong> dai tuoi musicisti preferiti. Anche solo 2-3 misure, poi suonali in varie tonalità.',
-  'Usa il <strong>Player</strong> per creare backing track con ii-V-I e improvvisa sopra col fretboard.',
-  'Studia la <strong>scala alterata</strong> sul dominante (G7alt → Alterata). È il suono del jazz moderno.',
-  'Ricorda: improvvisare non è suonare note a caso. È <strong>raccontare una storia</strong> — tensione e risoluzione.',
+  'Aggiungi la <strong>blue note (b5)</strong> per la scala blues.',
+  'Impara il <strong>ii-V-I in C</strong> a memoria. Suonaci sopra ogni giorno.',
+  'Studia le <strong>note guida</strong>: la 3ª e la 7ª degli accordi.',
+  'Passa a <strong>Dorico e Misolidio</strong>. Dorico sul ii, Misolidio sul V.',
+  'Ascolta tanto jazz: <em>Kind of Blue</em>, <em>Waltz for Debby</em>.',
+  '<strong>Trascrivi lick</strong> dai tuoi musicisti preferiti.',
+  'Usa il <strong>Player</strong> per creare backing track con ii-V-I.',
+  'Studia la <strong>scala alterata</strong> sul dominante.',
+  'Ricorda: improvvisare è <strong>raccontare una storia</strong>.',
 ]
 </script>
+
+<style scoped>
+.jd-intro {
+  font-family: var(--jd-mono);
+  font-size: 0.85em;
+  color: var(--jd-text-soft);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.teoria-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.interval-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.progs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+  justify-content: center;
+}
+
+.vl-scroll {
+  overflow-x: auto;
+  margin: 14px 0;
+  border-radius: 10px;
+  border: 1px solid var(--jd-line);
+}
+</style>
