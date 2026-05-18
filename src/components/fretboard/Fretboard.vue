@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute }  from 'vue-router'
 import { useAppStore } from '../../stores/app.js'
 import { STRINGS, FRETS } from '../../utils/constants.js'
@@ -45,6 +45,17 @@ const route    = useRoute()
 const ARP_INTERVALS = [0, 3, 4, 7, 10, 11]
 
 const isGameMode = computed(() => ['interval', 'note', 'lick'].includes(props.gameMode))
+
+// When leaving game mode, purge inline transition/color set directly on DOM by game views.
+// These are outside Vue's style tracking so Vue won't clear them on its own re-render.
+watch(isGameMode, (newVal) => {
+  if (!newVal) {
+    document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
+      c.style.removeProperty('transition')
+      c.style.removeProperty('color')
+    })
+  }
+}, { flush: 'post' })
 const showFretboard = computed(() => route.meta?.fretboard !== false)
 
 // Computed grid state to ensure reactivity and performance

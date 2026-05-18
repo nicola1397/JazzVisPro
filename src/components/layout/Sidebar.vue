@@ -37,8 +37,9 @@
     </SidebarGroup>
 
     <SidebarGroup name="theory" :label="t('sg.theory')" :collapsed="true">
-      <RouterLink class="nav-item" to="/teoria-generale" @click="appStore.closeSidebar()">{{ t('nav.teoria-generale') }}</RouterLink>
-      <RouterLink class="nav-item" to="/teoria"          @click="appStore.closeSidebar()">{{ t('nav.teoria') }}</RouterLink>
+      <RouterLink class="nav-item" to="/teoria-generale"  @click="appStore.closeSidebar()">{{ t('nav.teoria-generale') }}</RouterLink>
+      <RouterLink class="nav-item" to="/teoria"           @click="appStore.closeSidebar()">{{ t('nav.teoria') }}</RouterLink>
+      <RouterLink class="nav-item" to="/teoria-chitarra"  @click="appStore.closeSidebar()">{{ t('nav.teoria-chitarra') }}</RouterLink>
     </SidebarGroup>
 
     <div class="sidebar-controls">

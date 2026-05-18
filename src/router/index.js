@@ -24,6 +24,7 @@ const routes = [
   { path: '/snapshots',           component: () => import('../views/SnapshotsView.vue'),            meta: { title:'title.snapshots',        fretboard:false,legend:false } },
   { path: '/teoria-generale',     component: () => import('../views/TheoryGeneralView.vue'),        meta: { title:'title.teoria-generale',  fretboard:false,legend:false } },
   { path: '/teoria',              component: () => import('../views/TheoryJazzView.vue'),            meta: { title:'title.teoria',           fretboard:false,legend:false } },
+  { path: '/teoria-chitarra',    component: () => import('../views/TheoryGuitarView.vue'),           meta: { title:'title.teoria-chitarra',  fretboard:false,legend:false } },
 ]
 
 export default createRouter({

@@ -182,7 +182,6 @@ onMounted(() => {
 })
 onUnmounted(() => {
   window.removeEventListener('fretboard:noteClick', onNoteClick)
-  clearBoard()
 })
 </script>
 

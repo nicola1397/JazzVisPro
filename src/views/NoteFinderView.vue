@@ -127,7 +127,7 @@ async function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
 
 function onNoteClick(e) { checkAnswer(e.detail) }
 onMounted(() => { window.addEventListener('fretboard:noteClick', onNoteClick); clearBoard() })
-onUnmounted(() => { window.removeEventListener('fretboard:noteClick', onNoteClick); clearBoard() })
+onUnmounted(() => { window.removeEventListener('fretboard:noteClick', onNoteClick) })
 </script>
 
 <style scoped>
