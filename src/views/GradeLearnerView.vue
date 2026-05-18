@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area" style="max-width:720px; margin: 0 auto; width: 100%;">
+    <div class="importer-area jd-container--narrow">
       <section class="jd-console" style="margin-bottom: 32px;">
         <div class="jd-grain" aria-hidden="true"></div>
         

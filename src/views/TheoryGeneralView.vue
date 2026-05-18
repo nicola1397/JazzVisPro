@@ -9,7 +9,7 @@
 
     <p class="jd-intro">{{ t('tg.subtitle') }}</p>
 
-    <div class="teoria-container">
+    <div class="teoria-container jd-container">
 
       <!-- 1. Notazione -->
       <div class="teoria-card" :class="{ open: open[0] }">

@@ -22,12 +22,27 @@
         >
           <!-- Meta -->
           <div class="snapshot-meta">
-            <h3>{{ snap.root }} {{ snap.scale }}</h3>
+            <div class="snapshot-title-row">
+              <input
+                v-if="renamingIdx === idx"
+                v-model="editLabel"
+                class="snapshot-rename-input"
+                @keyup.enter="commitRename(idx)"
+                @keyup.esc="renamingIdx = -1"
+                @blur="commitRename(idx)"
+              />
+              <h3 v-else>{{ snap.label || (snap.root + ' ' + snap.scale) }}</h3>
+              <button
+                v-if="renamingIdx !== idx"
+                class="jd-iconbtn jd-iconbtn--rename"
+                @click="startRename(idx, snap)"
+                :title="t('btn.rename')"
+              >✎</button>
+            </div>
             <div class="snapshot-date">{{ snap.date }}</div>
             <div class="snapshot-actions">
               <button class="jd-extra" @click="loadSnapshot(snap)">{{ t('btn.load') }}</button>
               <button class="jd-iconbtn jd-iconbtn--delete" @click="deleteSnapshot(idx)" :title="t('btn.delete')">
-
                 <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
               </button>
             </div>
@@ -59,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useAppStore }    from '../stores/app.js'
 import { useI18n }        from '../composables/useI18n.js'
 import { INTERVAL_COLORS, SCALES } from '../utils/theory.js'
@@ -68,6 +83,8 @@ const appStore = useAppStore()
 const { t }    = useI18n()
 
 const snapshots = ref([])
+const renamingIdx = ref(-1)
+const editLabel = ref('')
 
 onMounted(() => {
   loadSnapshots()
@@ -86,6 +103,7 @@ function createSnapshot() {
   const snap = {
     root: appStore.root,
     scale: appStore.scaleName,
+    label: appStore.root + ' ' + appStore.scaleName,
     manualNotes: Array.from(appStore.manualNotes),
     customScale: Array.from(appStore.customScaleNotes),
     date: new Date().toLocaleString()
@@ -97,6 +115,23 @@ function createSnapshot() {
 function deleteSnapshot(idx) {
   snapshots.value.splice(idx, 1)
   saveSnapshots()
+}
+
+async function startRename(idx, snap) {
+  renamingIdx.value = idx
+  editLabel.value = snap.label || (snap.root + ' ' + snap.scale)
+  await nextTick()
+  document.querySelector('.snapshot-rename-input')?.focus()
+}
+
+function commitRename(idx) {
+  if (renamingIdx.value !== idx) return
+  const label = editLabel.value.trim()
+  if (label) {
+    snapshots.value[idx].label = label
+    saveSnapshots()
+  }
+  renamingIdx.value = -1
 }
 
 function clearSnapshots() {
@@ -147,6 +182,38 @@ function getColor(snap, s, f) {
   display: grid;
   grid-template-columns: 200px 1fr;
   align-items: center;
+}
+
+.snapshot-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.snapshot-title-row h3 { margin: 0; flex: 1; }
+
+.snapshot-rename-input {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--jd-amber);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--jd-text);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--jd-sans);
+  outline: none;
+}
+
+.jd-iconbtn--rename {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  color: var(--jd-muted);
+  flex-shrink: 0;
+}
+.jd-iconbtn--rename:hover {
+  color: var(--jd-amber);
+  border-color: var(--jd-amber);
 }
 
 .snapshot-date {

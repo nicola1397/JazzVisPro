@@ -293,7 +293,6 @@ function importCustomScale(event) {
 
 .jd-select {
   width: 100% !important;
-  height: 34px !important;
   flex: none !important;
 }
 
@@ -302,14 +301,16 @@ function importCustomScale(event) {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .explorer-controls .jd-mode {
   justify-content: center;
-  min-width: 80px;
+  min-width: 90px;
   padding: 0 12px;
   cursor: pointer;
   pointer-events: auto !important;
+  flex: 1 1 auto;
 }
 
 .hidden-radio {
@@ -320,28 +321,30 @@ function importCustomScale(event) {
 
 .pill-group {
   display: flex;
+  flex-wrap: wrap;
   background: rgba(0, 0, 0, 0.3);
   padding: 3px;
   border-radius: 8px;
   border: 1px solid var(--jd-line);
-  height: 34px;
+  height: auto;
+  min-height: 34px;
   box-sizing: border-box;
   width: 100%;
 }
 
 .pill-btn {
-  flex: 1;
+  flex: 1 1 auto;
   background: transparent;
   border: none;
   color: var(--jd-text-soft);
   font-family: var(--jd-mono);
   font-size: 10px;
   font-weight: 700;
-  padding: 0 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
-  height: 100%;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;

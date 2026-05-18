@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area text-center" style="max-width:720px; margin: 0 auto; width: 100%; padding-top: 20px;">
+    <div class="importer-area jd-container" style="padding-top: 20px;">
       <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('fh.subtitle') }}</p>
 
       <section class="jd-console" style="padding: 25px; margin-bottom: 25px;">
@@ -71,7 +71,7 @@
         </div>
 
         <!-- Answer Grid -->
-        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">
+        <div class="jd-grid-fixed-4" style="margin-bottom:20px;">
           <button
             v-for="deg in currentDegrees"
             :key="deg"

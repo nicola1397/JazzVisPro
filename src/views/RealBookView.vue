@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area" style="max-width:860px; margin: 0 auto; width: 100%; padding-top: 20px;">
+    <div class="importer-area jd-container" style="padding-top: 20px;">
       <p
         style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">
         {{ t('rb.subtitle') }}</p>

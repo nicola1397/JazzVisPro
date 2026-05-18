@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area" style="max-width:800px; margin: 0 auto; width: 100%; padding-top: 20px;">
+    <div class="importer-area jd-container--wide" style="padding-top: 20px;">
       <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('gt.subtitle') }}</p>
 
       <section class="jd-console gt-controls" style="margin-bottom: 30px;">

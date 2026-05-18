@@ -15,7 +15,7 @@
         <span class="jd-section-rule"></span>
       </div>
 
-      <div class="jd-master" style="grid-template-columns: 1fr 1.5fr auto;">
+      <div class="jd-master">
         <div class="jd-feel" style="flex:1;">
           <span class="jd-feel-label">{{ t('label.key') }}</span>
           <select :value="rootIdx" @change="rootIdx = parseInt($event.target.value)" class="jd-feel-select"
@@ -56,33 +56,41 @@
           <span class="jd-section-rule"></span>
         </div>
 
-        <div class="jd-improv-banner" style="margin-bottom:14px; padding:14px 20px;">
-          <div
-            style="font-family:var(--jd-display); font-style:italic; font-size:2em; color:var(--jd-amber); line-height:1; margin-bottom:8px;">
-            {{ NOTES[rootIdx] }}{{ chordType }}
-          </div>
-
-          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-            <div v-for="intv in chord.intervals" :key="intv" class="cv-int-badge">
-              <div class="cv-int-dot" :style="{ background: INTERVAL_COLORS[intv].color }">
-                {{ INTERVAL_COLORS[intv].short }}
+        <div class="jd-improv-banner jd-info-grid-container" style="padding:16px; margin-bottom:16px; background: linear-gradient(90deg, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0.02) 100%); border: 1px solid rgba(34,197,94,0.3); border-left: 4px solid var(--jd-improv); border-radius:16px; color: #c1f0cf;">
+          
+          <div class="jd-info-grid">
+            <!-- Cell 1: Chord Name (Large) -->
+            <div class="jd-grid-cell cell-title" style="display:flex; align-items:center; justify-content:center; padding:12px;">
+              <div style="font-family:var(--jd-display); font-style:italic; font-size:4.2em; color:var(--jd-improv); line-height:0.9; white-space: nowrap; text-shadow: 0 0 20px rgba(34,197,94,0.2);">
+                {{ NOTES[rootIdx] }}<span style="color:var(--jd-text)">{{ chordType }}</span>
               </div>
-              <span style="font-family:var(--jd-mono); font-size:11px; font-weight:700;">{{ NOTES[(rootIdx + intv) % 12]
-              }}</span>
             </div>
-          </div>
 
-          <div
-            style="display:grid; grid-template-columns: auto 1fr; gap:20px; font-size:12px; color:rgba(255,255,255,0.7);">
-            <div>
-              <span class="jd-pitch-label" style="display:block; margin-bottom:4px;">{{ t('cv.scale-rec') }}</span>
-              <strong style="color:var(--jd-text); font-family:var(--jd-display); font-style:italic; font-size:16px;">{{
-                chord.scale }}</strong>
+            <!-- Cell 2: Interval Badges -->
+            <div class="jd-grid-cell cell-intervals" style="display:flex; align-items:center; justify-content:center; padding:12px; border-left: 1px solid rgba(34,197,94,0.15);">
+              <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:280px;">
+                <div v-for="intv in chord.intervals" :key="intv" class="cv-int-badge" style="padding: 4px 10px; border-radius:20px; background:rgba(0,0,0,0.4); border-color:rgba(34,197,94,0.3); display:flex; align-items:center; gap:6px;">
+                  <div class="cv-int-dot" :style="{ background: INTERVAL_COLORS[intv].color, width:'20px', height:'24px', fontSize:'9px', borderRadius:'50%' }">
+                    {{ INTERVAL_COLORS[intv].short }}
+                  </div>
+                  <span style="font-family:var(--jd-mono); font-size:12px; font-weight:800; color:#fff;">{{ NOTES[(rootIdx + intv) % 12] }}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span class="jd-pitch-label" style="display:block; margin-bottom:4px;">{{ t('cv.info-desc') }}</span>
-              <span style="font-family:var(--jd-mono); line-height:1.4;">{{ appStore.lang === 'it' ? chord.desc_it :
-                chord.desc_en }}</span>
+
+            <!-- Separator Row (Desktop only via grid-column span) -->
+            <div class="jd-grid-sep" style="grid-column: 1 / -1; height:1px; background:rgba(34,197,94,0.2); margin: 6px 0;"></div>
+
+            <!-- Cell 3: Scale Rec -->
+            <div class="jd-grid-cell cell-scale" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:10px;">
+              <span class="jd-pitch-label" style="display:block; margin-bottom:4px; opacity:0.8; font-size:9px; color:var(--jd-improv); letter-spacing:2px; font-weight:700;">{{ t('cv.scale-rec') }}</span>
+              <strong style="color:#fff; font-family:var(--jd-display); font-style:italic; font-size:20px; letter-spacing:0.5px;">{{ chord.scale }}</strong>
+            </div>
+
+            <!-- Cell 4: Description -->
+            <div class="jd-grid-cell cell-desc" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:10px; border-left: 1px solid rgba(34,197,94,0.15);">
+              <span class="jd-pitch-label" style="display:block; margin-bottom:4px; opacity:0.8; font-size:9px; color:var(--jd-improv); letter-spacing:2px; font-weight:700;">{{ t('cv.info-desc') }}</span>
+              <p style="font-family:var(--jd-mono); line-height:1.5; margin:0; font-size:12px; color:rgba(193,240,207,0.9); max-width:320px;">{{ appStore.lang === 'it' ? chord.desc_it : chord.desc_en }}</p>
             </div>
           </div>
         </div>
@@ -99,7 +107,7 @@
     <div v-else-if="!diagrams.length" class="jd-empty-state" style="padding:30px;">{{ t('label.no-voicings') }}</div>
     <div v-else class="chord-diagram-grid">
       <div v-for="(d, i) in diagrams" :key="i" class="chord-diagram-wrap">
-        <div v-html="renderSVG(d.frets, d.fingers, d.baseFret)"></div>
+        <div class="chord-svg-container" v-html="renderSVG(d.frets, d.fingers, d.baseFret)"></div>
         <div class="chord-diagram-label">{{ d.label }}</div>
       </div>
     </div>
@@ -225,9 +233,29 @@ onMounted(async () => { await load() })
 
 .chord-diagram-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 20px;
   margin-top: 14px;
+}
+
+.chord-svg-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.chord-svg-container :deep(svg) {
+  width: 100%;
+  height: auto;
+  max-width: 130px;
+}
+
+@media (max-width: 480px) {
+  .chord-diagram-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
 }
 
 .chord-diagram-wrap {
@@ -260,5 +288,33 @@ onMounted(async () => { await load() })
   font-family: var(--jd-mono);
   font-size: 13px;
   text-align: center;
+}
+
+/* 2x2 Grid for Info Card */
+.jd-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .jd-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .jd-grid-cell {
+    border-left: none !important;
+    border-bottom: 1px solid rgba(34,197,94,0.15);
+    padding: 20px 10px !important;
+  }
+  .cell-desc {
+    border-bottom: none !important;
+  }
+  .jd-grid-sep {
+    display: none;
+  }
+  .cell-title div {
+    font-size: 3.2em !important;
+  }
 }
 </style>

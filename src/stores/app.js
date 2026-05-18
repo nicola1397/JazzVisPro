@@ -17,6 +17,7 @@ export const useAppStore = defineStore('app', () => {
   const add11       = ref(false)
   const add13       = ref(false)
   const explorerMode      = ref('normal')
+  const tunerMode        = ref('normal')
   const highlightedIntervals = ref(new Set())
   const manualNotes        = ref(new Set())
   const customScaleNotes   = ref(new Set())
@@ -47,6 +48,7 @@ export const useAppStore = defineStore('app', () => {
     data.add13      = add13.value
     data.hideUnused = hideUnused.value
     data.soloArp    = soloArp.value
+    data.tunerMode  = tunerMode.value
     data.customScale = Array.from(customScaleNotes.value)
     writeStorage('jazzVizData', data)
   }
@@ -63,6 +65,7 @@ export const useAppStore = defineStore('app', () => {
     if (data.add13 !== undefined)      add13.value      = data.add13
     if (data.hideUnused !== undefined) hideUnused.value = data.hideUnused
     if (data.soloArp !== undefined)    soloArp.value    = data.soloArp
+    if (data.tunerMode) tunerMode.value = data.tunerMode
     if (data.customScale) customScaleNotes.value = new Set(data.customScale)
     isLoaded.value = true // Set to true after loading
     return data
@@ -172,6 +175,7 @@ export const useAppStore = defineStore('app', () => {
   function setRoot(v)        { root.value = v;        scheduleSave() }
   function setScaleName(v)   { scaleName.value = v;   scheduleSave() }
   function setTuningName(v)  { tuningName.value = v;  scheduleSave() }
+  function setTunerMode(v)   { tunerMode.value = v;   scheduleSave() }
   function setNotation(v)    { notation.value = v;    scheduleSave() }
   function setAccidental(v)  { accidental.value = v;  scheduleSave() }
   function setCagedShape(v)  { cagedShape.value = v;   scheduleSave() }
@@ -193,13 +197,13 @@ export const useAppStore = defineStore('app', () => {
   return {
     root, scaleName, tuningName, notation, accidental, cagedShape,
     hideUnused, soloArp, add9, add11, add13,
-    explorerMode, highlightedIntervals, manualNotes, customScaleNotes,
+    explorerMode, tunerMode, highlightedIntervals, manualNotes, customScaleNotes,
     lang, sidebarOpen, isLoaded,
     currentTuning, currentScale, rootIdx, currentNotes, cagedHighlightSet,
     loadFromStorage, scheduleSave,
     toggleHighlightInterval, toggleManualNote, toggleCustomNote,
     clearCustomScale, resetFretboard,
-    setRoot, setScaleName, setTuningName, setNotation, setAccidental,
+    setRoot, setScaleName, setTuningName, setTunerMode, setNotation, setAccidental,
     setCagedShape, setExplorerMode, toggleLang, toggleSidebar, closeSidebar,
     scaleQuality, isCagedCompatible,
   }

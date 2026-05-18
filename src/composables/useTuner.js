@@ -28,6 +28,9 @@ export function useTuner(audioStore) {
 
   async function start() {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Il tuo browser o la tua connessione (non HTTPS) non supportano l'accesso al microfono.")
+      }
       tunerStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
       tunerCtx  = new (window.AudioContext || window.webkitAudioContext)()
       analyser  = tunerCtx.createAnalyser()
@@ -89,8 +92,8 @@ export function useTuner(audioStore) {
     const noteIdx = ((semitones + 9) % 12 + 12) % 12
     const octave  = 4 + Math.floor((semitones + 9) / 12)
     const exactFreq = 440 * Math.pow(2, semitones / 12)
-    const cents = Math.round(1200 * Math.log2(freq / exactFreq))
-    return { noteName: NOTES[noteIdx], octave, cents }
+    const cents = 1200 * Math.log2(freq / exactFreq)
+    return { noteName: NOTES[noteIdx], octave, cents: parseFloat(cents.toFixed(2)) }
   }
 
   function _updateDisplay(freq) {
@@ -102,8 +105,8 @@ export function useTuner(audioStore) {
       return
     }
     const { noteName, octave, cents } = _freqToNote(freq)
-    const inTune = Math.abs(cents) < 5
-    const close  = Math.abs(cents) < 15
+    const inTune = Math.abs(cents) < 8
+    const close  = Math.abs(cents) < 20
     tuneColor.value    = inTune ? '#2ecc71' : close ? '#f39c12' : '#e74c3c'
     detectedNote.value  = noteName + octave
     detectedFreq.value  = parseFloat(freq.toFixed(1))
