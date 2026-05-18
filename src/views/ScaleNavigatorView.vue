@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area" style="max-width:860px; margin: 0 auto; width: 100%; padding-top: 20px;">
+    <div class="importer-area jd-container" style="padding-top: 20px;">
       <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('sn.subtitle') }}</p>
 
       <!-- Selectors -->
@@ -15,15 +15,15 @@
 
         <div class="jd-grain" aria-hidden="true"></div>
         <div class="jd-master" style="gap: 20px;">
-          <div class="jd-feel" style="flex: 1; min-width: 100px;">
+          <div class="jd-feel" style="flex: 1; min-width: 100px; width: 100%;">
             <span class="jd-feel-label">{{ t('label.key') }}</span>
-            <select v-model="selectedRoot" class="jd-select">
+            <select v-model="selectedRoot" class="jd-select" style="width: 100%;">
               <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
             </select>
           </div>
-          <div class="jd-feel" style="flex: 2; min-width: 180px;">
+          <div class="jd-feel" style="flex: 2; min-width: 180px; width: 100%;">
             <span class="jd-feel-label">{{ t('sn.chord-type') }}</span>
-            <select v-model="selectedChordType" class="jd-select">
+            <select v-model="selectedChordType" class="jd-select" style="width: 100%;">
               <option value="maj7">maj7</option>
               <option value="m7">m7</option>
               <option value="7">7 (Dominant)</option>

@@ -23,7 +23,7 @@
     <section class="jd-console">
       <div class="jd-grain" aria-hidden="true"></div>
 
-      <div class="jd-master" style="grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+      <div class="jd-master" style="margin-bottom: 24px;">
         <div class="jd-feel">
           <label class="jd-feel-label">{{ t('label.context') }}</label>
           <select v-model="genre" class="jd-feel-select" style="width: 100%;">

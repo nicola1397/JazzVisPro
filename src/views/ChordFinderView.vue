@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area" style="max-width:600px; margin: 0 auto; width: 100%; padding-top: 20px;">
+    <div class="importer-area jd-container" style="padding-top: 20px;">
       <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:20px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('cf.subtitle') }}</p>
 
       <!-- Note selector -->
@@ -18,7 +18,7 @@
           <span class="jd-section-rule"></span>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:12px; justify-items:center; margin-bottom:20px; padding: 10px 0;">
+        <div class="jd-grid-fixed-6" style="justify-items:center; margin-bottom:20px; padding: 10px 0;">
           <button
             v-for="(note, idx) in NOTES"
             :key="note"

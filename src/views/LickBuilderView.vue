@@ -63,7 +63,7 @@
           <span>{{ t('label.lick-tools') }}</span>
           <span class="jd-section-rule"></span>
         </div>
-        <div class="jd-pitch-grid" style="grid-template-columns: 1fr 1fr auto;">
+        <div class="jd-pitch-grid">
           <div class="jd-pitch-group">
             <span class="jd-pitch-label">Edit</span>
             <div class="jd-pitch-keys">

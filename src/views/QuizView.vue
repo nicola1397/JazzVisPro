@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div class="importer-area text-center" style="max-width:720px; margin: 0 auto; width: 100%; padding-top: 20px;">
+    <div class="importer-area jd-container--narrow text-center" style="padding-top: 20px;">
       <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:24px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('quiz.subtitle') }}</p>
 
       <!-- ───── SETUP PHASE ───── -->
@@ -155,7 +155,7 @@
           <div><strong style="color:var(--jd-drums);">{{ sessReview }}</strong> {{ t('srs.statsReview') }}</div>
         </div>
 
-        <div style="display:flex; gap:12px; max-width:440px; margin:0 auto;">
+        <div style="display:flex; gap:12px; max-width:600px; margin:0 auto;">
           <button class="btn-io flex-grow-1" style="height:48px;" @click="gameState = 'setup'">{{ t('quiz.restart') }}</button>
           <button class="btn-reset" style="width:auto; padding:0 30px; height:48px;" @click="resetToDashboard">{{ t('btn.close') }}</button>
         </div>

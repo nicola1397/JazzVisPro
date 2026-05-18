@@ -9,22 +9,19 @@
     @click="onClick"
   >
     <div class="row g-2 w-100 m-0 align-items-center">
-      <div class="col-6 col-sm-auto order-1 d-flex align-items-center">
+      <div class="col-2 col-sm-auto order-1 d-flex align-items-center justify-content-center">
         <span class="step-label">{{ index + 1 }}</span>
       </div>
-      <div class="col-6 col-sm-auto order-2 order-sm-3 d-flex justify-content-end">
-        <button class="btn-remove-step" @click.stop="$emit('remove')"><span>×</span></button>
-      </div>
-      <div class="col-12 col-sm order-3 order-sm-2">
+      <div class="col-8 col-sm order-3 order-sm-2">
         <div class="row gx-2 gy-2 align-items-center">
-          <div class="col-12 col-sm-2 col-lg-1">
+          <div class="col-4 col-sm-2 col-lg-1">
             <div class="nav-group"><label>{{ t('label.key') }}</label>
               <select :value="step.root" @change="$emit('update','root',$event.target.value)">
                 <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
               </select>
             </div>
           </div>
-          <div class="col-12 col-sm-10 col-lg-4">
+          <div class="col-8 col-sm-10 col-lg-4">
             <div class="nav-group"><label>{{ t('label.scale') }}</label>
               <select :value="step.scale" @change="$emit('update','scale',$event.target.value)">
                 <option v-for="s in scaleKeys" :key="s" :value="s">{{ s }}</option>
@@ -70,6 +67,9 @@
             </div>
           </div>
         </div>
+      </div>
+      <div class="col-2 col-sm-auto order-2 order-sm-3 d-flex justify-content-end">
+        <button class="btn-remove-step" @click.stop="$emit('remove')"><span>×</span></button>
       </div>
     </div>
   </div>

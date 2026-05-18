@@ -9,7 +9,7 @@
 
     <p class="jd-intro">{{ t('tj.subtitle') }}</p>
 
-    <div class="teoria-container">
+    <div class="teoria-container jd-container">
 
       <!-- 1. I 12 Intervalli -->
       <div class="teoria-card" :class="{ open: open[0] }">
