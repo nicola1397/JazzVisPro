@@ -45,7 +45,7 @@ export default {
   'gl.grade-label-short':'FIND GRADE',
   'snap.title':'Snapshots','btn.save-snapshot':'Save Snapshot','btn.clear-snapshots':'Clear All',
   'btn.load':'Load','btn.delete':'Delete','snap.empty':'No snapshots saved.',
-  'snap.confirm-clear':'Clear all snapshots?',
+  'snap.confirm-clear':'Clear all snapshots?','snap.saved':'Saved',
   'nf.title':'Note Finder','nf.instructions':'Train fretboard memorization. Game controls are above the fretboard.',
   'nf.how-title':'How it works:',
   'nf.how-desc':'You will be asked to find a note on the fretboard. Click any correct position to score.',

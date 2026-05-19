@@ -45,7 +45,7 @@ export default {
   'gl.grade-label-short':'TROVA GRADO',
   'snap.title':'Snapshots','btn.save-snapshot':'Salva Snapshot','btn.clear-snapshots':'Cancella Tutti',
   'btn.load':'Carica','btn.delete':'Elimina','snap.empty':'Nessuno snapshot salvato.',
-  'snap.confirm-clear':'Cancellare tutti gli snapshot?',
+  'snap.confirm-clear':'Cancellare tutti gli snapshot?','snap.saved':'Salvato',
   'nf.title':'Note Finder','nf.instructions':'Allena la memorizzazione delle note sul manico.',
   'nf.how-title':'Come funziona:',
   'nf.how-desc':'Ti verrà chiesta una nota da trovare sul manico. Clicca qualsiasi posizione corretta per segnare un punto.',

@@ -11,24 +11,27 @@
       <div class="jd-grain" aria-hidden="true"></div>
 
       <div class="explorer-controls">
-        
+
         <!-- Row 1: Mode Switches (Centered Console) -->
         <div class="explorer-section explorer-section--compact explorer-row--center">
           <div class="nav-group">
             <span class="explorer-label">{{ t('label.display-mode') }}</span>
             <div class="jd-modes">
               <label class="jd-mode" :class="{ on: appStore.explorerMode === 'normal' }">
-                <input type="radio" v-model="appStore.explorerMode" value="normal" @change="appStore.setExplorerMode('normal')" class="hidden-radio">
+                <input type="radio" v-model="appStore.explorerMode" value="normal"
+                  @change="appStore.setExplorerMode('normal')" class="hidden-radio">
                 <span class="jd-mode-dot" aria-hidden="true"></span>
                 <span class="jd-mode-text">{{ t('opt.normal') }}</span>
               </label>
               <label class="jd-mode" :class="{ on: appStore.explorerMode === 'highlight' }">
-                <input type="radio" v-model="appStore.explorerMode" value="highlight" @change="appStore.setExplorerMode('highlight')" class="hidden-radio">
+                <input type="radio" v-model="appStore.explorerMode" value="highlight"
+                  @change="appStore.setExplorerMode('highlight')" class="hidden-radio">
                 <span class="jd-mode-dot" aria-hidden="true"></span>
                 <span class="jd-mode-text">{{ t('opt.highlight') }}</span>
               </label>
               <label class="jd-mode" :class="{ on: appStore.explorerMode === 'custom' }">
-                <input type="radio" v-model="appStore.explorerMode" value="custom" @change="appStore.setExplorerMode('custom')" class="hidden-radio">
+                <input type="radio" v-model="appStore.explorerMode" value="custom"
+                  @change="appStore.setExplorerMode('custom')" class="hidden-radio">
                 <span class="jd-mode-dot" aria-hidden="true"></span>
                 <span class="jd-mode-text">{{ t('opt.custom') }}</span>
               </label>
@@ -39,6 +42,14 @@
         <!-- Master Dashboard: Selectors & Secondary -->
         <div class="explorer-section">
           <div class="explorer-dashboard">
+            <!-- Col: Tuning -->
+            <div class="nav-group span-3 span-m-4 span-s-12">
+              <span class="explorer-label">{{ t('label.tuning') }}</span>
+              <select class="jd-select" :value="appStore.tuningName"
+                @change="appStore.setTuningName($event.target.value)">
+                <option v-for="name in tuningKeys" :key="name" :value="name">{{ name }}</option>
+              </select>
+            </div>
             <!-- Col: Key -->
             <div class="nav-group span-2 span-m-3 span-s-12">
               <span class="explorer-label">{{ t('label.key') }}</span>
@@ -46,17 +57,11 @@
                 <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
               </select>
             </div>
-            <!-- Col: Tuning -->
-            <div class="nav-group span-3 span-m-4 span-s-12">
-              <span class="explorer-label">{{ t('label.tuning') }}</span>
-              <select class="jd-select" :value="appStore.tuningName" @change="appStore.setTuningName($event.target.value)">
-                <option v-for="name in tuningKeys" :key="name" :value="name">{{ name }}</option>
-              </select>
-            </div>
             <!-- Col: Scale -->
             <div class="nav-group span-7 span-m-5 span-s-12">
               <span class="explorer-label">{{ t('label.scale') }}</span>
-              <select class="jd-select" :value="appStore.scaleName" @change="appStore.setScaleName($event.target.value)">
+              <select class="jd-select" :value="appStore.scaleName"
+                @change="appStore.setScaleName($event.target.value)">
                 <option v-for="name in scaleKeys" :key="name" :value="name">{{ name }}</option>
               </select>
             </div>
@@ -67,8 +72,10 @@
             <div class="nav-group span-3 span-m-4 span-s-12">
               <span class="explorer-label">{{ t('label.notation') }}</span>
               <div class="pill-group">
-                <button class="pill-btn" :class="{ active: appStore.notation === 'interval' }" @click="appStore.setNotation('interval')">{{ t('opt.intervals') }}</button>
-                <button class="pill-btn" :class="{ active: appStore.notation === 'note' }" @click="appStore.setNotation('note')">{{ t('opt.notes') }}</button>
+                <button class="pill-btn" :class="{ active: appStore.notation === 'interval' }"
+                  @click="appStore.setNotation('interval')">{{ t('opt.intervals') }}</button>
+                <button class="pill-btn" :class="{ active: appStore.notation === 'note' }"
+                  @click="appStore.setNotation('note')">{{ t('opt.notes') }}</button>
               </div>
             </div>
 
@@ -76,8 +83,10 @@
             <div class="nav-group span-2 span-m-3 span-s-12">
               <span class="explorer-label">{{ t('label.accidentals') }}</span>
               <div class="pill-group">
-                <button class="pill-btn" :class="{ active: appStore.accidental === '#' }" @click="appStore.setAccidental('#')">#</button>
-                <button class="pill-btn" :class="{ active: appStore.accidental === 'b' }" @click="appStore.setAccidental('b')">♭</button>
+                <button class="pill-btn" :class="{ active: appStore.accidental === '#' }"
+                  @click="appStore.setAccidental('#')">#</button>
+                <button class="pill-btn" :class="{ active: appStore.accidental === 'b' }"
+                  @click="appStore.setAccidental('b')">♭</button>
               </div>
             </div>
 
@@ -86,8 +95,9 @@
               <span class="explorer-label">{{ t('label.caged-shape') }}</span>
               <div class="pill-group" :class="{ disabled: !appStore.isCagedCompatible }">
                 <template v-if="appStore.isCagedCompatible">
-                  <button class="pill-btn" :class="{ active: appStore.cagedShape === 'none' }" @click="appStore.setCagedShape('none')">{{ t('opt.none') }}</button>
-                  <button v-for="s in ['C','A','G','E','D']" :key="s" class="pill-btn" 
+                  <button class="pill-btn" :class="{ active: appStore.cagedShape === 'none' }"
+                    @click="appStore.setCagedShape('none')">{{ t('opt.none') }}</button>
+                  <button v-for="s in ['C', 'A', 'G', 'E', 'D']" :key="s" class="pill-btn"
                     :class="{ active: appStore.cagedShape === s }" @click="appStore.setCagedShape(s)">
                     {{ s }} <span class="pill-btn-sub">{{ appStore.scaleQuality === 'minor' ? 'm' : '' }}</span>
                   </button>
@@ -109,11 +119,13 @@
                   <span class="jd-mode-dot"></span><span class="jd-mode-text">9</span>
                 </label>
                 <label class="jd-mode" :class="{ on: appStore.add11 }">
-                  <input type="checkbox" v-model="appStore.add11" @change="appStore.scheduleSave()" class="hidden-radio">
+                  <input type="checkbox" v-model="appStore.add11" @change="appStore.scheduleSave()"
+                    class="hidden-radio">
                   <span class="jd-mode-dot"></span><span class="jd-mode-text">11</span>
                 </label>
                 <label class="jd-mode" :class="{ on: appStore.add13 }">
-                  <input type="checkbox" v-model="appStore.add13" @change="appStore.scheduleSave()" class="hidden-radio">
+                  <input type="checkbox" v-model="appStore.add13" @change="appStore.scheduleSave()"
+                    class="hidden-radio">
                   <span class="jd-mode-dot"></span><span class="jd-mode-text">13</span>
                 </label>
               </div>
@@ -123,19 +135,25 @@
               <span class="explorer-label mini">{{ t('label.view') }}</span>
               <div class="jd-modes">
                 <label class="jd-mode" :class="{ on: appStore.hideUnused }">
-                  <input type="checkbox" v-model="appStore.hideUnused" @change="appStore.scheduleSave()" class="hidden-radio">
+                  <input type="checkbox" v-model="appStore.hideUnused" @change="appStore.scheduleSave()"
+                    class="hidden-radio">
                   <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('opt.hide') }}</span>
                 </label>
                 <label class="jd-mode" :class="{ on: appStore.soloArp }" style="--engine-color: var(--jd-amber)">
-                  <input type="checkbox" v-model="appStore.soloArp" @change="appStore.scheduleSave()" class="hidden-radio">
+                  <input type="checkbox" v-model="appStore.soloArp" @change="appStore.scheduleSave()"
+                    class="hidden-radio">
                   <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('opt.arp') }}</span>
                 </label>
               </div>
             </div>
 
-            <button class="jd-toolbtn jd-toolbtn--reset" @click="appStore.resetFretboard()">
-              {{ t('btn.reset-display') }}
-            </button>
+            <div class="action-group action-group--end">
+              <button class="jd-toolbtn jd-toolbtn--reset" @click="appStore.resetFretboard()">
+                {{ t('btn.reset-display') }}
+              </button>
+              <button class="jd-toolbtn" :class="{ 'jd-toolbtn--saved': snapshotSaved }" @click="createSnapshot">{{
+                snapshotSaved ? '✓ ' + t('snap.saved') : t('btn.save-snapshot') }}</button>
+            </div>
           </div>
         </div>
       </div>
@@ -144,14 +162,20 @@
 
       <div v-if="appStore.explorerMode === 'custom'" class="jd-toolbar" style="margin-top: 10px;">
         <button class="jd-iconbtn" @click="exportCustomScale" :title="t('btn.export-json')" aria-label="Export JSON">
-          <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
+          </svg>
         </button>
-        <button class="jd-iconbtn" @click="$refs.importFile.click()" :title="t('btn.import-json')" aria-label="Import JSON">
-          <svg viewBox="0 0 24 24"><path d="M19 13h-4V7H9v6H5l7 7 7-7zM5 4v2h14V4H5z" transform="rotate(180 12 12)"/></svg>
+        <button class="jd-iconbtn" @click="$refs.importFile.click()" :title="t('btn.import-json')"
+          aria-label="Import JSON">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 13h-4V7H9v6H5l7 7 7-7zM5 4v2h14V4H5z" transform="rotate(180 12 12)" />
+          </svg>
         </button>
         <input ref="importFile" type="file" style="display:none" accept=".json" @change="importCustomScale">
         <span class="jd-toolbar-sep"></span>
-        <button class="jd-toolbtn jd-toolbtn--reset" @click="appStore.clearCustomScale()">{{ t('btn.clear-all-notes') }}</button>
+        <button class="jd-toolbtn jd-toolbtn--reset" @click="appStore.clearCustomScale()">{{ t('btn.clear-all-notes')
+          }}</button>
       </div>
     </section>
 
@@ -164,20 +188,39 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAppStore } from '../stores/app.js'
-import { useI18n }     from '../composables/useI18n.js'
+import { useI18n } from '../composables/useI18n.js'
 import { NOTES, SCALES, TUNINGS } from '../utils/theory.js'
 
-const appStore   = useAppStore()
-const { t }      = useI18n()
+const appStore = useAppStore()
+const { t } = useI18n()
+
+const snapshotSaved = ref(false)
 
 onMounted(() => {
   console.log('ExplorerView mounted. Notation:', appStore.notation, 'isCagedCompatible:', appStore.isCagedCompatible)
 })
 
 const tuningKeys = computed(() => Object.keys(TUNINGS))
-const scaleKeys  = computed(() => Object.keys(SCALES))
+const scaleKeys = computed(() => Object.keys(SCALES))
+
+function createSnapshot() {
+  const snap = {
+    root: appStore.root,
+    scale: appStore.scaleName,
+    label: appStore.root + ' ' + appStore.scaleName,
+    manualNotes: Array.from(appStore.manualNotes),
+    customScale: Array.from(appStore.customScaleNotes),
+    date: new Date().toLocaleString()
+  }
+  const saved = localStorage.getItem('jv_snapshots')
+  const list = saved ? JSON.parse(saved) : []
+  list.unshift(snap)
+  localStorage.setItem('jv_snapshots', JSON.stringify(list))
+  snapshotSaved.value = true
+  setTimeout(() => { snapshotSaved.value = false }, 1500)
+}
 
 const modeDesc = computed(() => {
   const map = { normal: t('mode.normal'), highlight: t('mode.highlight'), custom: t('mode.custom') }
@@ -187,8 +230,8 @@ const modeDesc = computed(() => {
 function exportCustomScale() {
   const data = { customScale: Array.from(appStore.customScaleNotes) }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
   a.href = url; a.download = 'custom-scale.json'; a.click()
   URL.revokeObjectURL(url)
 }
@@ -243,22 +286,53 @@ function importCustomScale(event) {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 16px;
-  align-items: end;
+  align-items: start;
 }
 
-.span-2 { grid-column: span 2; }
-.span-3 { grid-column: span 3; }
-.span-4 { grid-column: span 4; }
-.span-5 { grid-column: span 5; }
-.span-7 { grid-column: span 7; }
-.span-12 { grid-column: span 12; }
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-3 {
+  grid-column: span 3;
+}
+
+.span-4 {
+  grid-column: span 4;
+}
+
+.span-5 {
+  grid-column: span 5;
+}
+
+.span-7 {
+  grid-column: span 7;
+}
+
+.span-12 {
+  grid-column: span 12;
+}
 
 @media (max-width: 1024px) {
-  .span-m-3 { grid-column: span 3; }
-  .span-m-4 { grid-column: span 4; }
-  .span-m-5 { grid-column: span 5; }
-  .span-m-6 { grid-column: span 6; }
-  .span-m-12 { grid-column: span 12; }
+  .span-m-3 {
+    grid-column: span 3;
+  }
+
+  .span-m-4 {
+    grid-column: span 4;
+  }
+
+  .span-m-5 {
+    grid-column: span 5;
+  }
+
+  .span-m-6 {
+    grid-column: span 6;
+  }
+
+  .span-m-12 {
+    grid-column: span 12;
+  }
 }
 
 .explorer-label {
@@ -351,8 +425,16 @@ function importCustomScale(event) {
   white-space: nowrap;
 }
 
-.pill-btn:hover { background: rgba(255, 214, 10, 0.05); color: var(--jd-text); }
-.pill-btn.active { background: var(--jd-amber); color: var(--jd-bg-deep); }
+.pill-btn:hover {
+  background: rgba(255, 214, 10, 0.05);
+  color: var(--jd-text);
+}
+
+.pill-btn.active {
+  background: var(--jd-amber);
+  color: var(--jd-bg-deep);
+}
+
 .pill-btn-sub {
   font-size: 0.8em;
   opacity: 0.7;
@@ -364,6 +446,7 @@ function importCustomScale(event) {
   border-color: rgba(255, 255, 255, 0.05);
   cursor: not-allowed;
   justify-content: center;
+  align-items: center;
 }
 
 .pill-msg {
@@ -376,23 +459,51 @@ function importCustomScale(event) {
   align-items: center;
 }
 
+.action-group--end {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.jd-toolbtn--saved {
+  background: rgba(46, 204, 113, 0.12);
+  border-color: #2ecc71;
+  color: #2ecc71;
+  transition: all 0.2s;
+}
+
 @media (max-width: 768px) {
   .explorer-action-strip {
     gap: 16px;
   }
-  .jd-toolbtn--reset { width: 100%; margin-top: 10px; }
+
+  .jd-toolbtn--reset {
+    width: 100%;
+    margin-top: 10px;
+  }
 }
 
 @media (max-width: 600px) {
-  .span-s-12 { grid-column: span 12; }
-  .hide-mobile { display: none; }
+  .span-s-12 {
+    grid-column: span 12;
+  }
+
+  .hide-mobile {
+    display: none;
+  }
+
   .explorer-action-strip {
     flex-direction: column;
     align-items: stretch;
   }
+
   .action-group {
     justify-content: space-between;
   }
-  .jd-mode { flex: 1; }
+
+  .jd-mode {
+    flex: 1;
+  }
 }
 </style>
