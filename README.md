@@ -29,7 +29,7 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Player (Play Along)**: Riproduttore di progressioni con **accompagnamento intelligente** (Walking Bass e Swing Drums generati algoritmicamente in tempo reale).
 - **Sui Cambi**: Base con walking bass, batteria swing e accordi su qualsiasi brano del Real Book. Esercizi a tempo: note guida (terza/settima su ogni accordo, anche tenute), arpeggi, note di approccio (cromatiche ed enclosure) e assolo libero con analisi di ogni nota (nota dell'accordo, tensione, nota fuori).
 - **Lick Builder**: Crea i tuoi fraseggi nota dopo nota, esportali in tablatura e studiali con lo **Speed Trainer** integrato.
-- **Real Book**: Un database di standard jazz con visualizzazione degli accordi e integrazione diretta con il Player.
+- **Real Book**: Un database di standard jazz con visualizzazione degli accordi e integrazione diretta con il Player. Per ogni brano c'è un percorso di studio in cinque tappe (suonarci sopra, note guida, arpeggi, note di approccio, assolo libero) che si spuntano da sole quando completi bene l'esercizio.
 
 ### 🧠 Armonia e Teoria
 - **Scale Calculator**: Analizza una serie di note o un contesto armonico per suggerire le scale più appropriate.

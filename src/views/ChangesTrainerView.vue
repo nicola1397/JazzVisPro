@@ -148,6 +148,7 @@ import { useGuitarInput, midiToName } from '../composables/useGuitarInput.js'
 import { useBackingTrack } from '../composables/useBackingTrack.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { STANDARDS, parseChart, classifyNote } from '../utils/standards.js'
+import { setStepDone } from '../utils/studyPath.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
 import GuitarInputPanel from '../components/shared/GuitarInputPanel.vue'
 
@@ -409,11 +410,17 @@ function stopRun() {
 function finishRun() {
   checkTimers.forEach(clearTimeout); checkTimers = []
   clearBoard()
+  // A good run ticks the step of this tune's study path in the Real Book.
   if (settings.mode === 'free') {
     statusText.value = soloTotals.value.total ? t('ch.done-free') : t('ch.status')
+    if (soloTotals.value.total >= 16) setStepDone(settings.song, 'free')
   } else {
     const { ok, total } = judged.value
     statusText.value = total ? t('ch.done').replace('{0}', ok).replace('{1}', total) : t('ch.status')
+    if (total >= bars.value.length && ok / total >= 0.8) {
+      setStepDone(settings.song, settings.mode)
+      statusText.value += ' ' + t('ch.step-done')
+    }
   }
 }
 

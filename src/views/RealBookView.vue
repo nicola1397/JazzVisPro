@@ -50,9 +50,27 @@
             </div>
             <div class="rb-standard-chords">{{ s.chords }}</div>
           </div>
-          <button class="btn-add-step rb-load-btn" @click="loadStandard(s)">
-            {{ t('rb.load-btn') }}
-          </button>
+          <div class="rb-actions">
+            <button class="jd-toolbtn rb-study-btn" :aria-expanded="openStudy === s.title" @click="openStudy = openStudy === s.title ? '' : s.title">
+              {{ t('rb.study') }} · {{ doneCount(s.title) }}/{{ STUDY_STEPS.length }}
+            </button>
+            <button class="btn-add-step rb-load-btn" @click="loadStandard(s)">
+              {{ t('rb.load-btn') }}
+            </button>
+          </div>
+          <ol v-if="openStudy === s.title" class="rb-study">
+            <li v-for="(step, i) in STUDY_STEPS" :key="step" class="rb-step" :class="{ done: stepsDone(s.title)[step] }">
+              <label class="rb-step-check">
+                <input type="checkbox" :checked="!!stepsDone(s.title)[step]" @change="setStepDone(s.title, step, $event.target.checked)">
+                <span class="rb-step-n">{{ i + 1 }}</span>
+              </label>
+              <div class="rb-step-text">
+                <strong>{{ t(`rb.step-${step}`) }}</strong>
+                <span>{{ t(`rb.step-${step}-desc`) }}</span>
+              </div>
+              <button class="jd-toolbtn" @click="goStep(s, step)">{{ t('rb.step-go') }}</button>
+            </li>
+          </ol>
         </div>
       </div>
 
@@ -66,6 +84,7 @@ import { useRouter } from 'vue-router'
 import { usePlaybackStore } from '../stores/playback.js'
 import { useI18n } from '../composables/useI18n.js'
 import { STANDARDS } from '../utils/standards.js'
+import { STUDY_STEPS, stepsDone, setStepDone } from '../utils/studyPath.js'
 
 const router = useRouter()
 const pb = usePlaybackStore()
@@ -73,6 +92,21 @@ const { t } = useI18n()
 
 const CATEGORIES = ['All', 'Standard', 'Bebop', 'Blues', 'Latin', 'Modal', 'Ballad']
 
+
+const openStudy = ref('')
+
+function doneCount(title) {
+  return STUDY_STEPS.filter(step => stepsDone(title)[step]).length
+}
+
+// Step 1 opens the Player; the others open Over the Changes on this tune.
+function goStep(s, step) {
+  if (step === 'listen') {
+    setStepDone(s.title, 'listen')
+    return loadStandard(s)
+  }
+  router.push({ path: '/changes-trainer', query: { song: s.title, mode: step } })
+}
 
 const searchQuery = ref('')
 const activeCategory = ref('All')
@@ -107,3 +141,18 @@ function loadStandard(s) {
   router.push('/player')
 }
 </script>
+
+<style scoped>
+.rb-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rb-study-btn { white-space: nowrap; }
+.rb-study { flex-basis: 100%; list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rb-step { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #2a2620; border-radius: 10px; background: rgba(0, 0, 0, 0.2); }
+.rb-step.done { border-color: rgba(46, 204, 113, 0.4); }
+.rb-step-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.rb-step-check input { width: 16px; height: 16px; accent-color: var(--jd-green); }
+.rb-step-n { font-family: var(--jd-mono); font-size: 11px; color: var(--jd-muted); }
+.rb-step-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rb-step-text strong { font-size: 13px; color: var(--jd-text); }
+.rb-step-text span { font-size: 12px; color: var(--jd-text-soft); }
+.rb-step.done .rb-step-text strong { color: var(--jd-green); }
+</style>
