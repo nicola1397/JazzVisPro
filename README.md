@@ -18,7 +18,8 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Groove Trainer**: Metronomo evoluto con supporto per **Poliritmi** (due pattern simultanei) e **Ghost Notes** (dinamiche accentate o piano).
 - **Note Finder**: Un gioco interattivo per memorizzare la posizione delle note sulla tastiera.
 - **Triadi e Rivolti**: Trova triadi maggiori, minori, diminuite, aumentate e sus, singoli rivolti in posizione stretta o il ciclo dei tre rivolti lungo il manico, con le diteggiature sui gruppi di tre corde.
-- **Suona con la chitarra**: Negli esercizi sul manico (Note Finder, Interval Learner, Triadi e Rivolti) puoi rispondere suonando la chitarra collegata (scheda audio o microfono) invece di cliccare, con avanzamento automatico alla domanda successiva.
+- **Settime e Drop**: Accordi di settima (maj7, 7, m7, m7b5, dim7, m(maj7), 7sus4) in posizione stretta, drop 2 e drop 3, con la nota scelta al basso e il ciclo dei rivolti lungo il manico.
+- **Suona con la chitarra**: Negli esercizi sul manico (Note Finder, Interval Learner, Triadi e Rivolti, Settime e Drop) puoi rispondere suonando la chitarra collegata (scheda audio o microfono) invece di cliccare, con avanzamento automatico alla domanda successiva.
 - **Grade/Interval Learner**: Strumenti specifici per visualizzare e interiorizzare i gradi delle scale e gli intervalli (anche in modalità discendente).
 
 ### 🎼 Improvvisazione e Composizione

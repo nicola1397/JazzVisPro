@@ -9,6 +9,7 @@ const WINDOW_SEC      = 0.043  // ~2048 samples at 48 kHz: 3 periods of the lowe
 const RMS_WINDOW_SEC  = 0.021
 const HARMONICS       = 6
 const FUNDAMENTAL_MIN = 0.1    // a real note has energy at its own fundamental
+const SEMITONE        = 2 ** (1 / 12)
 const CANDIDATE_MAX   = 0.6    // YIN dips worth checking when several notes ring together
 const MIXTURE_MAX     = 0.35   // deepest dip needed to look for a note when no clean period exists
 
@@ -50,7 +51,10 @@ function makeSpectrum(buf, sampleRate) {
     const max = Math.max(...mags)
     let score = 0
     mags.forEach((m, i) => { score += m / (i + 1) })   // favours the lowest real fundamental
-    return { real: max > 0 && mags[0] >= FUNDAMENTAL_MIN * max, score }
+    // Low notes a semitone apart blur together: energy that peaks on a neighbour
+    // (a string still ringing) is not this note's fundamental.
+    const ownPeak = mags[0] >= Math.max(magnitude(f * SEMITONE), magnitude(f / SEMITONE))
+    return { real: max > 0 && mags[0] >= FUNDAMENTAL_MIN * max && ownPeak, score }
   }
 }
 

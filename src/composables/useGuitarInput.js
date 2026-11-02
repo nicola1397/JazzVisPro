@@ -211,7 +211,8 @@ export function useGuitarInput({ onNote } = {}) {
 
     if (midi === candidate) candidateCount++
     else { candidate = midi; candidateCount = 1 }
-    if (candidateCount < STABLE_FRAMES) return
+    // Report once, when the note becomes stable (again after a new attack).
+    if (candidateCount !== STABLE_FRAMES) return
 
     // Octave jumps of a ringing note are detector noise, not a new note.
     const pc = ((midi % 12) + 12) % 12
