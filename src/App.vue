@@ -69,7 +69,7 @@ watch(() => appStore.lang, lang => {
 
 function handleNoteClick({ noteIndex, midiNote, stringIndex, fretIndex, element }) {
   const path = route.path
-  if (['/interval-learner', '/note-finder', '/lick-builder'].includes(path)) {
+  if (['/interval-learner', '/note-finder', '/lick-builder', '/triad-trainer'].includes(path)) {
     window.dispatchEvent(new CustomEvent('fretboard:noteClick', {
       detail: { noteIndex, midiNote, stringIndex, fretIndex, element }
     }))

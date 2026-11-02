@@ -28,6 +28,7 @@
       <RouterLink class="nav-item" to="/interval-learner"      @click="appStore.closeSidebar()">{{ t('nav.interval-learner') }}</RouterLink>
       <RouterLink class="nav-item" to="/grade-learner"         @click="appStore.closeSidebar()">{{ t('nav.grade-learner') }}</RouterLink>
       <RouterLink class="nav-item" to="/note-finder"           @click="appStore.closeSidebar()">{{ t('nav.note-finder') }}</RouterLink>
+      <RouterLink class="nav-item" to="/triad-trainer"         @click="appStore.closeSidebar()">{{ t('nav.triad-trainer') }}</RouterLink>
       <RouterLink class="nav-item" to="/quiz"                  @click="appStore.closeSidebar()">{{ t('nav.quiz') }}</RouterLink>
       <RouterLink class="nav-item" to="/functional-harmony"    @click="appStore.closeSidebar()">{{ t('nav.functional-harmony') }}</RouterLink>
       <RouterLink class="nav-item" to="/ear-training"          @click="appStore.closeSidebar()">{{ t('nav.ear-training') }}</RouterLink>

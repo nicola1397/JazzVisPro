@@ -13,7 +13,6 @@ const MIN_FREQ       = 65     // a bit below D2 (73 Hz), the lowest open string 
 const MAX_FREQ       = 1400   // a bit above E6 (1319 Hz), fret 24 of the high E string
 const GATE_ON        = 0.01   // RMS needed to start listening to a note
 const GATE_OFF       = 0.005  // RMS below which a ringing note is fading out
-const MIN_CLARITY    = 0.85   // YIN confidence needed to trust a pitch
 const STABLE_FRAMES  = 3      // consecutive frames on the same pitch before reporting it
 const SILENCE_FRAMES = 5      // quiet frames after which the current note is over
 const ONSET_RATIO    = 2      // energy jump that counts as a new pick attack
@@ -171,7 +170,7 @@ export function useGuitarInput({ onNote } = {}) {
     )
   }
 
-  function onFrame({ freq, clarity, rms }) {
+  function onFrame({ freq, rms }) {
     busy = false
     if (!listening.value) return
     level.value = Math.max(rms, level.value * 0.85)
@@ -199,7 +198,8 @@ export function useGuitarInput({ onNote } = {}) {
       heardPcs.clear()
     }
 
-    if (!open || freq < MIN_FREQ || freq > MAX_FREQ || clarity < MIN_CLARITY) {
+    // The worker reports -1 unless it trusts the pitch.
+    if (!open || freq < MIN_FREQ || freq > MAX_FREQ) {
       candidateCount = 0
       if (!sounding) liveMidi.value = null
       return
@@ -228,6 +228,13 @@ export function useGuitarInput({ onNote } = {}) {
     if (!listening.value) return
     const pc = pitchClass === null ? null : ((pitchClass % 12) + 12) % 12
     holds.push({ pc, until: performance.now() + ms })
+  }
+
+  // An exercise that expects this pitch class again (the same note played twice
+  // in a row, e.g. across two inversions) lets it be reported even if the string
+  // is re-picked too softly to be heard as a new attack.
+  function allowRepeat(pitchClass) {
+    heardPcs.delete(((pitchClass % 12) + 12) % 12)
   }
 
   function toggle() {
@@ -259,7 +266,7 @@ export function useGuitarInput({ onNote } = {}) {
 
   return reactive({
     enabled, listening, suspended, error, devices, deviceId, autoNext, level, liveMidi,
-    toggle, toggleAutoNext, setDevice, holdOff,
+    toggle, toggleAutoNext, setDevice, holdOff, allowRepeat,
   })
 }
 

@@ -17,6 +17,8 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Functional Harmony Trainer**: Nuovo modulo interattivo per allenare il riconoscimento dei gradi romani e delle funzioni tonali (II-V-I, ecc.).
 - **Groove Trainer**: Metronomo evoluto con supporto per **Poliritmi** (due pattern simultanei) e **Ghost Notes** (dinamiche accentate o piano).
 - **Note Finder**: Un gioco interattivo per memorizzare la posizione delle note sulla tastiera.
+- **Triadi e Rivolti**: Trova triadi maggiori, minori, diminuite, aumentate e sus, singoli rivolti in posizione stretta o il ciclo dei tre rivolti lungo il manico, con le diteggiature sui gruppi di tre corde.
+- **Suona con la chitarra**: Negli esercizi sul manico (Note Finder, Interval Learner, Triadi e Rivolti) puoi rispondere suonando la chitarra collegata (scheda audio o microfono) invece di cliccare, con avanzamento automatico alla domanda successiva.
 - **Grade/Interval Learner**: Strumenti specifici per visualizzare e interiorizzare i gradi delle scale e gli intervalli (anche in modalità discendente).
 
 ### 🎼 Improvvisazione e Composizione
