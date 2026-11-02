@@ -12,176 +12,156 @@
 
       <section class="jd-console" style="padding: 25px; margin-bottom: 25px;">
         <div class="jd-grain" aria-hidden="true"></div>
-        
+
         <div class="jd-section-label">
           <span>{{ t('quiz.difficulty') }}</span>
           <span class="jd-section-rule"></span>
         </div>
 
-        <!-- Difficulty Selector -->
-        <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:20px;">
-          <button
-            v-for="d in ['easy', 'medium', 'hard']"
-            :key="d"
-            class="et-diff-btn"
-            :class="{ active: difficulty === d }"
-            @click="setDifficulty(d)"
-          >{{ t('et.' + d) }}</button>
+        <div class="fh-levels">
+          <button v-for="d in ['easy', 'medium', 'hard']" :key="d" class="et-diff-btn"
+            :class="{ active: difficulty === d }" @click="setDifficulty(d)">{{ t('et.' + d) }}</button>
         </div>
 
         <div class="jd-rule" aria-hidden="true"></div>
 
-        <!-- Score & Streak -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; font-family: var(--jd-mono); font-size: 0.8em; letter-spacing: 1px;">
+        <div class="fh-score">
           <div style="color: var(--jd-text-soft);">{{ t('label.score') }}: <strong style="color: var(--jd-text);">{{ score }} / {{ total }}</strong></div>
           <div style="color: var(--jd-amber);">{{ t('label.streak') }}: <strong>{{ streak }}</strong></div>
         </div>
 
-        <!-- Progression Display -->
-        <div class="jd-steps" style="padding: 20px; margin-bottom: 20px; background: var(--jd-bg-deep); border-radius: 12px; border: 1px solid var(--jd-line);">
-          <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <div
-              v-for="(chord, idx) in currentProgression"
-              :key="idx"
-              class="progression-step"
-              :class="{ 'active-step': idx === targetIdx }"
-              style="padding: 12px 20px; min-width: 80px; text-align: center;"
-            >
-              <div style="font-size:1.4em; font-weight:700; color:var(--jd-text);">{{ chord.name }}</div>
-              <div v-if="answered" style="font-size:0.8em; color:var(--jd-amber); margin-top:4px; font-weight:700; font-family: var(--jd-mono);">{{ chord.degree }}</div>
-              <div v-else-if="idx === targetIdx" style="font-size:0.8em; color:var(--jd-amber); margin-top:4px; font-family: var(--jd-mono);">?</div>
+        <!-- Key, always stated: numerals only mean something relative to a tonic -->
+        <div v-if="q" class="fh-key">
+          <span class="fh-key-label">{{ t('fh.key') }}</span>
+          <strong>{{ q.tonic }} {{ q.mode === 'major' ? t('fh.major') : t('fh.minor') }}</strong>
+        </div>
+
+        <!-- Progression -->
+        <div class="fh-prog">
+          <div v-if="q" class="fh-chords">
+            <div v-for="(chord, idx) in q.chords" :key="idx" class="progression-step fh-chord"
+              :class="{ 'active-step': idx === q.targetIdx, playing: idx === playingIdx }">
+              <div class="fh-chord-name">{{ chord.name }}</div>
+              <div v-if="answered" class="fh-chord-deg">{{ chord.id }}</div>
+              <div v-if="answered" class="fh-chord-tag">{{ tagOf(chord) }}</div>
+              <div v-else-if="idx === q.targetIdx" class="fh-chord-deg">?</div>
             </div>
           </div>
-          <div v-if="!active" style="margin-top:20px; color:var(--jd-muted); font-style:italic; font-family: var(--jd-mono); font-size: 0.8em;">
-            {{ t('fh.ready') }}
-          </div>
+          <div v-else class="fh-ready">{{ t('fh.ready') }}</div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="jd-toolbar" style="justify-content: center; margin-bottom: 25px;">
-          <button class="jd-toolbtn" style="min-width:180px;" @click="generateNew" :disabled="active && !answered">
+        <div class="jd-toolbar fh-actions">
+          <button class="jd-toolbtn" style="min-width:160px;" @click="generateNew" :disabled="!!q && !answered">
             {{ answered ? t('fh.next') : t('fh.start') }}
           </button>
-          <button class="jd-toolbtn jd-toolbtn--reset" style="width:auto; padding:0 20px;" @click="resetGame">{{ t('btn.reset-game') }}</button>
+          <button class="jd-toolbtn" :disabled="!q" @click="listen">▶ {{ t('fh.listen') }}</button>
+          <button class="jd-toolbtn" :disabled="!q || answered || hintShown" @click="hintShown = true">{{ t('fh.hint') }}</button>
+          <button class="jd-toolbtn jd-toolbtn--reset" @click="resetGame">{{ t('btn.reset-game') }}</button>
         </div>
 
+        <p v-if="q && hintShown && !answered" class="fh-hint">{{ hintText }}</p>
+
         <div class="jd-section-label">
-          <span>{{ t('cf.results') }}</span>
+          <span>{{ q ? t(q.mode === 'major' ? 'fh.degrees-major' : 'fh.degrees-minor') : t('cf.results') }}</span>
           <span class="jd-section-rule"></span>
         </div>
 
-        <!-- Answer Grid -->
-        <div class="jd-grid-fixed-4" style="margin-bottom:20px;">
-          <button
-            v-for="deg in currentDegrees"
-            :key="deg"
-            class="et-choice-btn"
-            style="padding: 10px 4px; font-family: var(--jd-mono);"
+        <div class="jd-grid-fixed-4 fh-grid">
+          <button v-for="deg in palette" :key="deg" class="et-choice-btn"
             :class="{
-              correct: answered && deg === currentProgression[targetIdx]?.degree,
-              wrong:   answered && deg === selectedAnswer && deg !== currentProgression[targetIdx]?.degree,
+              correct: answered && deg === target.id,
+              wrong:   answered && deg === selectedAnswer && deg !== target.id,
             }"
-            :disabled="!active || answered"
+            :disabled="!q || answered"
             @click="checkAnswer(deg)"
           >{{ deg }}</button>
         </div>
 
-        <div id="fh-status" style="text-align:center; font-size:0.9em; min-height:28px; font-family: var(--jd-mono); font-weight: 700; letter-spacing: 0.5px;" :style="{color: lastCorrect ? 'var(--jd-improv)' : 'var(--jd-red)'}">
-          {{ statusMsg }}
+        <div class="fh-status" :style="{ color: lastCorrect ? 'var(--jd-improv)' : 'var(--jd-red)' }">{{ statusMsg }}</div>
+
+        <!-- Why -->
+        <div v-if="answered" class="fh-why">
+          <p class="fh-why-main">{{ whyText(target) }}</p>
+          <p class="fh-why-fn">{{ FUNCTION_TEXT[lang][degreeOf(target).fn] }}</p>
+          <details class="fh-analysis">
+            <summary>{{ t('fh.analysis') }}</summary>
+            <ul>
+              <li v-for="(chord, i) in q.chords" :key="i">
+                <strong>{{ chord.name }}</strong> = {{ chord.id }} · {{ FUNCTION_TEXT[lang][degreeOf(chord).fn] }}
+              </li>
+            </ul>
+          </details>
         </div>
       </section>
+
+      <div class="teoria-tip">
+        <strong>{{ t('label.pro-tip') }}:</strong> {{ t('fh.notation') }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
+import { useAppStore } from '../stores/app.js'
+import { useAudioStore } from '../stores/audio.js'
 import { usePracticeStore } from '../stores/practice.js'
-import { NOTES } from '../utils/theory.js'
+import { getNoteIdx } from '../utils/theory.js'
+import { getChordIntervals, parseChord } from '../utils/chordParser.js'
+import { DEGREES, makeQuestion, paletteOf, spellRoot, intervalName, FUNCTION_TEXT, FUNCTION_TAG } from '../utils/functionalHarmony.js'
 
 const { t } = useI18n()
+const appStore = useAppStore()
+const audio = useAudioStore()
 const practice = usePracticeStore()
-
-// ── Configuration ─────────────────────────────────────────────────────────────
-const DIFFICULTY_CONFIG = {
-  easy: {
-    degrees: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'],
-    progressions: [
-      ['I', 'vi', 'ii', 'V'],
-      ['ii', 'V', 'I'],
-      ['I', 'IV', 'vii°', 'iii', 'vi', 'ii', 'V', 'I'],
-      ['I', 'V', 'vi', 'IV']
-    ],
-    chordMap: {
-      'I': 'maj7', 'ii': 'm7', 'iii': 'm7', 'IV': 'maj7', 'V': '7', 'vi': 'm7', 'vii°': 'm7b5'
-    }
-  },
-  medium: {
-    degrees: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°', 'i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII', 'II'],
-    progressions: [
-      ['i', 'VI', 'iv', 'V'],
-      ['ii°', 'V', 'i'],
-      ['I', 'II', 'ii', 'V'],
-      ['i', 'iv', 'VII', 'III', 'VI', 'ii°', 'V', 'i']
-    ],
-    chordMap: {
-      'I': 'maj7', 'ii': 'm7', 'iii': 'm7', 'IV': 'maj7', 'V': '7', 'vi': 'm7', 'vii°': 'm7b5',
-      'i': 'm7', 'ii°': 'm7b5', 'III': 'maj7', 'iv': 'm7', 'v': 'm7', 'VI': 'maj7', 'VII': '7',
-      'II': '7'
-    }
-  },
-  hard: {
-    degrees: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°', 'i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII', 'II', 'bII', 'bIII', 'bVI', 'bVII', '#iv°'],
-    progressions: [
-      ['I', 'bVI', 'bII', 'V'],
-      ['I', '#iv°', 'IV', 'iv', 'I'],
-      ['I', 'bIII', 'bVI', 'bVII'],
-      ['ii', 'bII', 'I']
-    ],
-    chordMap: {
-      'I': 'maj7', 'ii': 'm7', 'iii': 'm7', 'IV': 'maj7', 'V': '7', 'vi': 'm7', 'vii°': 'm7b5',
-      'i': 'm7', 'ii°': 'm7b5', 'III': 'maj7', 'iv': 'm7', 'v': 'm7', 'VI': 'maj7', 'VII': '7',
-      'II': '7', 'bII': 'maj7', 'bIII': 'maj7', 'bVI': 'maj7', 'bVII': '7', '#iv°': 'dim7'
-    }
-  }
-}
+const lang = computed(() => (appStore.lang === 'en' ? 'en' : 'it'))
 
 // ── State ─────────────────────────────────────────────────────────────────────
-const difficulty         = ref('easy')
-const currentProgression = ref([])
-const targetIdx          = ref(-1)
-const active             = ref(false)
-const answered           = ref(false)
-const selectedAnswer     = ref(null)
-const score              = ref(0)
-const total              = ref(0)
-const streak             = ref(0)
-const statusMsg          = ref('')
-const lastCorrect        = ref(false)
+const difficulty     = ref('easy')
+const q              = ref(null)        // { mode, tonic, chords: [{ id, name }], targetIdx }
+const answered       = ref(false)
+const selectedAnswer = ref(null)
+const hintShown      = ref(false)
+const playingIdx     = ref(-1)
+const score          = ref(0)
+const total          = ref(0)
+const streak         = ref(0)
+const statusMsg      = ref('')
+const lastCorrect    = ref(false)
+let timers = []
 
-// ── Computed ──────────────────────────────────────────────────────────────────
-const currentDegrees = computed(() => DIFFICULTY_CONFIG[difficulty.value].degrees)
+const target  = computed(() => q.value?.chords[q.value.targetIdx] || {})
+const palette = computed(() => paletteOf(difficulty.value, q.value?.mode || 'major'))
 
-// ── Logic ─────────────────────────────────────────────────────────────────────
-function getSemitones(degree) {
-  const baseMap = { 'I':0, 'II':2, 'III':4, 'IV':5, 'V':7, 'VI':9, 'VII':11 }
-  let offset = 0
-  
-  // Handle accidentals
-  let cleanDegree = degree.replace('°', '')
-  if (cleanDegree.includes('b')) {
-    offset = -1
-    cleanDegree = cleanDegree.replace('b', '')
-  } else if (cleanDegree.includes('#')) {
-    offset = 1
-    cleanDegree = cleanDegree.replace('#', '')
-  }
-  
-  const base = cleanDegree.toUpperCase()
-  const baseSemitones = baseMap[base] ?? 0
-  return (baseSemitones + offset + 12) % 12
+const degreeOf = chord => DEGREES[q.value.mode][chord.id]
+const tagOf = chord => FUNCTION_TAG[lang.value][degreeOf(chord).fn]
+const QUALITY_TEXT = {
+  it: { maj7: 'maggiore con settima maggiore', m7: 'minore settima', '7': 'di dominante', m7b5: 'semidiminuito', dim7: 'diminuito' },
+  en: { maj7: 'major seventh', m7: 'minor seventh', '7': 'dominant seventh', m7b5: 'half-diminished', dim7: 'diminished seventh' },
 }
+
+function rootOf(chord) {
+  return spellRoot(q.value.tonic, degreeOf(chord))
+}
+
+// e.g. "Ebmaj7 in C maggiore: Eb è una terza minore sopra C e l'accordo è maggiore con settima maggiore → bIII."
+function whyText(chord) {
+  const d = degreeOf(chord)
+  const key = `${q.value.tonic} ${q.value.mode === 'major' ? t('fh.major') : t('fh.minor')}`
+  return t(d.semis === 0 ? 'fh.why-tonic' : 'fh.why')
+    .replace('{0}', chord.name).replace('{1}', key).replace('{2}', rootOf(chord))
+    .replace('{3}', intervalName(d, lang.value)).replace('{4}', q.value.tonic)
+    .replace('{5}', QUALITY_TEXT[lang.value][d.quality]).replace('{6}', chord.id)
+}
+
+const hintText = computed(() => {
+  if (!q.value) return ''
+  const d = degreeOf(target.value)
+  return t(d.semis === 0 ? 'fh.hint-tonic' : 'fh.hint-text')
+    .replace('{0}', target.value.name).replace('{1}', rootOf(target.value))
+    .replace('{2}', intervalName(d, lang.value)).replace('{3}', q.value.tonic)
+})
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 function setDifficulty(d) {
@@ -190,38 +170,25 @@ function setDifficulty(d) {
 }
 
 function generateNew() {
-  active.value   = true
+  stopListening()
+  const next = makeQuestion(difficulty.value)
+  // the chord asked is more often one whose degree is often missed
+  next.targetIdx = practice.pickWeighted('functional-harmony', next.chords.map((_, i) => i), i => next.chords[i].id)
+  q.value = next
   answered.value = false
-  statusMsg.value = ''
   selectedAnswer.value = null
-  
-  const rootIdx = Math.floor(Math.random() * 12)
-  const config = DIFFICULTY_CONFIG[difficulty.value]
-  const template = config.progressions[Math.floor(Math.random() * config.progressions.length)]
-  
-  currentProgression.value = template.map(deg => {
-    const semitones = getSemitones(deg)
-    const chordRoot = NOTES[(rootIdx + semitones) % 12]
-    return {
-      name: chordRoot + config.chordMap[deg],
-      degree: deg
-    }
-  })
-  
-  targetIdx.value = Math.floor(Math.random() * currentProgression.value.length)
+  hintShown.value = false
+  statusMsg.value = ''
 }
 
 function checkAnswer(deg) {
-  if (!active.value || answered.value) return
-  
+  if (!q.value || answered.value) return
   selectedAnswer.value = deg
   answered.value = true
   total.value++
-  
-  const correct = deg === currentProgression.value[targetIdx.value].degree
+  const correct = deg === target.value.id
   lastCorrect.value = correct
-  practice.record('functional-harmony', currentProgression.value[targetIdx.value].degree, correct)
-  
+  practice.record('functional-harmony', target.value.id, correct)
   if (correct) {
     score.value++
     streak.value++
@@ -232,21 +199,67 @@ function checkAnswer(deg) {
   }
 }
 
+// The progression played one chord per second, the sounding chord highlighted.
+async function listen() {
+  if (!q.value) return
+  stopListening()
+  await audio.init()
+  q.value.chords.forEach((chord, i) => {
+    timers.push(setTimeout(() => {
+      playingIdx.value = i
+      const p = parseChord(chord.name)
+      audio.playChord(getChordIntervals(chord.name), getNoteIdx(p.root), 0, 0.95, 0.25, 'Electric Piano', 4)
+    }, i * 1000))
+  })
+  timers.push(setTimeout(() => { playingIdx.value = -1 }, q.value.chords.length * 1000))
+}
+
+function stopListening() {
+  timers.forEach(clearTimeout)
+  timers = []
+  playingIdx.value = -1
+}
+
 function resetGame() {
-  active.value = false
+  stopListening()
+  q.value = null
   answered.value = false
+  hintShown.value = false
   score.value = 0
   total.value = 0
   streak.value = 0
   statusMsg.value = ''
-  currentProgression.value = []
 }
+
+onUnmounted(stopListening)
 </script>
 
 <style scoped>
-.et-choice-btn {
-  padding: 12px 5px;
-  font-size: 0.95em;
-  font-weight: 700;
-}
+.fh-levels { display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 20px; }
+.fh-score { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-family: var(--jd-mono); font-size: 0.8em; letter-spacing: 1px; }
+.fh-key { position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.fh-key-label { font-family: var(--jd-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--jd-muted); }
+.fh-key strong { font-size: 1.3em; color: var(--jd-amber); }
+.fh-prog { position: relative; z-index: 1; padding: 20px; margin-bottom: 20px; background: var(--jd-bg-deep); border-radius: 12px; border: 1px solid var(--jd-line); }
+.fh-chords { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.fh-chord { padding: 12px 18px; min-width: 84px; text-align: center; flex-direction: column; justify-content: center; gap: 2px; }
+.fh-chord.playing { border-color: var(--jd-amber); background: rgba(255, 214, 10, 0.08); }
+.fh-chord-name { font-size: 1.35em; font-weight: 700; color: var(--jd-text); }
+.fh-chord-deg { font-size: 0.85em; color: var(--jd-amber); margin-top: 4px; font-weight: 700; font-family: var(--jd-mono); }
+.fh-chord-tag { font-size: 0.7em; color: var(--jd-text-soft); margin-top: 2px; font-family: var(--jd-mono); }
+.fh-ready { color: var(--jd-muted); font-style: italic; font-family: var(--jd-mono); font-size: 0.8em; text-align: center; }
+.fh-actions { justify-content: center; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+.fh-hint { position: relative; z-index: 1; text-align: center; font-size: 0.9em; color: var(--jd-text); margin: 0 0 16px; }
+.fh-grid { margin-bottom: 20px; }
+.fh-grid .et-choice-btn { padding: 10px 4px; font-family: var(--jd-mono); font-size: 0.95em; font-weight: 700; }
+/* after answering the buttons are disabled (dimmed): keep the right and the chosen one fully visible */
+.fh-grid .et-choice-btn.correct, .fh-grid .et-choice-btn.wrong { opacity: 1; }
+.fh-status { text-align: center; font-size: 0.9em; min-height: 28px; font-family: var(--jd-mono); font-weight: 700; letter-spacing: 0.5px; position: relative; z-index: 1; }
+.fh-why { position: relative; z-index: 1; margin-top: 8px; padding: 14px 16px; border: 1px solid var(--jd-line-strong); border-radius: 10px; background: rgba(0, 0, 0, 0.25); }
+.fh-why-main { margin: 0 0 6px; color: var(--jd-text); font-size: 0.92em; }
+.fh-why-fn { margin: 0; color: var(--jd-text-soft); font-size: 0.88em; line-height: 1.55; }
+.fh-analysis { margin-top: 10px; }
+.fh-analysis summary { cursor: pointer; font-family: var(--jd-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--jd-muted); }
+.fh-analysis ul { margin: 8px 0 0; padding-left: 18px; font-size: 0.85em; color: var(--jd-text-soft); line-height: 1.6; }
+.fh-analysis strong { color: var(--jd-text); }
 </style>
