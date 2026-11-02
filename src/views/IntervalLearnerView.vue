@@ -46,6 +46,7 @@
             <span class="jd-mode-text">{{ t('il.descending') }}</span>
           </label>
         </div>
+        <GuitarInputPanel :guitar="guitar" />
       </div>
     </section>
 
@@ -60,12 +61,18 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
-import { INTERVAL_COLORS, TUNINGS, NOTES } from '../utils/theory.js'
+import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { INTERVAL_COLORS, TUNINGS, NOTES, NOTES_FLAT } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
+import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
 
 const appStore = useAppStore()
 const audio    = useAudioStore()
 const { t }    = useI18n()
+const guitar   = useGuitarInput({ onNote: onGuitarNote })
+
+// While the app plays a note, a microphone may hear it: ignore that pitch for a moment.
+const SELF_SOUND_HOLDOFF_MS = 600
 
 const questionText = ref(t('il.ready'))
 const statusText   = ref(t('il.status'))
@@ -75,8 +82,10 @@ const descending   = ref(false)
 let active = false
 let root   = 0
 let targetInterval = 0
+let nextTimer = null
 
 function reset() {
+  clearTimeout(nextTimer)
   score.value = 0; total.value = 0; active = false
   questionText.value = t('il.ready')
   statusText.value   = t('il.status')
@@ -84,21 +93,27 @@ function reset() {
 }
 
 async function start() {
+  clearTimeout(nextTimer)
   active = true
   root           = Math.floor(Math.random() * 12)
   targetInterval = Math.floor(Math.random() * 11) + 1
   const info     = INTERVAL_COLORS[targetInterval]
   const rootName = NOTES[root]
   questionText.value = `${t('il.find-prefix')}: ${info.label} ${t('il.find-of')} ${rootName}${descending.value ? ' ↓' : ''}`
-  statusText.value   = t('il.click-status')
+  statusText.value   = guitar.enabled ? t('il.play-status') : t('il.click-status')
   await audio.init()
-  audio.playChord([0], root, 0, 1, 0.2, 'Electric Piano', 3)
+  playRoot()
   drawBoard()
 }
 
 async function replay() {
   if (!active && root === undefined) return
   await audio.init()
+  playRoot()
+}
+
+function playRoot() {
+  guitar.holdOff(SELF_SOUND_HOLDOFF_MS, root)
   audio.playChord([0], root, 0, 1, 0.2, 'Electric Piano', 3)
 }
 
@@ -124,38 +139,50 @@ function clearBoard() {
   })
 }
 
-async function checkAnswer({ noteIndex, stringIndex, fretIndex, element }) {
-  // Play the note
-  const tuning = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
-  const oct = BASE_OCTAVES[stringIndex] + Math.floor((tuning[stringIndex] + fretIndex) / 12)
-  await audio.init()
-  audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
+// Next question without leaving the guitar, when auto-advance is on.
+function scheduleNext(delay) {
+  clearTimeout(nextTimer)
+  if (!guitar.enabled || !guitar.autoNext) return
+  nextTimer = setTimeout(() => {
+    if (guitar.enabled && guitar.autoNext) start()
+  }, delay)
+}
+
+// `elements`: the circles to mark (the clicked one, or every position of the played pitch).
+// `oct`: octave of the answer, used to play the right note back after a mistake.
+// `played`: name of the note played on the guitar, if the answer came from it.
+function checkAnswer({ noteIndex, elements, oct, played = '' }) {
   if (!active) return
   active = false
   total.value++
   const clicked = descending.value
     ? (root - noteIndex + 12) % 12
     : (noteIndex - root + 12) % 12
-  element.style.transition = 'all 0.2s ease'
-  if (clicked === targetInterval) {
+  const correct = clicked === targetInterval
+  elements.forEach(el => {
+    el.style.transition = 'all 0.2s ease'
+    el.style.backgroundColor = correct ? '#2ecc71' : '#e74c3c'
+    el.style.opacity = '1'
+    el.style.color   = 'rgba(0,0,0,0.8)'
+    el.innerText     = INTERVAL_COLORS[clicked]?.short || '?'
+    if (played) { el.style.border = '2px solid white'; el.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)' }
+  })
+  const playedSuffix = played ? ` · 🎸 ${played}` : ''
+  if (correct) {
     score.value++
-    element.style.backgroundColor = '#2ecc71'
-    element.style.opacity = '1'
-    element.style.color   = 'rgba(0,0,0,0.8)'
-    element.innerText     = INTERVAL_COLORS[clicked].short
-    statusText.value      = t('il.correct')
+    statusText.value = t('il.correct') + playedSuffix
   } else {
-    element.style.backgroundColor = '#e74c3c'
-    element.style.opacity = '1'
-    element.style.color   = 'rgba(0,0,0,0.8)'
-    element.innerText     = INTERVAL_COLORS[clicked]?.short || '?'
-    statusText.value      = t('il.wrong')
+    statusText.value = t('il.wrong') + playedSuffix
     revealCorrect()
     const targetNote = descending.value
       ? (root - targetInterval + 12) % 12
       : (root + targetInterval) % 12
-    setTimeout(() => audio.playChord([0], targetNote, 0, 1.2, 0.2, 'Electric Piano', oct), 800)
+    setTimeout(() => {
+      guitar.holdOff(SELF_SOUND_HOLDOFF_MS, targetNote)
+      audio.playChord([0], targetNote, 0, 1.2, 0.2, 'Electric Piano', oct)
+    }, 800)
   }
+  scheduleNext(correct ? 1500 : 2800)
 }
 
 function revealCorrect() {
@@ -174,7 +201,27 @@ function revealCorrect() {
   })
 }
 
-function onNoteClick(e) { checkAnswer(e.detail) }
+async function onNoteClick(e) {
+  const { noteIndex, stringIndex, fretIndex, element } = e.detail
+  // Play the note
+  const tuning = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
+  const oct = BASE_OCTAVES[stringIndex] + Math.floor((tuning[stringIndex] + fretIndex) / 12)
+  await audio.init()
+  guitar.holdOff(SELF_SOUND_HOLDOFF_MS, noteIndex)
+  audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
+  checkAnswer({ noteIndex, elements: [element], oct })
+}
+
+function onGuitarNote({ midi, noteIndex }) {
+  if (!active) return
+  const notes = appStore.accidental === '#' ? NOTES : NOTES_FLAT
+  checkAnswer({
+    noteIndex,
+    elements: fretboardCirclesForMidi(appStore.currentTuning, midi),
+    oct: Math.floor(midi / 12),
+    played: midiToName(midi, notes),
+  })
+}
 
 onMounted(() => {
   window.addEventListener('fretboard:noteClick', onNoteClick)
@@ -182,6 +229,7 @@ onMounted(() => {
 })
 onUnmounted(() => {
   window.removeEventListener('fretboard:noteClick', onNoteClick)
+  clearTimeout(nextTimer)
 })
 </script>
 
