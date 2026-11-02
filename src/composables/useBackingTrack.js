@@ -11,6 +11,14 @@ import { beatsOf, chordInfo } from '../utils/standards.js'
 const LOOKAHEAD_S = 0.15
 const TICK_MS = 25
 
+// Audio clock -> performance clock, as the sound leaves the speakers.
+export function audioTimeToPerf(audioTime) {
+  const raw = Tone.context.rawContext
+  const ts = raw.getOutputTimestamp?.()
+  if (ts && ts.performanceTime) return ts.performanceTime + (audioTime - ts.contextTime) * 1000
+  return performance.now() + (audioTime - raw.currentTime) * 1000 + (raw.outputLatency || raw.baseLatency || 0) * 1000
+}
+
 export function useBackingTrack() {
   const audio = useAudioStore()
   const playing = ref(false)
@@ -25,13 +33,7 @@ export function useBackingTrack() {
   let nextBeat = 0                // audio time of the next beat
   let pos = 0, beatInChord = 0, barBeat = 0, loop = 0, countLeft = 0, eventId = 0
 
-  // Audio clock -> performance clock, as the sound leaves the speakers.
-  function perfAt(audioTime) {
-    const raw = Tone.context.rawContext
-    const ts = raw.getOutputTimestamp?.()
-    if (ts && ts.performanceTime) return ts.performanceTime + (audioTime - ts.contextTime) * 1000
-    return performance.now() + (audioTime - raw.currentTime) * 1000 + (raw.outputLatency || raw.baseLatency || 0) * 1000
-  }
+  const perfAt = audioTimeToPerf
 
   function at(ms, fn) {
     timeouts.push(setTimeout(fn, Math.max(0, ms - performance.now())))

@@ -184,6 +184,7 @@ const EXERCISES = [
   { id: 'ear-intervals',      nav: 'nav.interval-ear-training', route: '/interval-ear-training', item: k => (appStore.lang === 'it' ? INTERVALS_IT : INTERVALS_EN)[+k] || `${k}` },
   { id: 'ear-playback',       nav: 'nav.ear-playback',          route: '/ear-playback',          item: playbackItem },
   { id: 'changes',            nav: 'nav.changes-trainer',       route: '/changes-trainer',       item: k => `${t('ch.mode-' + k.split(':')[0])} · ${t('ch.group-' + k.split(':')[1])}` },
+  { id: 'scale-tempo',        nav: 'nav.scale-tempo',           route: '/scale-tempo',           item: k => k },
   { id: 'functional-harmony', nav: 'nav.functional-harmony',    route: '/functional-harmony',    item: k => k },
   { id: 'quiz',               nav: 'nav.quiz',                  route: '/quiz',                  item: k => t('quiz.cat.' + k) },
 ]

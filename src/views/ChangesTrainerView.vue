@@ -149,6 +149,7 @@ import { useBackingTrack } from '../composables/useBackingTrack.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { STANDARDS, parseChart, classifyNote } from '../utils/standards.js'
 import { setStepDone } from '../utils/studyPath.js'
+import { getInputLatency } from '../utils/latency.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
 import GuitarInputPanel from '../components/shared/GuitarInputPanel.vue'
 
@@ -156,7 +157,7 @@ const appStore = useAppStore()
 const practice = usePracticeStore()
 const route = useRoute()
 const { t } = useI18n()
-const guitar = useGuitarInput({ onNote: ({ midi, time }) => onNote({ midi, time }) })
+const guitar = useGuitarInput({ onNote: ({ midi, time }) => onNote({ midi, time: time - getInputLatency() }) })
 const backing = useBackingTrack()
 
 const MODES = ['guide', 'arpeggio', 'approach', 'free']
