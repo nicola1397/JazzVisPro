@@ -36,6 +36,7 @@
       <RouterLink class="nav-item" to="/ear-training"          @click="appStore.closeSidebar()">{{ t('nav.ear-training') }}</RouterLink>
 
       <RouterLink class="nav-item" to="/interval-ear-training" @click="appStore.closeSidebar()">{{ t('nav.interval-ear-training') }}</RouterLink>
+      <RouterLink class="nav-item" to="/ear-playback"          @click="appStore.closeSidebar()">{{ t('nav.ear-playback') }}</RouterLink>
       <RouterLink class="nav-item" to="/groove-trainer"        @click="appStore.closeSidebar()">{{ t('nav.groove-trainer') }}</RouterLink>
     </SidebarGroup>
 

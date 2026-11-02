@@ -113,8 +113,10 @@ export const useAudioStore = defineStore('audio', () => {
     _currentOscillators = []
   }
 
-  async function playNoteImmediate(midiNote, duration, vol, soundName) { // UPDATED PARAMS
+  // `octave` places a bare pitch class (0-11), as playChord does; absolute MIDI notes are played as they are.
+  async function playNoteImmediate(midiNote, duration, vol, soundName, octave = 4) {
     await init()
+    if (midiNote < 12) midiNote += octave * 12
     if (!_isInitialized || !_chordSynth) return
     try {
       _setPreset(soundName)

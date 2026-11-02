@@ -182,9 +182,21 @@ const EXERCISES = [
   { id: 'sevenths',           nav: 'nav.seventh-trainer',       route: '/seventh-trainer',       item: chordItem },
   { id: 'ear-chords',         nav: 'nav.ear-training',          route: '/ear-training',          item: k => k },
   { id: 'ear-intervals',      nav: 'nav.interval-ear-training', route: '/interval-ear-training', item: k => (appStore.lang === 'it' ? INTERVALS_IT : INTERVALS_EN)[+k] || `${k}` },
+  { id: 'ear-playback',       nav: 'nav.ear-playback',          route: '/ear-playback',          item: playbackItem },
   { id: 'functional-harmony', nav: 'nav.functional-harmony',    route: '/functional-harmony',    item: k => k },
   { id: 'quiz',               nav: 'nav.quiz',                  route: '/quiz',                  item: k => t('quiz.cat.' + k) },
 ]
+
+// 'i:+7' interval up a fifth, 'p:dorian' phrase in a scale, 'a:m7' arpeggio
+function playbackItem(k) {
+  const [kind, value] = k.split(':')
+  if (kind === 'i') {
+    const names = appStore.lang === 'it' ? INTERVALS_IT : INTERVALS_EN
+    return `${names[Math.abs(+value)] || value} ${+value > 0 ? '↑' : '↓'}`
+  }
+  if (kind === 'p') return `${t('ep.q-phrase').replace('{0}', '').trim()} · ${t('ep.scale-' + value)}`
+  return `${t('ep.mode-arpeggio')} · ${t('ct.q-' + value)}`
+}
 
 function chordItem(k) {
   const [quality, voicing, bass] = k.split('|')

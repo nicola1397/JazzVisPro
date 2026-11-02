@@ -15,6 +15,7 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 ### 🎹 Allenamento e Ear Training
 - **Ear Training (Accordi & Intervalli)**: Moduli per sviluppare l'orecchio riconoscendo qualità di accordi e distanze intervallari, con statistiche persistenti.
 - **Functional Harmony Trainer**: Nuovo modulo interattivo per allenare il riconoscimento dei gradi romani e delle funzioni tonali (II-V-I, ecc.).
+- **Ripeti a Orecchio**: L'app suona un intervallo, una frase (maggiore, dorica, misolidia, pentatonica, blues) o un arpeggio e tu lo ripeti sulla chitarra o sul manico, dalla nota indicata o da qualsiasi nota. Alla fine mostra una diteggiatura numerata.
 - **Groove Trainer**: Metronomo evoluto con supporto per **Poliritmi** (due pattern simultanei) e **Ghost Notes** (dinamiche accentate o piano).
 - **Note Finder**: Un gioco interattivo per memorizzare la posizione delle note sulla tastiera.
 - **Triadi e Rivolti**: Trova triadi maggiori, minori, diminuite, aumentate e sus, singoli rivolti in posizione stretta o il ciclo dei tre rivolti lungo il manico, con le diteggiature sui gruppi di tre corde.
