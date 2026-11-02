@@ -44,7 +44,7 @@ const route    = useRoute()
 
 const ARP_INTERVALS = [0, 3, 4, 7, 10, 11]
 
-const isGameMode = computed(() => ['interval', 'note', 'lick', 'chord', 'playback', 'changes', 'scale'].includes(props.gameMode))
+const isGameMode = computed(() => ['interval', 'note', 'lick', 'chord', 'playback', 'changes', 'scale', 'transcribe'].includes(props.gameMode))
 
 // When leaving game mode, purge inline transition/color set directly on DOM by game views.
 // These are outside Vue's style tracking so Vue won't clear them on its own re-render.

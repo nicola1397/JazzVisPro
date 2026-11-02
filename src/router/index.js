@@ -14,6 +14,7 @@ const routes = [
   { path: '/ear-playback',        component: () => import('../views/EarPlaybackView.vue'),          meta: { title:'title.ear-playback',     fretboard:true, legend:false, game:'playback' } },
   { path: '/changes-trainer',     component: () => import('../views/ChangesTrainerView.vue'),       meta: { title:'title.changes-trainer',  fretboard:true, legend:false, game:'changes' } },
   { path: '/scale-tempo',         component: () => import('../views/ScaleTempoView.vue'),           meta: { title:'title.scale-tempo',      fretboard:true, legend:false, game:'scale' } },
+  { path: '/transcribe',          component: () => import('../views/TranscribeView.vue'),           meta: { title:'title.transcribe',       fretboard:true, legend:false, game:'transcribe' } },
   { path: '/quiz',                component: () => import('../views/QuizView.vue'),                 meta: { title:'quiz.title',             fretboard:false,legend:false } },
   { path: '/functional-harmony',  component: () => import('../views/FunctionalHarmonyView.vue'),  meta: { title:'fh.title',               fretboard:false,legend:false } },
   { path: '/ear-training',        component: () => import('../views/EarTrainingView.vue'),          meta: { title:'title.ear-training',     fretboard:false,legend:false } },

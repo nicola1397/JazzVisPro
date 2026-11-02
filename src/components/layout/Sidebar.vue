@@ -13,6 +13,7 @@
 
     <SidebarGroup name="tools" :label="t('sg.tools')" :collapsed="true">
       <RouterLink class="nav-item" to="/tuner"        @click="appStore.closeSidebar()">{{ t('nav.tuner') }}</RouterLink>
+      <RouterLink class="nav-item" to="/transcribe"   @click="appStore.closeSidebar()">{{ t('nav.transcribe') }}</RouterLink>
       <RouterLink class="nav-item" to="/lick-builder" @click="appStore.closeSidebar()">{{ t('nav.lick-builder') }}</RouterLink>
       <RouterLink class="nav-item" to="/chord-finder" @click="appStore.closeSidebar()">{{ t('nav.chord-finder') }}</RouterLink>
       <RouterLink class="nav-item" to="/transposer"   @click="appStore.closeSidebar()">{{ t('nav.transposer') }}</RouterLink>

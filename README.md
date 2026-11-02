@@ -39,6 +39,7 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Transposer**: Strumento rapido per trasporre brani o progressioni in qualsiasi tonalità.
 
 ### 🛠 Utility
+- **Trascrizione**: Carica un file audio (resta sul dispositivo), rallentalo senza cambiare l'intonazione, ripeti un tratto A-B scelto trascinando sulla forma d'onda, aggiungi marcatori con nome (ricordati per file) e vedi la nota al cursore sul manico. Scorciatoie da tastiera per ogni comando.
 - **Accordatore (Tuner)**: Accordatore cromatico preciso basato sull'analisi della frequenza tramite microfono.
 - **Analisi Armonica**: Rilevamento automatico della tonalità e suggerimenti contestuali basati sullo stile (Jazz, Blues, Pop).
 
