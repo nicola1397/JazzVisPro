@@ -25,6 +25,7 @@
     </SidebarGroup>
 
     <SidebarGroup name="training" :label="t('sg.training')" :collapsed="true">
+      <RouterLink class="nav-item" to="/progress"              @click="appStore.closeSidebar()">{{ t('nav.progress') }}</RouterLink>
       <RouterLink class="nav-item" to="/interval-learner"      @click="appStore.closeSidebar()">{{ t('nav.interval-learner') }}</RouterLink>
       <RouterLink class="nav-item" to="/grade-learner"         @click="appStore.closeSidebar()">{{ t('nav.grade-learner') }}</RouterLink>
       <RouterLink class="nav-item" to="/note-finder"           @click="appStore.closeSidebar()">{{ t('nav.note-finder') }}</RouterLink>

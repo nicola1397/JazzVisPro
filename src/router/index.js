@@ -5,6 +5,7 @@ const routes = [
   { path: '/explorer',            component: () => import('../views/ExplorerView.vue'),            meta: { title:'title.explorer',    fretboard:true,  legend:true  } },
   { path: '/player',              component: () => import('../views/PlayerView.vue'),               meta: { title:'title.player',      fretboard:true,  legend:false } },
   { path: '/calculator',          component: () => import('../views/CalculatorView.vue'),           meta: { title:'title.calculator',  fretboard:false, legend:false } },
+  { path: '/progress',            component: () => import('../views/ProgressView.vue'),             meta: { title:'title.progress',         fretboard:false,legend:false } },
   { path: '/interval-learner',    component: () => import('../views/IntervalLearnerView.vue'),      meta: { title:'title.interval-learner', fretboard:true, legend:false, game:'interval' } },
   { path: '/grade-learner',       component: () => import('../views/GradeLearnerView.vue'),         meta: { title:'title.grade-learner',    fretboard:false,legend:false } },
   { path: '/note-finder',         component: () => import('../views/NoteFinderView.vue'),           meta: { title:'title.note-finder',      fretboard:true, legend:false, game:'note' } },

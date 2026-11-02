@@ -170,11 +170,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
+import { usePracticeStore } from '../stores/practice.js'
 import { QUIZ_DATABASE } from '../utils/quiz_db.js'
 
 const { t } = useI18n()
 const router = useRouter()
 const appStore = useAppStore()
+const practice = usePracticeStore()
 
 // ── SRS storage ─────────────────────────────────────────────────────────────
 // Leitner 5-box: wrong→box 1, correct promotes box (max 5).
@@ -350,6 +352,7 @@ function checkAnswer(opt) {
   answered.value = true
   isCorrect.value = opt.isCorrect
   if (isCorrect.value) score.value++
+  practice.record('quiz', currentQuestionRaw.value.category, opt.isCorrect)
   // Track session origin
   const id = currentQuestionRaw.value.id
   if (srsState.value[id]) sessReview.value++

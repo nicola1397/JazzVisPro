@@ -107,10 +107,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useAudioStore } from '../stores/audio.js'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
+import { usePracticeStore } from '../stores/practice.js'
 
 const audio    = useAudioStore()
 const appStore = useAppStore()
 const { t }    = useI18n()
+const practice = usePracticeStore()
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const POOLS = {
@@ -227,7 +229,7 @@ async function playInterval() {
   await audio.init()
   clearTimers()
   const pool = POOLS[difficulty.value]
-  currentSemitones.value  = randomItem(pool)
+  currentSemitones.value  = practice.pickWeighted('ear-intervals', pool)
   currentRoot.value       = Math.floor(Math.random() * 12)
   answered.value          = false
   answeredSemitones.value = null
@@ -254,6 +256,7 @@ function answerInterval(semi) {
 
   const isCorrect = semi === currentSemitones.value
   lastCorrect.value = isCorrect
+  practice.record('ear-intervals', currentSemitones.value, isCorrect)
 
   if (isCorrect) {
     score.value++

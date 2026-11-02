@@ -118,11 +118,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useAudioStore } from '../stores/audio.js'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
+import { usePracticeStore } from '../stores/practice.js'
 import { NOTES, NOTES_FLAT, SCALES } from '../utils/theory.js'
 
 const audio = useAudioStore()
 const appStore = useAppStore()
 const { t } = useI18n()
+const practice = usePracticeStore()
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GL_ROOTS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B']
@@ -277,6 +279,8 @@ async function onNoteClick(idx, clickedIsFlat) {
     const correctIsFlat = glExpectFlat(gameRoot.value)
     if (isEnharm && (clickedIsFlat !== correctIsFlat)) isCorrect = false
   }
+
+  practice.record('grade-learner', targetGrade.value, isCorrect)
 
   if (isCorrect) {
     if (clickedIsFlat) flatStates.value = { ...flatStates.value, [idx]: 'correct' }

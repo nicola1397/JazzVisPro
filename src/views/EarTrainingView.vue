@@ -108,11 +108,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useAudioStore } from '../stores/audio.js'
 import { useAppStore }   from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
+import { usePracticeStore } from '../stores/practice.js'
 import { NOTES } from '../utils/theory.js'
 
 const audio = useAudioStore()
 const appStore = useAppStore()
 const { t } = useI18n()
+const practice = usePracticeStore()
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CHORD_SETS = {
@@ -194,7 +196,7 @@ async function playChord() {
   await audio.init()
   const types = CHORD_SETS[difficulty.value]
   currentRoot.value  = Math.floor(Math.random() * 12)
-  currentChord.value = types[Math.floor(Math.random() * types.length)]
+  currentChord.value = practice.pickWeighted('ear-chords', types)
   const tones = INTERVALS[currentChord.value] || [0,4,7,10]
 
   answered.value      = false
@@ -233,6 +235,7 @@ async function answer(type) {
   }
 
   rawStats.value.push({ chord: currentChord.value, correct: isCorrect })
+  practice.record('ear-chords', currentChord.value, isCorrect)
   if (rawStats.value.length > 200) rawStats.value.splice(0, rawStats.value.length - 200)
   saveStats()
 

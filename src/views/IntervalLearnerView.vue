@@ -62,6 +62,7 @@ import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
 import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { usePracticeStore } from '../stores/practice.js'
 import { INTERVAL_COLORS, TUNINGS, NOTES, NOTES_FLAT } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
@@ -70,6 +71,7 @@ const appStore = useAppStore()
 const audio    = useAudioStore()
 const { t }    = useI18n()
 const guitar   = useGuitarInput({ onNote: onGuitarNote })
+const practice = usePracticeStore()
 
 // While the app plays a note, a microphone may hear it: ignore that pitch for a moment.
 const SELF_SOUND_HOLDOFF_MS = 600
@@ -96,7 +98,7 @@ async function start() {
   clearTimeout(nextTimer)
   active = true
   root           = Math.floor(Math.random() * 12)
-  targetInterval = Math.floor(Math.random() * 11) + 1
+  targetInterval = practice.pickWeighted('interval-learner', [...Array(11).keys()].map(i => i + 1), iv => intervalKey(iv))
   const info     = INTERVAL_COLORS[targetInterval]
   const rootName = NOTES[root]
   questionText.value = `${t('il.find-prefix')}: ${info.label} ${t('il.find-of')} ${rootName}${descending.value ? ' ↓' : ''}`
@@ -139,6 +141,10 @@ function clearBoard() {
   })
 }
 
+function intervalKey(iv) {
+  return `${iv}${descending.value ? 'd' : ''}`
+}
+
 // Next question without leaving the guitar, when auto-advance is on.
 function scheduleNext(delay) {
   clearTimeout(nextTimer)
@@ -151,7 +157,8 @@ function scheduleNext(delay) {
 // `elements`: the circles to mark (the clicked one, or every position of the played pitch).
 // `oct`: octave of the answer, used to play the right note back after a mistake.
 // `played`: name of the note played on the guitar, if the answer came from it.
-function checkAnswer({ noteIndex, elements, oct, played = '' }) {
+// `pos`: string and fret of a clicked answer.
+function checkAnswer({ noteIndex, elements, oct, played = '', pos = {} }) {
   if (!active) return
   active = false
   total.value++
@@ -159,6 +166,7 @@ function checkAnswer({ noteIndex, elements, oct, played = '' }) {
     ? (root - noteIndex + 12) % 12
     : (noteIndex - root + 12) % 12
   const correct = clicked === targetInterval
+  practice.record('interval-learner', intervalKey(targetInterval), correct, { ...pos, guitar: !!played })
   elements.forEach(el => {
     el.style.transition = 'all 0.2s ease'
     el.style.backgroundColor = correct ? '#2ecc71' : '#e74c3c'
@@ -209,7 +217,7 @@ async function onNoteClick(e) {
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, noteIndex)
   audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
-  checkAnswer({ noteIndex, elements: [element], oct })
+  checkAnswer({ noteIndex, elements: [element], oct, pos: { s: stringIndex, f: fretIndex } })
 }
 
 function onGuitarNote({ midi, noteIndex }) {

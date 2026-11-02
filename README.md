@@ -22,6 +22,8 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Suona con la chitarra**: Negli esercizi sul manico (Note Finder, Interval Learner, Triadi e Rivolti, Settime e Drop) puoi rispondere suonando la chitarra collegata (scheda audio o microfono) invece di cliccare, con avanzamento automatico alla domanda successiva.
 - **Grade/Interval Learner**: Strumenti specifici per visualizzare e interiorizzare i gradi delle scale e gli intervalli (anche in modalità discendente).
 
+- **Progressi**: Storico di tutte le risposte con tempo di pratica, precisione, giorni di fila, punti da ripassare per ogni esercizio e mappa degli errori sul manico. Gli esercizi ripropongono più spesso ciò che sbagli.
+
 ### 🎼 Improvvisazione e Composizione
 - **Player (Play Along)**: Riproduttore di progressioni con **accompagnamento intelligente** (Walking Bass e Swing Drums generati algoritmicamente in tempo reale).
 - **Lick Builder**: Crea i tuoi fraseggi nota dopo nota, esportali in tablatura e studiali con lo **Speed Trainer** integrato.

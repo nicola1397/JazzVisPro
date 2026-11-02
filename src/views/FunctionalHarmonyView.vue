@@ -97,9 +97,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
+import { usePracticeStore } from '../stores/practice.js'
 import { NOTES } from '../utils/theory.js'
 
 const { t } = useI18n()
+const practice = usePracticeStore()
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 const DIFFICULTY_CONFIG = {
@@ -218,6 +220,7 @@ function checkAnswer(deg) {
   
   const correct = deg === currentProgression.value[targetIdx.value].degree
   lastCorrect.value = correct
+  practice.record('functional-harmony', currentProgression.value[targetIdx.value].degree, correct)
   
   if (correct) {
     score.value++

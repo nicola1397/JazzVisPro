@@ -55,6 +55,7 @@ import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
 import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { usePracticeStore } from '../stores/practice.js'
 import { NOTES, NOTES_FLAT, TUNINGS } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
@@ -63,6 +64,7 @@ const appStore = useAppStore()
 const audio    = useAudioStore()
 const { t }    = useI18n()
 const guitar   = useGuitarInput({ onNote: onGuitarNote })
+const practice = usePracticeStore()
 
 // While the app plays a note, a microphone may hear it: ignore that pitch for a moment.
 const SELF_SOUND_HOLDOFF_MS = 600
@@ -87,7 +89,7 @@ async function start() {
   clearTimeout(nextTimer)
   active = true
   const notes = appStore.accidental === '#' ? NOTES : NOTES_FLAT
-  targetNote = Math.floor(Math.random() * 12)
+  targetNote = practice.pickWeighted('note-finder', [...Array(12).keys()])
   questionText.value = `${t('nf.find-prefix')}: ${notes[targetNote]}`
   statusText.value   = guitar.enabled ? t('nf.play-status') : t('nf.click-status')
   await audio.init()
@@ -123,12 +125,14 @@ function scheduleNext(delay) {
 
 // `elements`: the circles to mark (the clicked one, or every position of the played pitch).
 // `played`: name of the note played on the guitar, if the answer came from it.
-function checkAnswer({ noteIndex, elements, played = '' }) {
+// `pos`: string and fret of a clicked answer.
+function checkAnswer({ noteIndex, elements, played = '', pos = {} }) {
   if (!active) return
   const notes = appStore.accidental === '#' ? NOTES : NOTES_FLAT
   active = false; total.value++
   const correct = noteIndex === targetNote
   if (correct) score.value++
+  practice.record('note-finder', targetNote, correct, { ...pos, guitar: !!played })
   elements.forEach(el => {
     el.style.transition = 'all 0.2s ease'
     el.style.backgroundColor = correct ? '#2ecc71' : '#e74c3c'; el.style.opacity = '1'
@@ -153,7 +157,7 @@ async function onNoteClick(e) {
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, noteIndex)
   audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
-  checkAnswer({ noteIndex, elements: [element] })
+  checkAnswer({ noteIndex, elements: [element], pos: { s: stringIndex, f: fretIndex } })
 }
 
 function onGuitarNote({ midi, noteIndex }) {

@@ -124,6 +124,7 @@ import { useAudioStore } from '../../stores/audio.js'
 import { useI18n }       from '../../composables/useI18n.js'
 import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../../composables/useGuitarInput.js'
 import { readStorage, writeStorage } from '../../composables/useLocalStorage.js'
+import { usePracticeStore } from '../../stores/practice.js'
 import { INTERVAL_COLORS, getAbsoluteNote } from '../../utils/theory.js'
 import { FRETS } from '../../utils/constants.js'
 import GuitarInputPanel from '../shared/GuitarInputPanel.vue'
@@ -186,6 +187,7 @@ const appStore = useAppStore()
 const audio    = useAudioStore()
 const { t }    = useI18n()
 const guitar   = useGuitarInput({ onNote: onGuitarNote })
+const practice = usePracticeStore()
 
 // ── Settings (remembered) ─────────────────────────────────────────────────────
 const defaults = { mode: 'chord', qualities: cfg.defaultQualities, voicings: [cfg.voicings[0]], inversions: inversionKeys, root: -1 }
@@ -399,17 +401,22 @@ function reveal(voicings) {
 }
 
 // ── Game flow ─────────────────────────────────────────────────────────────────
-const pick = list => list[Math.floor(Math.random() * list.length)]
+// Practice history key: the chord type, plus voicing and bass in the ordered modes.
+function itemKey(q) {
+  return settings.mode === 'chord' ? q.quality : `${q.quality}|${q.voicing}|${q.bass}`
+}
 
+// Chord types / voicings answered wrong come back more often.
 function pickQuestion() {
   const prev = question.value
+  const ordered = settings.mode !== 'chord'
+  const combos = settings.qualities.flatMap(quality =>
+    (ordered ? settings.voicings : ['close']).flatMap(voicing =>
+      (ordered ? settings.inversions : [0]).map(bass => ({ quality, voicing, bass }))))
   for (let tries = 0; tries < 20; tries++) {
-    const ordered = settings.mode !== 'chord'
     const q = {
       rootPc: settings.root >= 0 ? settings.root : Math.floor(Math.random() * 12),
-      quality: pick(settings.qualities),
-      voicing: ordered ? pick(settings.voicings) : 'close',
-      bass: ordered ? pick(settings.inversions) : 0,
+      ...practice.pickWeighted(props.kind, combos, c => itemKey(c)),
     }
     if (!prev || ['rootPc', 'quality', 'voicing', 'bass'].some(k => q[k] !== prev[k])) return q
   }
@@ -491,6 +498,7 @@ function accept(slot, note) {
 function succeed(fromClick) {
   active.value = false
   score.value++; total.value++
+  practice.record(props.kind, itemKey(question.value), true, { guitar: !fromClick })
   const voicings = settings.mode === 'chord' ? [] : groupsOf(expected)
   if (settings.mode === 'chord' && !fromClick) {
     // Show where the pitches just played lie on the neck.
@@ -509,6 +517,10 @@ function succeed(fromClick) {
 function fail(note, message, slot) {
   active.value = false
   total.value++
+  const pos = note.element
+    ? { s: parseInt(note.element.dataset.stringIndex), f: parseInt(note.element.dataset.fretIndex) }
+    : { guitar: true }
+  practice.record(props.kind, itemKey(question.value), false, pos)
   if (slot) { slot.state = 'wrong'; slot.played = noteName(note.midi) }
   const wrongCells = note.element ? [note.element] : fretboardCirclesForMidi(appStore.currentTuning, note.midi)
   wrongCells.forEach(c => {
