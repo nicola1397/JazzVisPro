@@ -210,7 +210,7 @@ export default {
   'th.jazz4':'Essential Progressions','th.jazz5':'The CAGED System',
   'th.jazz6':'How to Improvise Jazz','th.jazz7':'Guide Tones',
   'th.jazz8':'Tritone Substitution','th.jazz9':'Chromaticism & Approach Notes',
-  'th.jazz10':'Bebop Scales','th.jazz11':'Modal Interchange',
+  'th.jazz10':'Bebop Scales','th.jazz11':'Modal Interchange','th.jazz12':'Jazz Guitar Voicings','th.jazz13':'Tune Forms','th.jazz14':'The Language of Improvisation','th.jazz15':'Swing & Rhythm','th.jazz16':'Harmony beyond the ii-V','tl.player':'Hear it in the Player',
   'tc.title':'Guitar Theory',
   'tc.subtitle':'Introduction to guitar techniques with tablature examples.',
   'nav.teoria-chitarra':'Guitar Theory',

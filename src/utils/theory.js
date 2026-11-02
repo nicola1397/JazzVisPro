@@ -30,6 +30,9 @@ export const SCALES = {
   'Minore Armonica':      [0,2,3,5,7,8,11],
   'Lidio Dominante':      [0,2,4,6,7,9,10],
   'Misolidio b13':        [0,2,4,5,7,8,10],
+  'Bebop Dominante':      [0,2,4,5,7,9,10,11],
+  'Bebop Maggiore':       [0,2,4,5,7,8,9,11],
+  'Bebop Dorica':         [0,2,3,4,5,7,9,10],
 }
 
 export const CAGED_SHAPES_MAJOR = {

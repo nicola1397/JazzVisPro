@@ -210,7 +210,7 @@ export default {
   'th.jazz4':'Progressioni Fondamentali','th.jazz5':'Il Sistema CAGED',
   'th.jazz6':'Come Improvvisare Jazz','th.jazz7':'Note Guida (Guide Tones)',
   'th.jazz8':'Sostituzione del Tritono','th.jazz9':'Cromatismo e Note di Approccio',
-  'th.jazz10':'Scale Bebop','th.jazz11':'Modal Interchange',
+  'th.jazz10':'Scale Bebop','th.jazz11':'Interscambio Modale','th.jazz12':'Voicing per Chitarra Jazz','th.jazz13':'Forme dei Brani','th.jazz14':'Linguaggio dell\'Improvvisazione','th.jazz15':'Swing e Ritmo','th.jazz16':'Armonia oltre il II-V','tl.player':'Ascolta nel Player',
   'tc.title':'Teoria Chitarra',
   'tc.subtitle':'Introduzione alle tecniche chitarristiche con esempi in tablatura.',
   'nav.teoria-chitarra':'Teoria Chitarra',

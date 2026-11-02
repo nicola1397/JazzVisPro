@@ -141,7 +141,7 @@
         </Transition>
       </div>
 
-      <!-- 8. Sostituzione del Tritono -->
+      <!-- 8. Sostituzione del Tritono (below), then the lessons of jazzLessons.js -->
       <div class="teoria-card" :class="{ open: open[7] }">
         <button class="teoria-header" @click="toggle(7)"><span>{{ t('th.jazz8') }}</span><span class="teoria-arrow">▸</span></button>
         <Transition name="jd-collapse">
@@ -149,6 +149,33 @@
             <p class="teoria-intro">Un accordo dominante può essere sostituito dal dominante a distanza di tritono (6 semitoni).</p>
             <div class="prog-example">| Dm7 | G7 | Cmaj7 |<br>→ | Dm7 | Db7 | Cmaj7 | (tritone sub)</div>
             <div class="teoria-tip mt-3"><strong>Perché funziona:</strong> G7 ha note guida B e F. Db7 ha note guida F e Cb (enarmonia di B). Le note guida sono le stesse, invertite!</div>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- 9+. Lessons in Italian and English -->
+      <div v-for="(lesson, li) in JAZZ_LESSONS" :key="lesson.titleKey" class="teoria-card" :class="{ open: open[8 + li] }">
+        <button class="teoria-header" @click="toggle(8 + li)"><span>{{ t(lesson.titleKey) }}</span><span class="teoria-arrow">▸</span></button>
+        <Transition name="jd-collapse">
+          <div class="teoria-body" v-show="open[8 + li]">
+            <template v-for="(b, bi) in lesson.blocks" :key="bi">
+              <p v-if="b.type === 'p'" :class="bi === 0 ? 'teoria-intro' : 'tl-p'">{{ L(b) }}</p>
+              <ul v-else-if="b.type === 'list'" class="tl-list">
+                <li v-for="(item, ii) in L(b)" :key="ii"><strong>{{ item[0] }}</strong> {{ item[1] }}</li>
+              </ul>
+              <div v-else-if="b.type === 'example'" class="prog-example tl-example">
+                <span>{{ b.chart }}</span>
+                <button v-if="b.play" class="jd-toolbtn tl-play" @click="loadChart(b.chart)">▶ {{ t('tl.player') }}</button>
+              </div>
+              <div v-else-if="b.type === 'table'" class="vl-scroll">
+                <table class="chord-table">
+                  <thead><tr><th v-for="h in L(b.head)" :key="h">{{ h }}</th></tr></thead>
+                  <tbody><tr v-for="(row, ri) in L(b.rows)" :key="ri"><td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td></tr></tbody>
+                </table>
+              </div>
+              <div v-else-if="b.type === 'tip'" class="teoria-tip mt-3"><strong>{{ L(b.label) }}</strong> {{ L(b) }}</div>
+              <RouterLink v-else-if="b.type === 'practice'" :to="b.to" class="tl-practice">{{ L(b) }} →</RouterLink>
+            </template>
           </div>
         </Transition>
       </div>
@@ -165,6 +192,7 @@ import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
 import { PRESET_PROGRESSIONS } from '../utils/chordParser.js'
+import { JAZZ_LESSONS } from '../utils/jazzLessons.js'
 
 const router  = useRouter()
 const pb      = usePlaybackStore()
@@ -172,8 +200,16 @@ const appStore = useAppStore()
 const { t }   = useI18n()
 const lang    = computed(() => appStore.lang)
 
-const open = reactive(Array(11).fill(false))
+const open = reactive(Array(8 + JAZZ_LESSONS.length).fill(false))
 function toggle(i) { open[i] = !open[i] }
+
+// Text of a lesson block in the current language (Italian if missing)
+const L = x => x[lang.value] ?? x.it
+
+function loadChart(text) {
+  pb.importFromText(text)
+  router.push('/player')
+}
 
 function loadProg(key) {
   const text = PRESET_PROGRESSIONS[key]
@@ -300,4 +336,14 @@ const improvTips = [
   border-radius: 10px;
   border: 1px solid var(--jd-line);
 }
+
+/* Lessons from jazzLessons.js */
+.tl-p { color: var(--jd-text-soft); font-size: 0.88em; line-height: 1.6; margin: 10px 0; }
+.tl-list { margin: 10px 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 0.88em; line-height: 1.55; color: #ccc; }
+.tl-list strong { color: var(--jd-text); }
+.tl-example { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.tl-example span { white-space: pre-wrap; }
+.tl-play { flex-shrink: 0; }
+a.tl-practice { display: inline-block; margin-top: 14px; font-family: var(--jd-mono); font-size: 0.8em; letter-spacing: 0.5px; color: var(--jd-amber); text-decoration: none; }
+a.tl-practice:hover { text-decoration: underline; }
 </style>

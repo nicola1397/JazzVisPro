@@ -35,7 +35,7 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 ### 🧠 Armonia e Teoria
 - **Scale Calculator**: Analizza una serie di note o un contesto armonico per suggerire le scale più appropriate.
 - **Reharmonizer**: Suggerisce sostituzioni armoniche (sostituzioni di tritono, dominanti secondarie, ecc.) per arricchire le tue progressioni.
-- **Theory Jazz & General**: Dispense integrate per consultare rapidamente i pilastri della teoria jazz.
+- **Theory Jazz & General**: Dispense integrate per consultare rapidamente i pilastri della teoria jazz. Teoria Jazz include anche, in italiano e inglese: cromatismo e note di approccio, scale bebop, interscambio modale, voicing per chitarra jazz, forme dei brani, linguaggio dell'improvvisazione, swing e ritmo, armonia oltre il II-V, con esempi da ascoltare nel Player e link agli esercizi.
 - **Transposer**: Strumento rapido per trasporre brani o progressioni in qualsiasi tonalità.
 
 ### 🛠 Utility
