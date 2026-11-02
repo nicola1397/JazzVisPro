@@ -27,6 +27,7 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 
 ### 🎼 Improvvisazione e Composizione
 - **Player (Play Along)**: Riproduttore di progressioni con **accompagnamento intelligente** (Walking Bass e Swing Drums generati algoritmicamente in tempo reale).
+- **Sui Cambi**: Base con walking bass, batteria swing e accordi su qualsiasi brano del Real Book. Esercizi a tempo: note guida (terza/settima su ogni accordo, anche tenute), arpeggi, note di approccio (cromatiche ed enclosure) e assolo libero con analisi di ogni nota (nota dell'accordo, tensione, nota fuori).
 - **Lick Builder**: Crea i tuoi fraseggi nota dopo nota, esportali in tablatura e studiali con lo **Speed Trainer** integrato.
 - **Real Book**: Un database di standard jazz con visualizzazione degli accordi e integrazione diretta con il Player.
 

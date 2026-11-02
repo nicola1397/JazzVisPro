@@ -161,6 +161,18 @@ export const useAudioStore = defineStore('audio', () => {
     } catch (e) { console.warn('playChord error:', e) }
   }
 
+  // Notes scheduled at an exact audio time, without stopping what is already
+  // sounding (playChord stops everything): used by the backing tracks.
+  function playNotesAt(midis, time, duration, velocity = 0.5, soundName = 'Electric Piano') {
+    if (!_isInitialized || !_chordSynth || !midis.length) return
+    try {
+      _setPreset(soundName)
+      const startTime = (time && time > Tone.now()) ? time : Tone.now() + 0.01
+      const notes = midis.map(m => Tone.Frequency(pitchToFrequency(m)).toNote())
+      _chordSynth.triggerAttackRelease(notes, duration, startTime, velocity)
+    } catch (e) { console.warn('playNotesAt error:', e) }
+  }
+
   function playClick(time, isDownbeat, vol, soundName, multiplier = 1.0) {
     if (!_isInitialized || !_metronomeSynth) return
     const now = Tone.now()
@@ -215,7 +227,7 @@ export const useAudioStore = defineStore('audio', () => {
 
   return {
     isInitialized, METRONOME_SAMPLES, CHORD_SOUNDS, context,
-    init, stopAll, playNoteImmediate, playChord, playClick, playRef,
+    init, stopAll, playNoteImmediate, playChord, playNotesAt, playClick, playRef,
     playBass, playDrum
   }
 })

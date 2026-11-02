@@ -65,6 +65,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlaybackStore } from '../stores/playback.js'
 import { useI18n } from '../composables/useI18n.js'
+import { STANDARDS } from '../utils/standards.js'
 
 const router = useRouter()
 const pb = usePlaybackStore()
@@ -72,53 +73,6 @@ const { t } = useI18n()
 
 const CATEGORIES = ['All', 'Standard', 'Bebop', 'Blues', 'Latin', 'Modal', 'Ballad']
 
-const STANDARDS = [
-  {
-    title: 'Autumn Leaves', composer: 'Joseph Kosma', key: 'Em', style: 'Standard', bpm: 140, playback: 'Swing',
-    chords: '| Am7 | D7 | Gmaj7 | Cmaj7 | F#m7b5 | B7alt | Em7 | % | Am7 | D7 | Gmaj7 | Cmaj7 | F#m7b5 | B7alt | Em7 | % | F#m7b5 | B7alt | Em7 | % | Am7 | D7 | Gmaj7 | % | F#m7b5 | B7alt | Em7 Eb7 | Dm7 Db7 | Cmaj7 | B7alt | Em7 | % |'
-  },
-  {
-    title: 'All The Things You Are', composer: 'Jerome Kern', key: 'Ab', style: 'Standard', bpm: 130, playback: 'Swing',
-    chords: '| Fm7 | Bbm7 | Eb7 | Abmaj7 | Dbmaj7 | G7 | Cmaj7 | % | Cm7 | Fm7 | Bb7 | Ebmaj7 | Abmaj7 | D7 | Gmaj7 | % | Am7 | D7 | Gmaj7 | % | F#m7 | B7 | Emaj7 | C7alt | Fm7 | Bbm7 | Eb7 | Abmaj7 | Dbmaj7 | Dbm7 | Cm7 | Bdim7 | Bbm7 | Eb7 | Abmaj7 | % |'
-  },
-  {
-    title: 'Stella By Starlight', composer: 'Victor Young', key: 'Bb', style: 'Standard', bpm: 120, playback: 'Swing',
-    chords: '| Em7b5 | A7alt | Cm7 | F7 | Fm7 | Bb7 | Ebmaj7 | Ab7 | Bbmaj7 | % | Em7b5 | A7alt | Dm7 | % | Bbm7 | Eb7 | Fmaj7 | % | Em7b5 | A7alt | Dm7 | % | Bbm7 | Eb7 | Fmaj7 | % | Em7b5 | A7alt | Bbmaj7 | Ab7 | Bbmaj7 | G7alt | Cm7b5 | F7alt | Bbmaj7 | % |'
-  },
-  {
-    title: 'Blue Bossa', composer: 'Kenny Dorham', key: 'Cm', style: 'Latin', bpm: 140, playback: 'Bossa',
-    chords: '| Cm7 | % | Fm7 | % | Dm7b5 | G7alt | Cm7 | % | Ebm7 | Ab7 | Dbmaj7 | % | Dm7b5 | G7alt | Cm7 | Dm7b5 G7alt |'
-  },
-  {
-    title: 'So What', composer: 'Miles Davis', key: 'Dm', style: 'Modal', bpm: 140, playback: 'Swing',
-    chords: '| Dm7 | % | % | % | % | % | % | % | Dm7 | % | % | % | % | % | % | % | Ebm7 | % | % | % | % | % | % | % | Dm7 | % | % | % | % | % | % | % |'
-  },
-  {
-    title: 'Wave', composer: 'Tom Jobim', key: 'D', style: 'Latin', bpm: 140, playback: 'Bossa',
-    chords: '| Dmaj7 | Bbdim7 | Am7 | D7 | Gmaj7 | % | Gm7 | C7 | F#m7 | B7alt | E7 | Bb7 | A7 | % | Dmaj7 | % |'
-  },
-  {
-    title: 'Take The A Train', composer: 'Billy Strayhorn', key: 'C', style: 'Standard', bpm: 160, playback: 'Swing',
-    chords: '| Cmaj7 | % | D7alt | % | Dm7 | G7 | Cmaj7 | Dm7 G7 | Cmaj7 | % | D7alt | % | Dm7 | G7 | Cmaj7 | % | Fmaj7 | % | % | % | D7 | % | Dm7 | G7 | Cmaj7 | % | D7alt | % | Dm7 | G7 | Cmaj7 | Dm7 G7 |'
-  },
-  {
-    title: 'Giant Steps', composer: 'John Coltrane', key: 'B', style: 'Bebop', bpm: 240, playback: 'Swing',
-    chords: '| Bmaj7 D7 | Gmaj7 Bb7 | Ebmaj7 | Am7 D7 | Gmaj7 Bb7 | Ebmaj7 F#7 | Bmaj7 | Fm7 Bb7 | Ebmaj7 | Am7 D7 | Gmaj7 | C#m7 F#7 | Bmaj7 | Fm7 Bb7 | Ebmaj7 | C#m7 F#7 |'
-  },
-  {
-    title: 'Summertime', composer: 'Gershwin', key: 'Am', style: 'Standard', bpm: 100, playback: 'Swing',
-    chords: '| Am7 | E7alt | Am7 | % | Dm7 | % | Bm7b5 | E7alt | Am7 | E7alt | Am7 | D7 | Cmaj7 | Am7 | Bm7b5 E7alt | Am7 (E7alt) |'
-  },
-  {
-    title: 'Maiden Voyage', composer: 'Herbie Hancock', key: 'D', style: 'Modal', bpm: 120, playback: 'Standard',
-    chords: '| D7sus | % | % | % | F7sus | % | % | % | Eb7sus | % | % | % | Dbmaj7#11 | % | % | % |'
-  },
-  { title: 'ii-V-I in C', composer: 'Common', key: 'C', style: 'Bebop', bpm: 120, playback: 'Swing', chords: '| Dm7 | G7 | Cmaj7 | % |' },
-  { title: 'ii-V-I in F', composer: 'Common', key: 'F', style: 'Bebop', bpm: 120, playback: 'Swing', chords: '| Gm7 | C7 | Fmaj7 | % |' },
-  { title: 'ii-V-I in Bb', composer: 'Common', key: 'Bb', style: 'Bebop', bpm: 120, playback: 'Swing', chords: '| Cm7 | F7 | Bbmaj7 | % |' },
-  { title: 'Minor ii-V-i', composer: 'Common', key: 'Dm', style: 'Bebop', bpm: 120, playback: 'Swing', chords: '| Em7b5 | A7alt | Dm7 | % |' },
-  { title: 'Rhythm Changes (Bb)', composer: 'Gershwin', key: 'Bb', style: 'Bebop', bpm: 180, playback: 'Swing', chords: '| Bbmaj7 Gm7 | Cm7 F7 | Bbmaj7 Gm7 | Cm7 F7 | Fm7 Bb7 | Ebmaj7 Ab7 | Dm7 G7 | Cm7 F7 |' },
-]
 
 const searchQuery = ref('')
 const activeCategory = ref('All')

@@ -20,6 +20,7 @@
 
     <SidebarGroup name="play" :label="t('sg.play')" :collapsed="true">
       <RouterLink class="nav-item" to="/player"     @click="appStore.closeSidebar()">{{ t('nav.player') }}</RouterLink>
+      <RouterLink class="nav-item" to="/changes-trainer" @click="appStore.closeSidebar()">{{ t('nav.changes-trainer') }}</RouterLink>
       <RouterLink class="nav-item" to="/calculator" @click="appStore.closeSidebar()">{{ t('nav.calculator') }}</RouterLink>
       <RouterLink class="nav-item" to="/real-book"  @click="appStore.closeSidebar()">{{ t('nav.real-book') }}</RouterLink>
     </SidebarGroup>

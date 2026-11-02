@@ -17,6 +17,7 @@ const STABLE_FRAMES  = 3      // consecutive frames on the same pitch before rep
 const SILENCE_FRAMES = 5      // quiet frames after which the current note is over
 const ONSET_RATIO    = 2      // energy jump that counts as a new pick attack
 const ONSET_HISTORY  = 3
+const ATTACK_LEAD_MS = 30     // a note starts a little before the first frame that shows its pitch
 
 export function useGuitarInput({ onNote } = {}) {
   const prefs = readStorage(STORAGE_KEY, {}) || {}
@@ -36,7 +37,7 @@ export function useGuitarInput({ onNote } = {}) {
 
   // Note tracking state
   let sounding = false, silentFrames = 0
-  let candidate = null, candidateCount = 0
+  let candidate = null, candidateCount = 0, candidateSince = 0
   let heardPcs = new Set()           // pitch classes already heard since the last attack/silence
   let recentRms = []
   let holds = []                     // [{ pc, until }]: notes the app itself is playing
@@ -209,8 +210,9 @@ export function useGuitarInput({ onNote } = {}) {
     const midi = Math.round(midiFloat)
     liveMidi.value = midi
 
-    if (midi === candidate) candidateCount++
-    else { candidate = midi; candidateCount = 1 }
+    // A run of frames starts again after a gap or a new attack, even on the same pitch.
+    if (midi === candidate && candidateCount > 0) candidateCount++
+    else { candidate = midi; candidateCount = 1; candidateSince = performance.now() }
     // Report once, when the note becomes stable (again after a new attack).
     if (candidateCount !== STABLE_FRAMES) return
 
@@ -220,7 +222,8 @@ export function useGuitarInput({ onNote } = {}) {
     heardPcs.add(pc)
     if (holds.some(h => h.pc === null || h.pc === pc)) return
 
-    onNote?.({ midi, noteIndex: pc, freq, cents: Math.round((midiFloat - midi) * 100) })
+    // `time`: when the note was played (performance.now() clock), for exercises in time.
+    onNote?.({ midi, noteIndex: pc, freq, cents: Math.round((midiFloat - midi) * 100), time: candidateSince - ATTACK_LEAD_MS })
   }
 
   // Call when the app plays a note through the speakers, so a microphone that

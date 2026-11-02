@@ -46,8 +46,12 @@ export function getChordIntervals(chordStr) {
   const p = parseChord(chordStr)
   if (!p) return []
   const rest = p.rest.trim()
+  // Exact match first: "m" (minor) must not be taken for "M" (major).
   for (const [suffix, intervals] of Object.entries(CHORD_INTERVALS)) {
-    if (rest === suffix || rest.toLowerCase() === suffix.toLowerCase()) return intervals
+    if (rest === suffix) return intervals
+  }
+  for (const [suffix, intervals] of Object.entries(CHORD_INTERVALS)) {
+    if (rest.toLowerCase() === suffix.toLowerCase()) return intervals
   }
   if (!rest || rest === 'maj' || rest === 'M') return CHORD_INTERVALS['maj']
   if (rest.includes('sus4') || rest.includes('sus')) return CHORD_INTERVALS['sus4']
