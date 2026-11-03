@@ -20,7 +20,7 @@
           <span class="jd-feel-label">{{ t('label.key') }}</span>
           <select :value="rootIdx" @change="rootIdx = parseInt($event.target.value)" class="jd-feel-select"
             style="width:100%;">
-            <option v-for="(n, i) in NOTES" :key="i" :value="i">{{ n }}</option>
+            <option v-for="(n, i) in ROOT_NAMES" :key="i" :value="i">{{ n }}</option>
           </select>
         </div>
 
@@ -29,7 +29,7 @@
           <select v-model="chordType" class="jd-feel-select" style="width:100%;">
             <option value="maj7">maj7</option>
             <option value="m7">m7</option>
-            <option value="7">7 (Dominant)</option>
+            <option value="7">{{ t('opt.dominant7') }}</option>
             <option value="7alt">7alt</option>
             <option value="m7b5">m7b5 (ø)</option>
             <option value="dim7">dim7</option>
@@ -62,18 +62,18 @@
             <!-- Cell 1: Chord Name (Large) -->
             <div class="jd-grid-cell cell-title" style="display:flex; align-items:center; justify-content:center; padding:12px;">
               <div style="font-family:var(--jd-display); font-style:italic; font-size:4.2em; color:var(--jd-improv); line-height:0.9; white-space: nowrap; text-shadow: 0 0 20px rgba(34,197,94,0.2);">
-                {{ NOTES[rootIdx] }}<span style="color:var(--jd-text)">{{ chordType }}</span>
+                {{ ROOT_NAMES[rootIdx] }}<span style="color:var(--jd-text)">{{ chordType }}</span>
               </div>
             </div>
 
             <!-- Cell 2: Interval Badges -->
             <div class="jd-grid-cell cell-intervals" style="display:flex; align-items:center; justify-content:center; padding:12px; border-left: 1px solid rgba(34,197,94,0.15);">
               <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:280px;">
-                <div v-for="intv in chord.intervals" :key="intv" class="cv-int-badge" style="padding: 4px 10px; border-radius:20px; background:rgba(0,0,0,0.4); border-color:rgba(34,197,94,0.3); display:flex; align-items:center; gap:6px;">
+                <div v-for="(intv, k) in chord.intervals" :key="intv" class="cv-int-badge" style="padding: 4px 10px; border-radius:20px; background:rgba(0,0,0,0.4); border-color:rgba(34,197,94,0.3); display:flex; align-items:center; gap:6px;">
                   <div class="cv-int-dot" :style="{ background: INTERVAL_COLORS[intv].color, width:'20px', height:'24px', fontSize:'9px', borderRadius:'50%' }">
-                    {{ INTERVAL_COLORS[intv].short }}
+                    {{ toneLabels[k] }}
                   </div>
-                  <span style="font-family:var(--jd-mono); font-size:12px; font-weight:800; color:#fff;">{{ NOTES[(rootIdx + intv) % 12] }}</span>
+                  <span style="font-family:var(--jd-mono); font-size:12px; font-weight:800; color:#fff;">{{ toneNames[k] }}</span>
                 </div>
               </div>
             </div>
@@ -124,7 +124,7 @@ import { useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { useChordLibrary } from '../composables/useChordLibrary.js'
-import { NOTES, INTERVAL_COLORS, getNoteIdx } from '../utils/theory.js'
+import { NOTES, ROOT_NAMES, INTERVAL_COLORS, getNoteIdx, spellChord, chordToneLabels } from '../utils/theory.js'
 
 const appStore = useAppStore()
 const { t } = useI18n()
@@ -135,7 +135,7 @@ const CHORD_DATA = {
   'maj7': { intervals: [0, 4, 7, 11], scale: 'Ionio (Maj7)', desc_it: 'Stabile e luminoso. Su: Imaj7, IVmaj7.', desc_en: 'Stable, bright. Over: Imaj7, IVmaj7.' },
   'm7': { intervals: [0, 3, 7, 10], scale: 'Dorico (m7)', desc_it: 'Caldo jazz. Su: iim7, vim7.', desc_en: 'Warm jazz. Over: iim7, vim7.' },
   '7': { intervals: [0, 4, 7, 10], scale: 'Misolidio (7)', desc_it: 'Tensione, vuole risolvere. Su: V7.', desc_en: 'Tension, wants to resolve. Over: V7.' },
-  '7alt': { intervals: [0, 4, 6, 10], scale: 'Altered (7alt)', desc_it: 'Massima tensione alterata. Su: V7alt.', desc_en: 'Max altered tension. Over: V7alt.' },
+  '7alt': { intervals: [0, 4, 10, 3, 8], scale: 'Altered (7alt)', desc_it: 'Massima tensione alterata. Su: V7alt.', desc_en: 'Max altered tension. Over: V7alt.' },
   'm7b5': { intervals: [0, 3, 6, 10], scale: 'Locrio', desc_it: 'Scuro. Su: iim7b5 nel minore.', desc_en: 'Dark. Over: iim7b5 in minor.' },
   'dim7': { intervals: [0, 3, 6, 9], scale: 'Diminuita (T/S)', desc_it: 'Massima tensione. Accordo simmetrico.', desc_en: 'Maximum tension. Symmetric chord.' },
   'maj9': { intervals: [0, 4, 7, 11, 2], scale: 'Ionio (Maj7)', desc_it: 'Luminoso con colore. Maj7 + 9a.', desc_en: 'Bright with color. Maj7 + 9th.' },
@@ -149,6 +149,8 @@ const CHORD_DATA = {
 const rootIdx = ref(getNoteIdx(appStore.root) >= 0 ? getNoteIdx(appStore.root) : 0)
 const chordType = ref('maj7')
 const chord = computed(() => CHORD_DATA[chordType.value] || CHORD_DATA['maj7'])
+const toneNames = computed(() => spellChord(ROOT_NAMES[rootIdx.value], chord.value.intervals))
+const toneLabels = computed(() => chordToneLabels(chord.value.intervals))
 
 function renderSVG(frets, fingers, baseFret) {
   const W = 110, H = 130, NX = 20, NY = 28, SW = (W - NX - 10) / 5, FH = (H - NY - 12) / 5, R = 7
@@ -172,7 +174,7 @@ function renderSVG(frets, fingers, baseFret) {
 }
 
 function getChordDiagrams(rIdx, type) {
-  const typeMap = { 'maj': '', 'm': 'm', '7': '7', 'maj7': 'maj7', 'm7': 'm7', 'm7b5': 'm7b5', 'dim7': 'dim7', 'dim': 'dim', 'aug': 'aug', 'sus2': 'sus2', 'sus4': 'sus4', '9': '9', 'maj9': 'maj9', 'm9': 'm9', '13': '13', 'mMaj7': 'mmaj7', '7alt': '7b5', 'maj7#11': 'maj#11', '6': '6', 'm6': 'm6', 'add9': 'add9' }
+  const typeMap = { 'maj': '', 'm': 'm', '7': '7', 'maj7': 'maj7', 'm7': 'm7', 'm7b5': 'm7b5', 'dim7': 'dim7', 'dim': 'dim', 'aug': 'aug', 'sus2': 'sus2', 'sus4': 'sus4', '9': '9', 'maj9': 'maj9', 'm9': 'm9', '13': '13', 'mMaj7': 'mmaj7', '7alt': '7#9', 'maj7#11': 'maj#11', '6': '6', 'm6': 'm6', 'add9': 'add9' }
   const suffix = typeMap[type] !== undefined ? typeMap[type] : type
   const key = NOTES[rIdx] + suffix
   const voicings = window.CHORD_COLLECTION?.[key]

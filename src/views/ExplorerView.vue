@@ -53,7 +53,7 @@
             <!-- Col: Key -->
             <div class="nav-group span-2 span-m-3 span-s-12">
               <span class="explorer-label">{{ t('label.key') }}</span>
-              <select class="jd-select" :value="appStore.root" @change="appStore.setRoot($event.target.value)">
+              <select class="jd-select" :value="NOTES[appStore.rootIdx] ?? appStore.root" @change="appStore.setRoot($event.target.value)">
                 <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
               </select>
             </div>

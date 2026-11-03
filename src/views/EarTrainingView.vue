@@ -22,10 +22,10 @@
         </div>
 
         <div class="jd-transport">
-          <button class="jd-tbtn jd-tbtn--play" :disabled="phase === 'listening'" @click="playChord" aria-label="Play">
+          <button class="jd-tbtn jd-tbtn--play" :disabled="phase === 'listening'" @click="playChord" :aria-label="t('aria.play')">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </button>
-          <button class="jd-tbtn jd-tbtn--replay" :disabled="phase === 'idle'" @click="replayChord" aria-label="Replay">
+          <button class="jd-tbtn jd-tbtn--replay" :disabled="phase === 'idle'" @click="replayChord" :aria-label="t('aria.replay')">
             <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
           </button>
         </div>
@@ -109,7 +109,7 @@ import { useAudioStore } from '../stores/audio.js'
 import { useAppStore }   from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { usePracticeStore } from '../stores/practice.js'
-import { NOTES } from '../utils/theory.js'
+import { NOTES, ROOT_NAMES } from '../utils/theory.js'
 
 const audio = useAudioStore()
 const appStore = useAppStore()
@@ -129,7 +129,7 @@ const INTERVALS = {
   'm7b5':  [0,3,6,10],
   'dim7':  [0,3,6,9],
   'mMaj7': [0,3,7,11],
-  '7alt':  [0,4,6,10],
+  '7alt':  [0,4,10,15,20],   // 3, b7, #9, b13: the classic altered sound
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ const currentSet = computed(() => CHORD_SETS[difficulty.value])
 
 const currentChordDisplay = computed(() => {
   if (!currentChord.value || currentRoot.value === null) return ''
-  return NOTES[currentRoot.value] + currentChord.value
+  return ROOT_NAMES[currentRoot.value] + currentChord.value
 })
 
 const historyStats = computed(() => {

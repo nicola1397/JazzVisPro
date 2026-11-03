@@ -51,7 +51,7 @@
             <span style="font-weight:600;">
               {{ m.name }}
               <span v-if="m.missing.length" style="color:var(--jd-muted); font-size:0.8em; margin-left: 8px;">
-                ({{ appStore.lang === 'it' ? 'manca' : 'missing' }}: {{ m.missing.map(n=>NOTES[n]).join(', ') }})
+                ({{ t('cf.missing') }}: {{ m.missingNames.join(', ') }})
               </span>
             </span>
             <span class="cf-result-arrow">{{ expandedIdx === idx ? '▲' : '▼' }}</span>
@@ -94,7 +94,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { useChordLibrary } from '../composables/useChordLibrary.js'
-import { NOTES } from '../utils/theory.js'
+import { NOTES, ROOT_NAMES, spellChord } from '../utils/theory.js'
 
 const appStore = useAppStore()
 const { t } = useI18n()
@@ -124,7 +124,9 @@ const matches = computed(() => {
       const chordNotes = new Set(tmpl.intervals.map(i => (root + i) % 12))
       if (!selected.every(n => chordNotes.has(n))) continue
       const missing = [...chordNotes].filter(n => !selected.includes(n))
-      found.push({ name: NOTES[root] + tmpl.name, root, type: tmpl.name, missing, score: selected.length - missing.length * 0.5 })
+      const spelled = spellChord(ROOT_NAMES[root], tmpl.intervals)
+      const missingNames = missing.map(n => spelled[tmpl.intervals.findIndex(i => (root + i) % 12 === n)])
+      found.push({ name: ROOT_NAMES[root] + tmpl.name, root, type: tmpl.name, missing, missingNames, score: selected.length - missing.length * 0.5 })
     }
   }
   return found.sort((a,b) => b.score - a.score).slice(0, 12)
@@ -146,7 +148,7 @@ function toggleDiagram(idx) {
   expandedIdx.value = expandedIdx.value === idx ? -1 : idx
 }
 
-const TYPE_MAP = {'maj':'','min':'m','m':'m','7':'7','maj7':'maj7','m7':'m7','m7b5':'m7b5','dim7':'dim7','dim':'dim','aug':'aug','sus2':'sus2','sus4':'sus4','9':'9','maj9':'maj9','m9':'m9','13':'13','mMaj7':'mmaj7','7alt':'7b5','maj7#11':'maj#11','6':'6','m6':'m6','add9':'add9'}
+const TYPE_MAP = {'maj':'','min':'m','m':'m','7':'7','maj7':'maj7','m7':'m7','m7b5':'m7b5','dim7':'dim7','dim':'dim','aug':'aug','sus2':'sus2','sus4':'sus4','9':'9','maj9':'maj9','m9':'m9','13':'13','mMaj7':'mmaj7','7alt':'7#9','maj7#11':'maj#11','6':'6','m6':'m6','add9':'add9'}
 
 function getDiagrams(m) {
   if (!loaded.value || !window.CHORD_COLLECTION) return []

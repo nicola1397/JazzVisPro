@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const srcDir = 'C:/Users/nicol/Desktop/GEMINI/Update Android App/jazz-viz-pro/src';
+// Run from the project root: node audit_translations.cjs
+const srcDir = path.join(__dirname, 'src');
 const enPath = path.join(srcDir, 'i18n/en.js');
 const itPath = path.join(srcDir, 'i18n/it.js');
 
@@ -25,7 +26,7 @@ function getFiles(dir, allFiles) {
 const keysInCode = new Set();
 
 // Regex for t('key') or t("key")
-const tRegex = /t\(['"]([^'"]+)['"]\)/g;
+const tRegex = /(?<![\w.$])t\(['"]([^'"]+)['"]\)/g;
 
 // Also look for meta: { title: 'key' } in router
 const metaRegex = /title\s*:\s*['"]([^'"]+)['"]/g;
@@ -93,7 +94,7 @@ console.log('\n--- DYNAMIC KEYS CHECK ---');
 const quizDbPath = path.join(srcDir, 'utils/quiz_db.js');
 if (fs.existsSync(quizDbPath)) {
     const quizDb = fs.readFileSync(quizDbPath, 'utf8');
-    const catRegex = /category\s*:\s*['"]([^'"]+)['"]/g;
+    const catRegex = /['"]?category['"]?\s*:\s*['"]([^'"]+)['"]/g;
     const cats = new Set();
     let m;
     while ((m = catRegex.exec(quizDb)) !== null) {

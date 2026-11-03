@@ -65,7 +65,7 @@
         </div>
         <div class="jd-pitch-grid">
           <div class="jd-pitch-group">
-            <span class="jd-pitch-label">Edit</span>
+            <span class="jd-pitch-label">{{ t('lb.edit') }}</span>
             <div class="jd-pitch-keys">
               <button @click="undo"><span>{{ t('lb.undo') }}</span></button>
               <button @click="transpose(1)"><span>{{ t('lb.trans-up') }}</span></button>
@@ -80,7 +80,7 @@
               </button>
               <input v-if="!speedTrainerRunning" type="number" v-model.number="trainerTargetBpm" min="40" max="300"
                      style="width:60px; height:38px; border-radius:7px;">
-              <span v-else class="jd-fader-value" style="align-self:center; font-size:16px; width:auto; padding:0 10px;">{{ bpm }} target</span>
+              <span v-else class="jd-fader-value" style="align-self:center; font-size:16px; width:auto; padding:0 10px;">{{ bpm }} {{ t('lb.target') }}</span>
             </div>
           </div>
           <button class="jd-extra" style="align-self:end; height:38px;" @click="exportTab">{{ t('lb.export-tab') }}</button>
@@ -122,7 +122,7 @@
     <div class="teoria-tip">
       <strong>{{ t('label.pro-tip') }}:</strong> {{ t('lb.tip') }}
       <div style="font-size:0.9em; opacity:0.7; margin-top:6px;">
-        Clic sulla pillola → cambia durata · ✕ → rimuovi nota · Trascina per riordinare
+        {{ t('lb.tip') }}
       </div>
     </div>
   </div>
@@ -134,7 +134,7 @@ import draggable from 'vuedraggable'
 import { useI18n } from '../composables/useI18n.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useAppStore } from '../stores/app.js'
-import { NOTES, NOTES_FLAT } from '../utils/theory.js'
+import { NOTES, NOTES_FLAT, getAbsoluteNote } from '../utils/theory.js'
 
 const { t } = useI18n()
 const audio = useAudioStore()
@@ -205,18 +205,26 @@ function undo() {
   }
 }
 
+// String and fret for a pitch, staying as close as possible to the string it was on
+function placeOnNeck(midi, prefString) {
+  const tuning = appStore.currentTuning
+  const strings = [0, 1, 2, 3, 4, 5].sort((a, b) => Math.abs(a - prefString) - Math.abs(b - prefString))
+  for (const s of strings) {
+    const f = midi - getAbsoluteNote(tuning, s, 0)
+    if (f >= 0 && f <= 22) return { s, f }
+  }
+  return null
+}
+
 function transpose(semitones) {
   saveHistory()
   const names = appStore.accidental === '#' ? NOTES : NOTES_FLAT
   sequence.value = sequence.value.map(n => {
     const newIdx = (n.noteIndex + semitones + 12) % 12
-    const noteName = names[newIdx]
-    return { 
-      ...n, 
-      noteIndex: newIdx, 
-      noteName, 
-      midiNote: n.midiNote + semitones 
-    }
+    const midiNote = n.midiNote + semitones
+    // Keep the tab in step with the pitch (the fret moves, or the note changes string)
+    const pos = placeOnNeck(midiNote, n.s) || { s: n.s, f: null }
+    return { ...n, noteIndex: newIdx, noteName: names[newIdx], midiNote, s: pos.s, f: pos.f }
   })
 }
 
@@ -275,13 +283,15 @@ function toggleSpeedTrainer() {
 
 // ── IO ────────────────────────────────────────────────────────────────────────
 function exportTab() {
-  const STRING_NAMES = ['e','B','G','D','A','E']
-  const lines = STRING_NAMES.map((name, strIdx) => {
+  // String names of the current tuning, highest string first (e B G D A E in standard tuning)
+  const names = appStore.currentTuning.map((pc, i) => (i === 0 ? NOTES_FLAT[pc].toLowerCase() : NOTES_FLAT[pc]))
+  const width = Math.max(...names.map(n => n.length))
+  const lines = names.map((name, strIdx) => {
     const cells = sequence.value.map(note => {
-      if (note.s === strIdx) return String(note.f).padStart(2, '-').padEnd(2, '-')
+      if (note.s === strIdx && note.f != null) return String(note.f).padStart(2, '-')
       return '--'
     })
-    return name + '|' + cells.join('|') + '|'
+    return name.padEnd(width) + '|' + cells.join('-') + '|'
   })
   const text = lines.join('\n')
   const blob = new Blob([text], { type: 'text/plain' })

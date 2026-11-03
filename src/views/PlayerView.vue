@@ -179,7 +179,7 @@
           </div>
           <button class="jd-extra" :disabled="!pb.playChords" @click="pb.autoAssignChords()"
             :title="t('btn.auto-chords')">
-            AUTO
+            {{ t('pl.auto') }}
           </button>
         </div>
 
@@ -236,9 +236,9 @@
             <option value="bossa">{{ t('opt.bossa-nova') }}</option>
             <option value="rock">{{ t('opt.rock-8ths') }}</option>
             <option value="brushes">{{ t('opt.brushes') }}</option>
-            <option value="latin">Latin (Songo)</option>
-            <option value="funk">Funk 16ths</option>
-            <option value="shuffle">Shuffle</option>
+            <option value="latin">{{ t('opt.latin') }}</option>
+            <option value="funk">{{ t('opt.funk') }}</option>
+            <option value="shuffle">{{ t('opt.shuffle') }}</option>
           </select>
           <div class="jd-fader">
             <input type="range" min="0" max="1" step="0.01" v-model.number="pb.drumVol" class="jd-range"
@@ -252,26 +252,26 @@
         <Transition name="jd-collapse">
           <div v-if="pb.drumsOn" class="jd-substrip">
             <div class="jd-subrow">
-              <span class="jd-sublabel">SWING</span>
+              <span class="jd-sublabel">{{ t('pl.swing') }}</span>
               <input type="range" min="0.5" max="0.75" step="0.005" v-model.number="pb.drumSwing"
                 class="jd-range jd-range--drums" :style="{ '--p': ((pb.drumSwing - 0.5) / 0.25 * 100) + '%' }"
                 aria-label="Swing ratio">
               <span class="jd-subvalue jd-subvalue--accent">{{ swingLabel }}</span>
             </div>
             <div class="jd-subrow">
-              <span class="jd-sublabel">VARIATION</span>
+              <span class="jd-sublabel">{{ t('pl.variation') }}</span>
               <input type="range" min="0" max="1" step="0.01" v-model.number="pb.drumVar"
                 class="jd-range jd-range--drums" :style="{ '--p': (pb.drumVar * 100) + '%' }" aria-label="Drum variation">
               <span class="jd-subvalue jd-subvalue--accent">{{ varLabel }}</span>
             </div>
             <div class="jd-subrow">
-              <span class="jd-sublabel">FILL</span>
+              <span class="jd-sublabel">{{ t('pl.fill') }}</span>
               <select v-model.number="pb.fillEvery" class="jd-select jd-select--sub" aria-label="Fill every N bars">
-                <option :value="0">— off —</option>
-                <option :value="2">every 2 bars</option>
-                <option :value="4">every 4 bars</option>
-                <option :value="8">every 8 bars</option>
-                <option :value="16">every 16 bars</option>
+                <option :value="0">{{ t('pl.fill-off') }}</option>
+                <option :value="2">{{ t('pl.fill-every').replace('{0}', 2) }}</option>
+                <option :value="4">{{ t('pl.fill-every').replace('{0}', 4) }}</option>
+                <option :value="8">{{ t('pl.fill-every').replace('{0}', 8) }}</option>
+                <option :value="16">{{ t('pl.fill-every').replace('{0}', 16) }}</option>
               </select>
               <span class="jd-subvalue">&nbsp;</span>
             </div>
@@ -284,7 +284,7 @@
       <!-- PITCH LAB ───────────────────────────────────────────── -->
       <div class="jd-pitch">
         <div class="jd-section-label">
-          <span>PITCH LAB</span>
+          <span>{{ t('pl.pitch-lab') }}</span>
           <span class="jd-section-rule"></span>
         </div>
         <div class="jd-pitch-grid">
@@ -318,8 +318,8 @@
     <!-- VOICE LEADING -->
     <div v-if="pb.voiceLeadingData.length >= 2" class="jd-voiceleading">
       <div class="jd-vl-header">
-        <span>VOICE LEADING</span>
-        <em>guide tones</em>
+        <span>{{ t('pl.voice-leading') }}</span>
+        <em>{{ t('pl.guide-tones') }}</em>
       </div>
       <div class="jd-vl-scroll">
         <table class="vl-table">
@@ -378,19 +378,19 @@ const chordSounds = computed(() => Object.keys(audio.CHORD_SOUNDS))
 
 const swingLabel = computed(() => {
   const s = pb.drumSwing
-  if (s <= 0.51) return 'Straight'
-  if (s <= 0.58) return 'Soft'
-  if (s <= 0.68) return 'Triplet'
-  if (s <= 0.72) return 'Swing'
-  return 'Shuffle'
+  if (s <= 0.51) return t('pl.straight')
+  if (s <= 0.58) return t('pl.soft')
+  if (s <= 0.68) return t('pl.triplet')
+  if (s <= 0.72) return t('pl.swing-label')
+  return t('pl.shuffle')
 })
 const varLabel = computed(() => {
   const v = pb.drumVar
-  if (v <= 0.05) return 'Robotic'
-  if (v <= 0.30) return t('opt.sottile') || 'Sottile'
-  if (v <= 0.55) return t('opt.naturale') || 'Naturale'
-  if (v <= 0.80) return t('opt.live') || 'Live'
-  return t('opt.wild') || 'Wild'
+  if (v <= 0.05) return t('pl.robotic')
+  if (v <= 0.30) return t('opt.sottile')
+  if (v <= 0.55) return t('opt.naturale')
+  if (v <= 0.80) return t('opt.live')
+  return t('opt.wild')
 })
 
 // Pretty-print the engine's current "tag" line under the channel name
@@ -399,7 +399,7 @@ const BASS_LABELS = computed(() => ({
 }))
 const DRUM_LABELS = computed(() => ({
   jazz: t('opt.jazz-swing'), bossa: t('opt.bossa-nova'), rock: t('opt.rock-8ths'),
-  brushes: t('opt.brushes'), latin: 'Latin (Songo)', funk: 'Funk 16ths', shuffle: 'Shuffle'
+  brushes: t('opt.brushes'), latin: t('opt.latin'), funk: t('opt.funk'), shuffle: t('opt.shuffle')
 }))
 const bassStyleLabel = computed(() => BASS_LABELS.value[pb.bassStyle] || pb.bassStyle)
 const drumStyleLabel = computed(() => DRUM_LABELS.value[pb.drumStyle] || pb.drumStyle)

@@ -8,7 +8,7 @@
     </div>
     <div class="nav-group">
       <label>{{ t('label.key') }}</label>
-      <select :value="appStore.root" @change="appStore.setRoot($event.target.value)">
+      <select :value="NOTES[appStore.rootIdx] ?? appStore.root" @change="appStore.setRoot($event.target.value)">
         <option v-for="n in NOTES" :key="n" :value="n">{{ n }}</option>
       </select>
     </div>

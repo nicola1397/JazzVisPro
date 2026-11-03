@@ -9,7 +9,9 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 ### 🎸 Visualizzazione e Strumenti
 - **Fretboard Interattiva**: Visualizzazione dinamica di scale, arpeggi e intervalli con supporto per diverse accordature.
 - **Chord Finder**: Trova rapidamente tutte le diteggiature di un accordo sulla tastiera con sistema a griglia professionale.
-- **Scale Explorer**: Esplora centinaia di scale e modi, visualizzando la loro struttura e le relazioni armoniche.
+- **Scale Explorer**: Esplora oltre venti scale e modi (modi della maggiore e della minore melodica, diminuite, esatonale, pentatoniche, blues, bebop) con forme CAGED, intervalli e nomi delle note.
+- **Voicing degli Accordi**: Formula, note scritte correttamente (Bb7 = Bb D F Ab), scala consigliata e diteggiature di ogni accordo jazz.
+- **Scale Navigator**: Suggerisce le scale adatte a ogni accordo e al suo contesto.
 - **Snapshots**: Cattura e salva diagrammi della tastiera per creare materiale didattico o promemoria personali.
 
 ### 🎹 Allenamento e Ear Training
@@ -22,7 +24,8 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Triadi e Rivolti**: Trova triadi maggiori, minori, diminuite, aumentate e sus, singoli rivolti in posizione stretta o il ciclo dei tre rivolti lungo il manico, con le diteggiature sui gruppi di tre corde.
 - **Settime e Drop**: Accordi di settima (maj7, 7, m7, m7b5, dim7, m(maj7), 7sus4) in posizione stretta, drop 2 e drop 3, con la nota scelta al basso e il ciclo dei rivolti lungo il manico.
 - **Suona con la chitarra**: Negli esercizi sul manico (Note Finder, Interval Learner, Triadi e Rivolti, Settime e Drop) puoi rispondere suonando la chitarra collegata (scheda audio o microfono) invece di cliccare, con avanzamento automatico alla domanda successiva.
-- **Grade/Interval Learner**: Strumenti specifici per visualizzare e interiorizzare i gradi delle scale e gli intervalli (anche in modalità discendente).
+- **Grade/Interval Learner**: Strumenti specifici per visualizzare e interiorizzare i gradi delle scale e gli intervalli (anche in modalità discendente). In modalità difficile conta anche il nome giusto della nota (Eb e non D# in Do minore).
+- **Quiz**: 1000 domande di teoria generale, teoria jazz e armonia in tre livelli, con ripasso a intervalli (SRS). Le risposte seguono le regole di teoria: note scritte per nome di lettera, una sola risposta corretta per domanda e spiegazione per ognuna.
 
 - **Progressi**: Storico di tutte le risposte con tempo di pratica, precisione, giorni di fila, punti da ripassare per ogni esercizio e mappa degli errori sul manico. Gli esercizi ripropongono più spesso ciò che sbagli.
 
@@ -33,9 +36,9 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Real Book**: Un database di standard jazz con visualizzazione degli accordi e integrazione diretta con il Player. Per ogni brano c'è un percorso di studio in cinque tappe (suonarci sopra, note guida, arpeggi, note di approccio, assolo libero) che si spuntano da sole quando completi bene l'esercizio.
 
 ### 🧠 Armonia e Teoria
-- **Scale Calculator**: Analizza una serie di note o un contesto armonico per suggerire le scale più appropriate.
+- **Calcolatore**: Incolla una progressione (es. `| Dm7 G7 | Cmaj7 |`), ne rileva la tonalità, assegna a ogni accordo la scala adatta allo stile scelto (jazz, blues, pop) e la apre nel Player.
 - **Reharmonizer**: Suggerisce sostituzioni armoniche (sostituzioni di tritono, dominanti secondarie, ecc.) per arricchire le tue progressioni.
-- **Theory Jazz & General**: Dispense integrate per consultare rapidamente i pilastri della teoria jazz. Teoria Jazz include anche, in italiano e inglese: cromatismo e note di approccio, scale bebop, interscambio modale, voicing per chitarra jazz, forme dei brani, linguaggio dell'improvvisazione, swing e ritmo, armonia oltre il II-V, con esempi da ascoltare nel Player e link agli esercizi.
+- **Teoria Generale, Jazz e Chitarra**: Dispense integrate, in italiano e inglese, su notazione, durate, tempo, circolo delle quinte, accordi, rivolti, scale e accordi jazz, progressioni, CAGED, note guida e tecniche chitarristiche. Teoria Jazz include anche: cromatismo e note di approccio, scale bebop, interscambio modale, voicing per chitarra jazz, forme dei brani, linguaggio dell'improvvisazione, swing e ritmo, armonia oltre il II-V, con esempi da ascoltare nel Player e link agli esercizi.
 - **Transposer**: Strumento rapido per trasporre brani o progressioni in qualsiasi tonalità.
 
 ### 🛠 Utility
@@ -48,3 +51,12 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - Motore audio avanzato basato su **Tone.js** con sintesi sonora e campionamento.
 - Design ottimizzato per desktop e tablet.
 - Supporto multilingua completo (Italiano/Inglese).
+
+## Sviluppo
+
+```bash
+npm install
+npm run dev       # server di sviluppo
+npm run build     # build di produzione in dist/
+node audit_translations.cjs   # controlla che ogni chiave di traduzione esista in IT e EN
+```

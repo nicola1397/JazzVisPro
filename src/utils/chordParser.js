@@ -1,4 +1,4 @@
-import { NOTES, NOTES_FLAT, SCALES, getNoteIdx } from './theory.js'
+import { NOTES, NOTES_FLAT, ROOT_NAMES, SCALES, getNoteIdx } from './theory.js'
 
 export const CHORD_INTERVALS = {
   'maj7':    [0,4,7,11],
@@ -126,6 +126,9 @@ export const PRESET_PROGRESSIONS = {
   "Autumn Leaves (style)": '| Cm7 F7 | Bbmaj7 | Ebmaj7 | Am7b5 D7 | Gm7 |',
 }
 
+// Minor keys are usually written with sharps for C#, F#, G# (fewer accidentals than Db, Gb, Ab minor)
+const MINOR_KEY_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B']
+
 export function detectKey(chords) {
   if (!chords || chords.length === 0) return null
   const MAJOR_SCALE = [
@@ -170,7 +173,7 @@ export function detectKey(chords) {
     }
   }
   if (!best || bestScore < 1) return null
-  const rootName = NOTES[best.root]
+  const rootName = best.mode === 'major' ? ROOT_NAMES[best.root] : MINOR_KEY_NAMES[best.root]
   return { root: rootName, mode: best.mode, score: bestScore,
     label: best.mode === 'major' ? `${rootName} maggiore` : `${rootName} minore` }
 }

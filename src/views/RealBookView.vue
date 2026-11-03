@@ -16,7 +16,7 @@
       <section class="jd-console" style="margin-bottom:25px; padding: 25px;">
         <div class="jd-grain" aria-hidden="true"></div>
         <div class="jd-section-label">
-          <span>SEARCH & FILTER</span>
+          <span>{{ t('rb.search') }}</span>
           <span class="jd-section-rule"></span>
         </div>
 
@@ -33,7 +33,7 @@
       <!-- Results list -->
       <div class="rb-list jd-steps">
         <div class="jd-section-label" style="margin-bottom: 15px;">
-          <span>STANDARDS</span>
+          <span>{{ t('rb.standards') }}</span>
           <span class="jd-section-rule"></span>
         </div>
 
@@ -45,7 +45,7 @@
           <div class="rb-standard-info">
             <div class="rb-standard-title">{{ s.title }}</div>
             <div class="rb-standard-meta">
-              {{ s.composer }} · Key: {{ s.key }} ·
+              {{ s.composer }} · {{ t('rb.key') }}: {{ s.key }} ·
               <span class="rb-style-tag">{{ s.style }}</span>
             </div>
             <div class="rb-standard-chords">{{ s.chords }}</div>

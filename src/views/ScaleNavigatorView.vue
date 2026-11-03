@@ -26,7 +26,7 @@
             <select v-model="selectedChordType" class="jd-select" style="width: 100%;">
               <option value="maj7">maj7</option>
               <option value="m7">m7</option>
-              <option value="7">7 (Dominant)</option>
+              <option value="7">{{ t('opt.dominant7') }}</option>
               <option value="7alt">7alt</option>
               <option value="m7b5">m7b5</option>
               <option value="dim7">dim7</option>

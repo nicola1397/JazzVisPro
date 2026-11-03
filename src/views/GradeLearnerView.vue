@@ -119,7 +119,7 @@ import { useAudioStore } from '../stores/audio.js'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { usePracticeStore } from '../stores/practice.js'
-import { NOTES, NOTES_FLAT, SCALES } from '../utils/theory.js'
+import { NOTES, NOTES_FLAT, SCALES, spellScale } from '../utils/theory.js'
 
 const audio = useAudioStore()
 const appStore = useAppStore()
@@ -154,12 +154,20 @@ const fixedScale = ref('Ionio (Maj7)')
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function glUsesFlat(name) { return !NOTES.includes(name) && NOTES_FLAT.includes(name); }
 
-function glExpectFlat(name) {
-  let i = NOTES.indexOf(name);
-  if (i === -1) i = NOTES_FLAT.indexOf(name);
-  const idx = i < 0 ? 0 : i;
-  if (NOTES[idx] !== NOTES_FLAT[idx]) return glUsesFlat(name);
-  return idx === 5; // F uses Bb
+// Names that have a button on the wheel (no E#, B#, Cb, Fb or double accidentals)
+const ON_WHEEL = new Set([...NOTES, ...NOTES_FLAT])
+const spelled = computed(() => spellScale(gameRoot.value, currentScale.value))
+const expectedName = computed(() => spelled.value[targetDegree.value - 1] || null)
+// Flats for the wheel when the scale is written with flats (C minor: Eb, Ab, Bb)
+const prefersFlat = computed(() => {
+  const names = spelled.value.filter(Boolean)
+  const flats = names.filter(n => n.length > 1 && n.endsWith('b')).length
+  const sharps = names.filter(n => n.includes('#')).length
+  return flats > sharps || (flats === sharps && glUsesFlat(gameRoot.value))
+})
+function wheelName(idx) {
+  const inScale = spelled.value.find(n => n && ON_WHEEL.has(n) && rootNameToIdx(n) === idx)
+  return inScale || (prefersFlat.value ? NOTES_FLAT : NOTES)[idx]
 }
 
 function rootNameToIdx(name) {
@@ -190,7 +198,6 @@ const questionText = computed(() => {
 
 const noteButtons = computed(() => {
   const R = 150, CX = 160, CY = 160
-  const curNotes = glExpectFlat(gameRoot.value) ? NOTES_FLAT : NOTES
   const isFlatRoot = glUsesFlat(gameRoot.value)
 
   return Array.from({ length: 12 }, (_, i) => {
@@ -201,7 +208,7 @@ const noteButtons = computed(() => {
 
     return {
       idx: i,
-      label: hardMode.value ? NOTES[i] : curNotes[i],
+      label: hardMode.value ? NOTES[i] : wheelName(i),
       x: CX + R * Math.cos(angle),
       y: CY + R * Math.sin(angle),
       isRoot
@@ -238,8 +245,12 @@ async function startNext() {
 
   let root, scaleName
   if (freeMode.value) {
-    root = randomItem(GL_ROOTS)
-    scaleName = randomItem(Object.keys(SCALES))
+    // Only roots whose scale can be written with the names on the wheel (no D# major with E# and B#)
+    for (let tries = 0; tries < 60; tries++) {
+      root = randomItem(GL_ROOTS)
+      scaleName = randomItem(Object.keys(SCALES))
+      if (spellScale(root, scaleName).every(n => n && ON_WHEEL.has(n))) break
+    }
   } else {
     root = fixedRoot.value
     scaleName = fixedScale.value
@@ -274,10 +285,10 @@ async function onNoteClick(idx, clickedIsFlat) {
   const correctIdx = (gameRootIdx.value + targetGrade.value) % 12
 
   let isCorrect = (idx === correctIdx)
-  if (hardMode.value) {
-    const isEnharm = NOTES[idx] !== NOTES_FLAT[idx]
-    const correctIsFlat = glExpectFlat(gameRoot.value)
-    if (isEnharm && (clickedIsFlat !== correctIsFlat)) isCorrect = false
+  // Hard mode: the spelling counts too (Eb, not D#, in C minor)
+  if (hardMode.value && expectedName.value && ON_WHEEL.has(expectedName.value)) {
+    const clickedName = clickedIsFlat ? NOTES_FLAT[idx] : NOTES[idx]
+    isCorrect = clickedName === expectedName.value
   }
 
   practice.record('grade-learner', targetGrade.value, isCorrect)
@@ -295,8 +306,8 @@ async function onNoteClick(idx, clickedIsFlat) {
     if (clickedIsFlat) flatStates.value = { ...flatStates.value, [idx]: 'wrong' }
     else noteStates.value = { ...noteStates.value, [idx]: 'wrong' }
 
-    const correctIsFlat = glExpectFlat(gameRoot.value)
-    const correctName = correctIsFlat ? NOTES_FLAT[correctIdx] : NOTES[correctIdx]
+    const correctName = expectedName.value || NOTES[correctIdx]
+    const correctIsFlat = glUsesFlat(correctName)
     feedbackMsg.value = t('gl.wrong-answer').replace('{0}', correctName)
     feedbackOk.value = false
 

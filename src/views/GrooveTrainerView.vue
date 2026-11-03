@@ -29,7 +29,7 @@
               <svg v-if="!isPlaying" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
               <svg v-else viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             </button>
-            <button class="jd-tbtn" @click="stopPlay" aria-label="Stop">
+            <button class="jd-tbtn" @click="stopPlay" :aria-label="t('aria.stop')">
               <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
             </button>
           </div>
@@ -47,7 +47,7 @@
             <label class="jd-mode" :class="{ on: isPolyrhythm }">
               <input type="checkbox" v-model="isPolyrhythm">
               <span class="jd-mode-dot" aria-hidden="true"></span>
-              <span class="jd-mode-text">Polyrhythm</span>
+              <span class="jd-mode-text">{{ t('gt.polyrhythm') }}</span>
             </label>
           </div>
         </div>
@@ -56,7 +56,7 @@
 
         <div class="jd-fader" style="max-width: 200px; margin: 10px 0;">
           <span class="jd-section-hint" style="margin-right: 15px;">{{ t('label.vol') }}</span>
-          <input type="range" v-model.number="volume" min="0" max="1" step="0.1" class="jd-range" :style="{ '--p': (volume*100) + '%' }" aria-label="Volume">
+          <input type="range" v-model.number="volume" min="0" max="1" step="0.1" class="jd-range" :style="{ '--p': (volume*100) + '%' }" :aria-label="t('aria.volume')">
           <span class="jd-fader-value">{{ Math.round(volume * 100) }}</span>
         </div>
       </section>
@@ -111,16 +111,16 @@
       <section v-if="isPolyrhythm" class="jd-console" style="margin-bottom:20px;">
         <div class="jd-grain" aria-hidden="true"></div>
         <div class="jd-section-label">
-          <span>{{ t('label.pattern') }} B (Polyrhythm)</span>
+          <span>{{ t('label.pattern') }} B ({{ t('gt.polyrhythm') }})</span>
           <span class="jd-section-rule"></span>
         </div>
 
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:15px;">
           <select class="jd-select" :value="subdivCountB" @change="onSubdivChange('B', $event.target.value)" style="max-width: 220px;">
-            <option value="3">3 (Triplets/Pulse)</option>
-            <option value="4">4 (Quarters)</option>
-            <option value="5">5 (Quintplets)</option>
-            <option value="7">7 (Septuplets)</option>
+            <option value="3">{{ t('gt.sub-3') }}</option>
+            <option value="4">{{ t('gt.sub-4') }}</option>
+            <option value="5">{{ t('gt.sub-5') }}</option>
+            <option value="7">{{ t('gt.sub-7') }}</option>
           </select>
           <button class="jd-toolbtn" @click="applyPreset('B','downbeats')">{{ t('gt.preset-down') }}</button>
           <button class="jd-toolbtn jd-toolbtn--reset" @click="clearPattern('B')">{{ t('gt.preset-reset') }}</button>
@@ -187,8 +187,7 @@
         <span class="jd-improv-bullet" aria-hidden="true"></span>
         <strong>{{ t('label.tips') }}</strong>
         <span class="jd-improv-helper">
-          Ghost Notes: Accento (Giallo) → Ghost (Trasparente) → Spento.
-          Polyrhythm: Sovrapponi due suddivisioni different (es. 4 contro 3).
+          {{ t('gt.tips') }}
         </span>
       </div>
 
@@ -290,79 +289,72 @@ function clearPattern(target) {
 
 // ── Scheduler ─────────────────────────────────────────────────────────────────
 let rafId          = null
-let nextNoteTimeA  = 0
-let schedStepA     = 0
-let nextNoteTimeB  = 0
-let schedStepB     = 0
+// Both patterns share one bar clock (4 beats), so a polyrhythm stays aligned even when the tempo
+// changes: an event's time is segStart + (bar + step / cells) * barDur.
+let segStart = 0
+let barDur   = 0
+let barA = 0, stepA = 0
+let barB = 0, stepB = 0
 const LOOK_AHEAD   = 0.1
 
-function secondsPerStep(subdiv) {
-  const beatsPerMin  = bpm.value
-  const stepsPerBeat = subdiv / 4
-  return 60 / beatsPerMin / stepsPerBeat
+const barSeconds = () => 4 * 60 / bpm.value
+const eventTime = (bar, step, cells) => segStart + (bar + step / cells) * barDur
+
+// Change tempo at audio time `at`, keeping the musical position unchanged
+function retime(at) {
+  const newDur = barSeconds()
+  if (!barDur || newDur === barDur) { barDur = newDur; return }
+  const pos = (at - segStart) / barDur
+  barDur = newDur
+  segStart = at - pos * barDur
+}
+
+function showStep(which, step, time, ctx) {
+  setTimeout(() => {
+    if (!isPlaying.value) return
+    if (which === 'A') currentStepA.value = step
+    else currentStepB.value = step
+  }, Math.max(0, (time - ctx.currentTime) * 1000 - 20))
 }
 
 function scheduler() {
   if (!isPlaying.value) return
   const ctx = audioStore.context
   if (!ctx) { rafId = requestAnimationFrame(scheduler); return }
+  const horizon = ctx.currentTime + LOOK_AHEAD
 
-  // Schedule Pattern A
-  while (nextNoteTimeA < ctx.currentTime + LOOK_AHEAD) {
-    const step       = schedStepA
-    const isDownbeat = step % barSizeA.value === 0
-    const state      = patternA.value[step]
-
-    if (state !== 0) {
-      const mult = state === 2 ? 0.35 : 1.0 // Ghost note multiplier
-      audioStore.playClick(nextNoteTimeA, isDownbeat, volume.value, soundName.value, mult)
+  // Pattern A (also drives the bar count and the speed trainer)
+  for (let t = eventTime(barA, stepA, subdivCountA.value); t < horizon; t = eventTime(barA, stepA, subdivCountA.value)) {
+    const state = patternA.value[stepA]
+    if (state && t > ctx.currentTime - 0.02) {   // skip events missed while the tab was hidden
+      const mult = state === 2 ? 0.35 : 1.0 // ghost note
+      audioStore.playClick(t, stepA % barSizeA.value === 0, volume.value, soundName.value, mult)
     }
-
-    const schedCapture = step
-    const fireAt = nextNoteTimeA - ctx.currentTime
-    setTimeout(() => {
-      if (isPlaying.value) currentStepA.value = schedCapture
-    }, Math.max(0, fireAt * 1000 - 20))
-
-    nextNoteTimeA += secondsPerStep(subdivCountA.value)
-    schedStepA = (schedStepA + 1) % subdivCountA.value
-
-    // Speed Trainer: when we wrap to step 0, we just completed a bar (16 steps for clave) /
-    // a beat (4 for quarters). Treat 1 bar = subdivCountA cells.
-    if (schedStepA === 0) {
+    showStep('A', stepA, t, ctx)
+    if (++stepA >= subdivCountA.value) {
+      stepA = 0
+      barA++
       barsPlayed.value++
       if (speedActive.value && speedBars.value > 0 && barsPlayed.value % speedBars.value === 0) {
-        const newBpm = Math.min(speedToBpm.value, bpm.value + speedStep.value)
-        if (newBpm !== bpm.value) {
-          bpm.value = newBpm
-        } else if (newBpm >= speedToBpm.value) {
-          // Reached the top — stop
-          stopPlay(); return
-        }
+        if (bpm.value >= speedToBpm.value) { stopPlay(); return }
+        const boundary = eventTime(barA, 0, 1)
+        bpm.value = Math.min(speedToBpm.value, bpm.value + speedStep.value)
+        retime(boundary)   // the new tempo starts exactly on the bar line
       }
     }
   }
 
-  // Schedule Pattern B
+  // Pattern B (polyrhythm), on the same bar clock
   if (isPolyrhythm.value) {
-    while (nextNoteTimeB < ctx.currentTime + LOOK_AHEAD) {
-      const step  = schedStepB
-      const state = patternB.value[step]
-
-      if (state !== 0) {
+    for (let t = eventTime(barB, stepB, subdivCountB.value); t < horizon; t = eventTime(barB, stepB, subdivCountB.value)) {
+      const state = patternB.value[stepB]
+      if (state && t > ctx.currentTime - 0.02) {
         const mult = state === 2 ? 0.35 : 1.0
-        // Use higher pitch for B to distinguish
-        audioStore.playClick(nextNoteTimeB, step === 0, volume.value * 0.8, soundName.value === 'Beep' ? 'Click' : 'Beep', mult)
+        // A different sound for B so the two layers can be told apart
+        audioStore.playClick(t, stepB === 0, volume.value * 0.8, soundName.value === 'Beep' ? 'Click' : 'Beep', mult)
       }
-
-      const schedCapture = step
-      const fireAt = nextNoteTimeB - ctx.currentTime
-      setTimeout(() => {
-        if (isPlaying.value) currentStepB.value = schedCapture
-      }, Math.max(0, fireAt * 1000 - 20))
-
-      nextNoteTimeB += secondsPerStep(subdivCountB.value)
-      schedStepB = (schedStepB + 1) % subdivCountB.value
+      showStep('B', stepB, t, ctx)
+      if (++stepB >= subdivCountB.value) { stepB = 0; barB++ }
     }
   }
 
@@ -373,21 +365,16 @@ async function startPlayback() {
   await audioStore.init()
   const ctx = audioStore.context
   if (!ctx) return
-  
-  const now = ctx.currentTime
-  schedStepA    = 0
-  nextNoteTimeA = now + 0.05
-  currentStepA.value = 0
-
-  schedStepB    = 0
-  nextNoteTimeB = now + 0.05
-  currentStepB.value = 0
 
   // Speed Trainer: reset and apply starting BPM
   barsPlayed.value = 0
-  if (speedActive.value) {
-    bpm.value = speedFromBpm.value
-  }
+  if (speedActive.value) bpm.value = speedFromBpm.value
+
+  segStart = ctx.currentTime + 0.05
+  barDur = barSeconds()
+  barA = stepA = barB = stepB = 0
+  currentStepA.value = 0
+  currentStepB.value = 0
 
   isPlaying.value   = true
   rafId = requestAnimationFrame(scheduler)
@@ -405,15 +392,17 @@ async function togglePlay() {
   else await startPlayback()
 }
 
+// Manual tempo changes while playing: keep the position in the bar (no-op if already retimed)
 watch(bpm, () => {
-  if (isPlaying.value) {
-    const ctx = audioStore.context
-    if (ctx) {
-      nextNoteTimeA = ctx.currentTime + 0.05
-      nextNoteTimeB = ctx.currentTime + 0.05
-    }
-  }
+  const ctx = audioStore.context
+  if (isPlaying.value && ctx) retime(ctx.currentTime)
 })
+
+// Changing the number of cells restarts that layer at the next bar line
+watch(subdivCountA, () => { if (isPlaying.value && stepA > 0) { barA++; stepA = 0 } })
+watch(subdivCountB, () => { if (isPlaying.value && stepB > 0) { barB++; stepB = 0 } })
+// Turning the second layer on mid-groove: start it on the next bar line
+watch(isPolyrhythm, on => { if (on && isPlaying.value) { barB = barA + 1; stepB = 0 } })
 
 onUnmounted(() => { stopPlay() })
 </script>

@@ -16,7 +16,7 @@
       <div class="jd-improv-bullet"></div>
       <div>
         <strong>{{ t('calc.result') }}</strong>
-        <div class="jd-improv-helper">{{ keyResult.label }} ({{ t('label.score') }}: {{ keyResult.score?.toFixed?.(1) || keyResult.score }})</div>
+        <div class="jd-improv-helper">{{ keyResult.root }} {{ t(keyResult.mode === 'major' ? 'fh.major' : 'fh.minor') }} ({{ t('label.score') }}: {{ keyResult.score?.toFixed?.(1) || keyResult.score }})</div>
       </div>
     </div>
 

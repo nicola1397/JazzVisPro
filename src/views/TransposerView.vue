@@ -18,7 +18,7 @@
         <div style="display:flex; flex-direction:column; gap:20px;">
           <div>
             <div class="jd-section-label">
-              <span>INPUT</span>
+              <span>{{ t('tr.input') }}</span>
               <span class="jd-section-rule"></span>
             </div>
             <textarea v-model="inputText" rows="3" placeholder="| Dm7 G7 | Cmaj7 | Am7 D7 | Gmaj7 |"
@@ -40,7 +40,7 @@
 
           <div>
             <div class="jd-section-label">
-              <span>OUTPUT</span>
+              <span>{{ t('tr.output') }}</span>
               <span class="jd-section-rule"></span>
             </div>
             <textarea :value="outputText" readonly rows="3" class="jd-bpm-input"

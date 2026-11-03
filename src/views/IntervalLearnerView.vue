@@ -17,10 +17,10 @@
         </div>
 
         <div class="jd-transport">
-          <button class="jd-tbtn jd-tbtn--play" @click="start" aria-label="Start / Next">
+          <button class="jd-tbtn jd-tbtn--play" @click="start" :aria-label="t('aria.start-next')">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </button>
-          <button class="jd-tbtn jd-tbtn--replay" @click="replay" :disabled="!active && root === undefined" aria-label="Replay">
+          <button class="jd-tbtn jd-tbtn--replay" @click="replay" :disabled="!active && root === undefined" :aria-label="t('aria.replay')">
             <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
           </button>
         </div>
@@ -63,7 +63,7 @@ import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
 import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
 import { usePracticeStore } from '../stores/practice.js'
-import { INTERVAL_COLORS, TUNINGS, NOTES, NOTES_FLAT } from '../utils/theory.js'
+import { INTERVAL_COLORS, TUNINGS, NOTES, NOTES_FLAT, ROOT_NAMES } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
 
@@ -94,14 +94,16 @@ function reset() {
   clearBoard()
 }
 
+// Interval names as degrees above the root (b7 = minor seventh, 7 = major seventh)
+const INTERVAL_NAMES = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7']
+
 async function start() {
   clearTimeout(nextTimer)
   active = true
   root           = Math.floor(Math.random() * 12)
   targetInterval = practice.pickWeighted('interval-learner', [...Array(11).keys()].map(i => i + 1), iv => intervalKey(iv))
-  const info     = INTERVAL_COLORS[targetInterval]
-  const rootName = NOTES[root]
-  questionText.value = `${t('il.find-prefix')}: ${info.label} ${t('il.find-of')} ${rootName}${descending.value ? ' ↓' : ''}`
+  const rootName = ROOT_NAMES[root]
+  questionText.value = `${t('il.find-prefix')}: ${INTERVAL_NAMES[targetInterval]} ${t('il.find-of')} ${rootName}${descending.value ? ' ↓' : ''}`
   statusText.value   = guitar.enabled ? t('il.play-status') : t('il.click-status')
   await audio.init()
   playRoot()

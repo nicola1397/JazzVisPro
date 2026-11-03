@@ -21,11 +21,11 @@
           <div class="jd-modes">
             <label class="jd-mode" :class="{ on: appStore.tunerMode === 'normal' }">
               <input type="radio" :checked="appStore.tunerMode === 'normal'" @change="appStore.setTunerMode('normal')" class="hidden-radio">
-              <span class="jd-mode-dot"></span><span class="jd-mode-text">Standard</span>
+              <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('tu.standard') }}</span>
             </label>
             <label class="jd-mode" :class="{ on: appStore.tunerMode === 'strobe' }">
               <input type="radio" :checked="appStore.tunerMode === 'strobe'" @change="appStore.setTunerMode('strobe')" class="hidden-radio">
-              <span class="jd-mode-dot"></span><span class="jd-mode-text">Pro Strobe</span>
+              <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('tu.strobe') }}</span>
             </label>
           </div>
         </div>

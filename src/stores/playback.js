@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAudioStore } from './audio.js'
 import { useAppStore } from './app.js'
-import { NOTES, NOTES_FLAT, SCALES, getNoteIdx } from '../utils/theory.js'
+import { NOTES, NOTES_FLAT, SCALES, getNoteIdx, spellAbove, chordToneSteps } from '../utils/theory.js'
 import { parseChord, getChordIntervals, getChordScale, PRESET_PROGRESSIONS, detectKey } from '../utils/chordParser.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 
@@ -609,14 +609,17 @@ export const usePlaybackStore = defineStore('playback', () => {
     return steps.value.map(step => {
       const ri = getNoteIdx(step.root)
       const ints = getChordIntervals(step.chordName || step.root)
-      const third   = ints.find(i => i === 3 || i === 4)
-      const seventh = ints.find(i => i === 9 || i === 10 || i === 11)
+      const steps   = chordToneSteps(ints)
+      const third   = ints.find((i, k) => steps[k] === 2)
+      const sevIdx  = steps.indexOf(6) >= 0 ? steps.indexOf(6) : ints.indexOf(9)   // 6th chords: the 6 acts as 7th
+      const seventh = sevIdx >= 0 ? ints[sevIdx] : undefined
       const absNote = semi => ri !== -1 && semi != null ? (ri + semi) % 12 : null
-      const noteName = semi => semi != null && ri !== -1 ? NOTES[(ri + semi) % 12] : '–'
+      const root = parseChord(step.chordName || step.root)?.root || step.root
+      const noteName = (semi, st) => semi != null && ri !== -1 ? (spellAbove(root, semi, st) ?? NOTES_FLAT[(ri + semi) % 12]) : '–'
       return {
         chord: step.chordName || step.root,
         thirdAbs: absNote(third), seventhAbs: absNote(seventh),
-        thirdNote: noteName(third), seventhNote: noteName(seventh),
+        thirdNote: noteName(third, 2), seventhNote: noteName(seventh, sevIdx >= 0 ? steps[sevIdx] : 6),
       }
     })
   })
