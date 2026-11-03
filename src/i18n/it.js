@@ -223,7 +223,7 @@ export default {
   'th.guit9':'9. Armonici Naturali','th.guit10':'10. Pinch Harmonics',
   'th.guit11':'11. Tapping','th.guit12':'12. Tremolo Picking',
   'th.guit13':'13. Legato','th.guit14':'14. Sweep Picking',
-  'th.guit15':'15. Note Smorzate (Muted)',
+  'th.guit15':'15. Note stoppate (dead notes)',
   'help.title':'Notazione Scale Calculator',
   'help.desc':'Il calcolatore analizza progressioni di accordi e suggerisce scale appropriate.',
   'help.chords':'Accordi:','help.chords-desc':'Notazione standard tipo Cmaj7, G7, Am7b5.',

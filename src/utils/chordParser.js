@@ -122,7 +122,7 @@ export const PRESET_PROGRESSIONS = {
   'ii-V-i (Am)': '| Bm7b5 | E7alt | Am7 | Am7 |',
   '12-Bar Blues (Bb)': '| Bb7 | Eb7 | Bb7 | Bb7 | Eb7 | Eb7 | Bb7 | G7 | Cm7 | F7 | Bb7 | F7 |',
   'Turnaround (C)': '| Cmaj7 | Am7 | Dm7 | G7 |',
-  'Rhythm Changes (Bb)': '| Bbmaj7 Gm7 | Cm7 F7 | Fm7 Bb7 | Ebmaj7 Ab7 | Dm7b5 G7 | Cm7 F7 | Bbmaj7 Gm7 | Cm7 F7 |',
+  'Rhythm Changes (Bb)': '| Bbmaj7 G7 | Cm7 F7 | Bbmaj7 G7 | Cm7 F7 | Fm7 Bb7 | Ebmaj7 Ab7 | Dm7 G7 | Cm7 F7 |',
   "Autumn Leaves (style)": '| Cm7 F7 | Bbmaj7 | Ebmaj7 | Am7b5 D7 | Gm7 |',
 }
 
