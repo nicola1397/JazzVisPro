@@ -570,11 +570,14 @@ export const usePlaybackStore = defineStore('playback', () => {
     clearProgression()
     const allChords = []
     const measures = text.split('|').map(m => m.trim()).filter(Boolean)
+    // the chord that follows each one, across bar lines (it decides the dominant's scale)
+    const sequence = measures.flatMap(m => m.split(/\s+/).filter(c => c && c !== '%' && c !== '•/•'))
+    let seqIdx = 0
     measures.forEach(m => {
       const chords = m.split(/\s+/).filter(Boolean)
       if (!chords.length) return
       const bars = 1.0 / chords.length
-      chords.forEach((c, idx) => {
+      chords.forEach(c => {
         if (c === '%' || c === '•/•') {
           const last = steps.value[steps.value.length - 1]
           if (last) {
@@ -586,8 +589,8 @@ export const usePlaybackStore = defineStore('playback', () => {
           }
           return
         }
-        const p = parseChord(c); if (!p) return
-        const nextC = chords[idx + 1] || null
+        const p = parseChord(c); if (!p) { seqIdx++; return }
+        const nextC = sequence[++seqIdx] || null
         allChords.push(c)
         addStep({
           root: p.root, scale: getChordScale(c, nextC, genre),

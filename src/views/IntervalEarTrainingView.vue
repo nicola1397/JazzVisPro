@@ -200,7 +200,7 @@ async function scheduleIntervalPlay(root, semi) {
   await audio.init()
   const rootNoteIdx = root
   const topNoteIdx  = (root + semi) % 12
-  const topOctave   = semi >= 12 ? 5 : 4
+  const topOctave   = 4 + Math.floor((root + semi) / 12)   // above the root even past B
 
   // 1) Play root
   audio.playChord([0], rootNoteIdx, 0, 0.8, 0.25, 'Electric Piano', 4)

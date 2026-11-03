@@ -92,7 +92,12 @@ onMounted(() => {
 
 function loadSnapshots() {
   const saved = localStorage.getItem('jv_snapshots')
-  if (saved) snapshots.value = JSON.parse(saved)
+  if (saved) {
+    try {
+      const list = JSON.parse(saved)
+      snapshots.value = Array.isArray(list) ? list : []
+    } catch { snapshots.value = [] }
+  }
 }
 
 function saveSnapshots() {

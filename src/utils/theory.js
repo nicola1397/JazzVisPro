@@ -21,12 +21,14 @@ export const SCALES = {
   'Altered (7alt)':       [0,1,3,4,6,8,10],
   'Minore Melodica':      [0,2,3,5,7,9,11],
   'Diminuita (T/S)':      [0,2,3,5,6,8,9,11],
+  'Diminuita (S/T)':      [0,1,3,4,6,7,9,10],
   'Esatonale':            [0,2,4,6,8,10],
   'Minore Pentatonica':   [0,3,5,7,10],
   'Maggiore Pentatonica': [0,2,4,7,9],
   'Blues':                [0,3,5,6,7,10],
   'Minore Naturale (Aeolian)': [0,2,3,5,7,8,10],
   'Locrio':               [0,1,3,5,6,8,10],
+  'Locrio #2':            [0,2,3,5,6,8,10],
   'Minore Armonica':      [0,2,3,5,7,8,11],
   'Lidio Dominante':      [0,2,4,6,7,9,10],
   'Misolidio b13':        [0,2,4,5,7,8,10],
@@ -46,7 +48,7 @@ export const CAGED_SHAPES_MAJOR = {
 export const CAGED_SHAPES_MINOR = {
   C: [{s:4,f:0},{s:3,f:-2},{s:2,f:-3},{s:1,f:-2},{s:0,f:-4}],
   A: [{s:4,f:0},{s:3,f:2},{s:2,f:2},{s:1,f:1},{s:0,f:0}],
-  G: [{s:5,f:0},{s:4,f:-2},{s:3,f:-3},{s:2,f:-3},{s:1,f:-3},{s:0,f:0}],
+  G: [{s:5,f:0},{s:4,f:-2},{s:3,f:-3},{s:2,f:-3},{s:1,f:-4},{s:0,f:0}],
   E: [{s:5,f:0},{s:4,f:2},{s:3,f:2},{s:2,f:0},{s:1,f:0},{s:0,f:0}],
   D: [{s:3,f:0},{s:2,f:2},{s:1,f:3},{s:0,f:1}],
 }

@@ -86,8 +86,16 @@ function transpose() {
     const useFlat = rootIdx === -1
     if (useFlat) rootIdx = NOTES_FLAT.indexOf(p.root)
     if (rootIdx === -1) return token
-    const newIdx = ((rootIdx + n) % 12 + 12) % 12
-    return (useFlat ? NOTES_FLAT[newIdx] : NOTES[newIdx]) + p.rest
+    const shift = (name, flat) => {
+      let i = NOTES.indexOf(name)
+      if (i === -1) i = NOTES_FLAT.indexOf(name)
+      if (i === -1) return name
+      const j = ((i + n) % 12 + 12) % 12
+      return flat ? NOTES_FLAT[j] : NOTES[j]
+    }
+    // slash chords: the bass note moves with the chord (C/E -> D/F#)
+    const rest = p.rest.replace(/\/([A-G][#b]?)/, (_, bass) => '/' + shift(bass, useFlat || bass.includes('b')))
+    return shift(p.root, useFlat) + rest
   }).join('')
 }
 

@@ -19,6 +19,9 @@ export const CHORD_INTERVALS = {
   'aug':     [0,4,8],
   'sus2':    [0,2,7],
   'sus4':    [0,5,7],
+  '7sus4':   [0,5,7,10],
+  '7sus':    [0,5,7,10],
+  '9sus4':   [0,5,7,10,14],
   '7alt':    [0,4,6,10],
   '13':      [0,4,9,10],
   '9':       [0,4,7,10,2],
@@ -54,8 +57,9 @@ export function getChordIntervals(chordStr) {
     if (rest.toLowerCase() === suffix.toLowerCase()) return intervals
   }
   if (!rest || rest === 'maj' || rest === 'M') return CHORD_INTERVALS['maj']
-  if (rest.includes('sus4') || rest.includes('sus')) return CHORD_INTERVALS['sus4']
+  if (rest.includes('sus') && /7|9|13/.test(rest)) return CHORD_INTERVALS['7sus4']
   if (rest.includes('sus2')) return CHORD_INTERVALS['sus2']
+  if (rest.includes('sus')) return CHORD_INTERVALS['sus4']
   if (rest.includes('maj7')) return CHORD_INTERVALS['maj7']
   if (rest.includes('m7b5') || rest.includes('ø')) return CHORD_INTERVALS['m7b5']
   if (rest.includes('mMaj7') || rest.includes('mM7')) return CHORD_INTERVALS['mMaj7']
@@ -76,6 +80,14 @@ export function getChordScale(chordStr, nextChord = null, genre = 'jazz') {
 
   if (rest.includes('sus4') || rest.includes('sus')) return 'Misolidio (7)'
 
+  // Dominants with their alterations written in the symbol
+  if (/7|9|13/.test(rest) && !/maj|m(?!aj)|dim|ø/.test(rest.replace(/b9|#9|b13|#11|b5|#5|alt/g, ''))) {
+    if (rest.includes('alt')) return 'Altered (7alt)'
+    if (rest.includes('b9')) return 'Diminuita (S/T)'
+    if (rest.includes('#11')) return 'Lidio Dominante'
+    if (rest.includes('b13') || rest.includes('#5')) return 'Misolidio b13'
+  }
+
   // Genre-aware dominant scale selection
   if (rest === '7' || rest === '9' || rest === '13') {
     if (genre === 'blues') return 'Blues'
@@ -84,8 +96,12 @@ export function getChordScale(chordStr, nextChord = null, genre = 'jazz') {
       if (np) {
         const curIdx  = getNoteIdx(p.root)
         const nextIdx = getNoteIdx(np.root)
+        // V7 resolving down a fifth: to a minor chord the b9 and b13 of the
+        // altered scale fit the minor key; to a major chord mixolydian does.
         if (curIdx !== -1 && nextIdx !== -1 && ((curIdx + 5) % 12) === nextIdx) {
-          return 'Altered (7alt)'
+          const nextRest = np.rest.trim()
+          const toMinor = /^m(?!aj)/.test(nextRest) || /dim|ø|m7b5/.test(nextRest)
+          return toMinor ? 'Altered (7alt)' : 'Misolidio (7)'
         }
       }
     }

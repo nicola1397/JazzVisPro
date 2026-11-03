@@ -15,7 +15,7 @@ export const STANDARDS = [
   },
   {
     title: 'Stella By Starlight', composer: 'Victor Young', key: 'Bb', style: 'Standard', bpm: 120, playback: 'Swing',
-    chords: '| Em7b5 | A7alt | Cm7 | F7 | Fm7 | Bb7 | Ebmaj7 | Ab7 | Bbmaj7 | % | Em7b5 | A7alt | Dm7 | % | Bbm7 | Eb7 | Fmaj7 | % | Em7b5 | A7alt | Dm7 | % | Bbm7 | Eb7 | Fmaj7 | % | Em7b5 | A7alt | Bbmaj7 | Ab7 | Bbmaj7 | G7alt | Cm7b5 | F7alt | Bbmaj7 | % |'
+    chords: '| Em7b5 | A7alt | Cm7 | F7 | Fm7 | Bb7 | Ebmaj7 | Ab7 | Bbmaj7 | Em7b5 A7 | Dm7 | Bbm7 Eb7 | Fmaj7 | Em7b5 A7 | Am7b5 | D7 | G7alt | % | Cm7 | % | Ab7 | % | Bbmaj7 | % | Em7b5 | A7 | Dm7b5 | G7 | Cm7b5 | F7 | Bbmaj7 | % |'
   },
   {
     title: 'Blue Bossa', composer: 'Kenny Dorham', key: 'Cm', style: 'Latin', bpm: 140, playback: 'Bossa',
@@ -27,7 +27,7 @@ export const STANDARDS = [
   },
   {
     title: 'Wave', composer: 'Tom Jobim', key: 'D', style: 'Latin', bpm: 140, playback: 'Bossa',
-    chords: '| Dmaj7 | Bbdim7 | Am7 | D7 | Gmaj7 | % | Gm7 | C7 | F#m7 | B7alt | E7 | Bb7 | A7 | % | Dmaj7 | % |'
+    chords: '| Dmaj7 | Bbdim7 | Am7 | D7 | Gmaj7 | Gm6 | F#7 | B7 | E7 | Bb7 | A7 | % |'
   },
   {
     title: 'Take The A Train', composer: 'Billy Strayhorn', key: 'C', style: 'Standard', bpm: 160, playback: 'Swing',
@@ -43,7 +43,7 @@ export const STANDARDS = [
   },
   {
     title: 'Maiden Voyage', composer: 'Herbie Hancock', key: 'D', style: 'Modal', bpm: 120, playback: 'Standard',
-    chords: '| D7sus | % | % | % | F7sus | % | % | % | Eb7sus | % | % | % | Dbmaj7#11 | % | % | % |'
+    chords: '| D7sus | % | % | % | F7sus | % | % | % | D7sus | % | % | % | F7sus | % | % | % | Eb7sus | % | % | % | C#m7 | % | % | % | D7sus | % | % | % | F7sus | % | % | % |'
   },
   { title: 'ii-V-I in C', composer: 'Common', key: 'C', style: 'Bebop', bpm: 120, playback: 'Swing', chords: '| Dm7 | G7 | Cmaj7 | % |' },
   { title: 'ii-V-I in F', composer: 'Common', key: 'F', style: 'Bebop', bpm: 120, playback: 'Swing', chords: '| Gm7 | C7 | Fmaj7 | % |' },

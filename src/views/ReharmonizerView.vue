@@ -53,7 +53,7 @@
 import { ref } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
-import { NOTES } from '../utils/theory.js'
+import { NOTES_FLAT, getNoteIdx } from '../utils/theory.js'
 import { parseChord } from '../utils/chordParser.js'
 
 const appStore = useAppStore()
@@ -77,32 +77,35 @@ function quality(rest) {
   return 'maj7'
 }
 
+// Substitutions and companion chords, by the chord's quality. Roots are
+// spelled with flats as on jazz charts (Db7, not C#7), F# excepted.
 function getSubs(rootName, qual) {
-  const ri = NOTES.indexOf(rootName)
+  const ri = getNoteIdx(rootName)
   if (ri === -1) return []
-  const note = (o) => NOTES[(ri + o + 12) % 12]
+  const note = (o) => { const pc = (ri + o + 12) % 12; return pc === 6 ? 'F#' : NOTES_FLAT[pc] }
   const subs = []
   if (qual === '7' || qual === '7alt') {
-    subs.push({ chord:`${note(6)}7`,     label: t('rh.tritone-sub') })
+    subs.push({ chord:`${note(6)}7`,     label: t('rh.tritone-sub') })   // G7 -> Db7: same 3rd and 7th
     subs.push({ chord:`${rootName}7alt`, label: t('rh.altered')     })
-    subs.push({ chord:`${note(2)}m7`,    label: t('rh.ii-of-v')     })
+    subs.push({ chord:`${note(7)}m7`,    label: t('rh.ii-of-v')     })   // G7 -> Dm7 before it
+    subs.push({ chord:`${note(3)}7`,     label: t('rh.backdoor')    })   // G7 -> Bb7, the backdoor to the same I
   } else if (qual === 'maj7' || qual === 'maj') {
-    subs.push({ chord:`${note(4)}m7`,    label: t('rh.diatonic-3')  })
-    subs.push({ chord:`${note(9)}m7`,    label: t('rh.diatonic-6')  })
+    subs.push({ chord:`${note(4)}m7`,    label: t('rh.diatonic-3')  })   // Cmaj7 -> Em7
+    subs.push({ chord:`${note(9)}m7`,    label: t('rh.diatonic-6')  })   // Cmaj7 -> Am7
     subs.push({ chord:`${note(10)}maj7`, label: t('rh.modal-bvii')  })
     subs.push({ chord:`${note(8)}maj7`,  label: t('rh.modal-bvi')   })
   } else if (qual === 'm7' || qual === 'm') {
-    subs.push({ chord:`${note(3)}maj7`,  label: t('rh.relative-maj') })
-    subs.push({ chord:`${note(10)}7`,    label: t('rh.backdoor')     })
-    subs.push({ chord:`${note(5)}maj7`,  label: t('rh.iv-maj')       })
+    subs.push({ chord:`${note(3)}maj7`,  label: t('rh.relative-maj') })  // Dm7 -> Fmaj7, three notes in common
+    subs.push({ chord:`${note(5)}7`,     label: t('rh.ii-v')         })  // Dm7 -> G7: complete the ii-V
   } else if (qual === 'm7b5') {
-    subs.push({ chord:`${note(3)}dim7`,  label: t('rh.dim-sub') })
-    subs.push({ chord:`${note(5)}7b9`,   label: t('rh.dom-b9')  })
+    subs.push({ chord:`${note(8)}9`,     label: t('rh.rootless-9') })    // Bm7b5 = G9 without its root
+    subs.push({ chord:`${note(3)}dim7`,  label: t('rh.dim-sub') })       // Bm7b5 -> Ddim7, three notes in common
+    subs.push({ chord:`${note(5)}7b9`,   label: t('rh.dom-b9')  })       // Bm7b5 -> E7b9, the V of the minor ii-V
   } else if (qual === 'dim7' || qual === 'dim') {
-    subs.push({ chord:`${note(3)}7b9`,   label: t('rh.dim-as-dom') })
-    subs.push({ chord:`${note(6)}7b9`,   label: t('rh.dim-as-dom') })
+    // a dim7 is a 7b9 without its root, a semitone below any of its notes
+    for (const o of [11, 2, 5, 8]) subs.push({ chord:`${note(o)}7b9`, label: t('rh.dim-as-dom') })
   }
-  subs.push({ chord:`${note(7)}7`, label: t('rh.sec-dom') })
+  subs.push({ chord:`${note(7)}7`, label: t('rh.sec-dom') })            // the V7 of this chord
   return subs
 }
 

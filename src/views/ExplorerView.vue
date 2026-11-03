@@ -188,7 +188,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { NOTES, SCALES, TUNINGS } from '../utils/theory.js'
@@ -198,9 +198,6 @@ const { t } = useI18n()
 
 const snapshotSaved = ref(false)
 
-onMounted(() => {
-  console.log('ExplorerView mounted. Notation:', appStore.notation, 'isCagedCompatible:', appStore.isCagedCompatible)
-})
 
 const tuningKeys = computed(() => Object.keys(TUNINGS))
 const scaleKeys = computed(() => Object.keys(SCALES))
@@ -214,8 +211,9 @@ function createSnapshot() {
     customScale: Array.from(appStore.customScaleNotes),
     date: new Date().toLocaleString()
   }
-  const saved = localStorage.getItem('jv_snapshots')
-  const list = saved ? JSON.parse(saved) : []
+  let list = []
+  try { list = JSON.parse(localStorage.getItem('jv_snapshots') || '[]') } catch {}
+  if (!Array.isArray(list)) list = []
   list.unshift(snap)
   localStorage.setItem('jv_snapshots', JSON.stringify(list))
   snapshotSaved.value = true
@@ -242,7 +240,10 @@ function importCustomScale(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result)
-      if (data.customScale) appStore.customScaleNotes = new Set(data.customScale)
+      if (Array.isArray(data.customScale)) {
+        appStore.customScaleNotes = new Set(data.customScale.filter(k => /^[0-5]-\d{1,2}$/.test(k)))
+        appStore.scheduleSave()
+      }
     } catch { alert(t('err.invalid-json')) }
   }
   reader.readAsText(file)
