@@ -190,6 +190,7 @@ export default {
   'srs.box1':'Da rifare','srs.box2':'Iniziale','srs.box3':'Familiare','srs.box4':'Buono','srs.box5':'Padroneggiato',
   'srs.modeNew':'Solo nuove','srs.modeReview':'Solo ripasso','srs.modeMixed':'Misto (consigliato)',
   'srs.due':'pendenti','srs.badge':'RIPASSO','srs.noReview':'Nessuna domanda da ripassare',
+  'srs.total':'in totale','srs.plusNew':'nuove','srs.neverSeen':'mai viste',
   'srs.statsCorrect':'corrette','srs.statsWrong':'sbagliate','srs.statsNew':'nuove','srs.statsReview':'ripasso',
   'imp.mode':'Improv Guide',
   'imp.helper':'Modalità improvvisazione: scala suggerita evidenziata, guide tones (3ª/7ª) marcate ad ogni cambio accordo.',

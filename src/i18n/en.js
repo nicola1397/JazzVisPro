@@ -190,6 +190,7 @@ export default {
   'srs.box1':'To redo','srs.box2':'Beginner','srs.box3':'Familiar','srs.box4':'Good','srs.box5':'Mastered',
   'srs.modeNew':'New only','srs.modeReview':'Review only','srs.modeMixed':'Mixed (recommended)',
   'srs.due':'due','srs.badge':'REVIEW','srs.noReview':'No questions to review',
+  'srs.total':'total','srs.plusNew':'new','srs.neverSeen':'never seen',
   'srs.statsCorrect':'correct','srs.statsWrong':'wrong','srs.statsNew':'new','srs.statsReview':'review',
   'imp.mode':'Improv Guide',
   'imp.helper':'Improv mode: suggested scale highlighted, guide tones (3rd/7th) marked at every chord change.',

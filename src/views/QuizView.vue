@@ -58,12 +58,13 @@
 
         <button class="btn-add-step" style="height:52px; font-size:1.1em; width:100%; max-width:400px; margin-top:10px;"
           :disabled="selectedCategories.length === 0" @click="startQuiz">{{ t('quiz.start') }}</button>
+        <p v-if="setupMsg" role="status" style="margin-top:12px; color:var(--jd-red); font-family:var(--jd-mono); font-size:0.8em;">{{ setupMsg }}</p>
 
         <!-- Box distribution chart -->
         <div v-if="totalSeen > 0" style="width:100%; margin-top:30px; padding:20px; background:var(--jd-bg-deep); border:1px solid var(--jd-line); border-radius:12px;">
           <div style="font-family:var(--jd-mono); font-size:0.7em; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--jd-muted); margin-bottom:14px; text-align:left; display:flex; justify-content:space-between;">
             <span>{{ t('srs.boxes') }}</span>
-            <span>{{ totalSeen }} TOTAL</span>
+            <span>{{ totalSeen }} {{ t('srs.total') }}</span>
           </div>
           <div style="display:flex; flex-direction:column; gap:10px;">
             <div v-for="b in boxRows" :key="b.box" style="display:flex; align-items:center; gap:12px;">
@@ -106,13 +107,13 @@
 
         <!-- Options -->
         <div style="display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:35px;">
-          <button v-for="(opt, idx) in currentOptions" :key="idx" class="et-choice-btn"
+          <button v-for="(opt, idx) in currentOptions" :key="opt.idx" class="et-choice-btn"
             style="text-align:left; padding:18px 24px; min-height:64px; height:auto; line-height:1.3;" :class="{
               correct: answered && opt.isCorrect,
-              wrong: answered && opt.label === selectedAnswerLabel && !opt.isCorrect,
+              wrong: answered && opt.idx === selectedIdx && !opt.isCorrect,
             }" :disabled="answered" @click="checkAnswer(opt)">
             <span style="margin-right:18px; opacity:0.3; font-family:var(--jd-mono); font-size:0.8em;">{{ String.fromCharCode(65 + idx) }}</span>
-            {{ opt.label }}
+            {{ (langContent.options || [])[opt.idx] }}
           </button>
         </div>
 
@@ -178,6 +179,15 @@ const router = useRouter()
 const appStore = useAppStore()
 const practice = usePracticeStore()
 
+// Fisher–Yates: Array.sort with a random comparator gives a biased order.
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
 // ── SRS storage ─────────────────────────────────────────────────────────────
 // Leitner 5-box: wrong→box 1, correct promotes box (max 5).
 const SRS_INTERVALS_MS = [
@@ -228,7 +238,8 @@ const score = ref(0)
 const sessNew = ref(0)
 const sessReview = ref(0)
 const answered = ref(false)
-const selectedAnswerLabel = ref(null)
+const selectedIdx = ref(null)
+const setupMsg = ref('')
 const isCorrect = ref(false)
 const currentOptions = ref([])
 const srsState = ref({})
@@ -261,10 +272,14 @@ const dueCountForSelection = computed(() => {
   return due
 })
 
+const newCountForSelection = computed(() => QUIZ_DATABASE.filter(q =>
+  selectedCategories.value.includes(q.category) && q.level === selectedDifficulty.value && !srsState.value[q.id]
+).length)
+
 const srsModes = computed(() => [
-  { id: 'mixed',  label: t('srs.modeMixed'),  desc: dueCountForSelection.value + ' ' + t('srs.due') + ', + nuove' },
+  { id: 'mixed',  label: t('srs.modeMixed'),  desc: dueCountForSelection.value + ' ' + t('srs.due') + ' + ' + t('srs.plusNew') },
   { id: 'review', label: t('srs.modeReview'), desc: dueCountForSelection.value + ' ' + t('srs.due') },
-  { id: 'new',    label: t('srs.modeNew'),    desc: 'mai viste' },
+  { id: 'new',    label: t('srs.modeNew'),    desc: newCountForSelection.value + ' ' + t('srs.neverSeen') },
 ])
 
 // Box distribution (across all categories — user-wide stats)
@@ -298,7 +313,7 @@ function pickQuestions(pool, limit = 15) {
     else if (r.due <= now) dueReview.push(q)
     else seen.push(q)
   }
-  const shuf = a => a.sort(() => Math.random() - 0.5)
+  const shuf = shuffle
   shuf(fresh); shuf(dueReview); shuf(seen)
 
   let picked = []
@@ -322,11 +337,12 @@ function startQuiz() {
     q.level === selectedDifficulty.value
   )
   if (filtered.length === 0) {
-    alert(t('quiz.no-questions'))
+    setupMsg.value = t('quiz.no-questions')
     return
   }
   const picked = pickQuestions(filtered, 15)
-  if (picked.length === 0) { alert(t('srs.noReview')); return }
+  if (picked.length === 0) { setupMsg.value = t('srs.noReview'); return }
+  setupMsg.value = ''
   quizQuestions.value = picked
   currentQuestionIdx.value = 0
   score.value = 0
@@ -338,17 +354,14 @@ function startQuiz() {
 
 function prepareQuestion() {
   answered.value = false
-  selectedAnswerLabel.value = null
+  selectedIdx.value = null
   const q = currentQuestionRaw.value
-  const lang = appStore.lang || 'it'
-  const content = q[lang] || q['it']
-  const opts = content.options.map((label, idx) => ({ label, isCorrect: idx === q.correct_idx }))
-  currentOptions.value = opts.sort(() => Math.random() - 0.5)
+  currentOptions.value = shuffle(q.it.options.map((_, idx) => ({ idx, isCorrect: idx === q.correct_idx })))
 }
 
 function checkAnswer(opt) {
   if (answered.value) return
-  selectedAnswerLabel.value = opt.label
+  selectedIdx.value = opt.idx
   answered.value = true
   isCorrect.value = opt.isCorrect
   if (isCorrect.value) score.value++
