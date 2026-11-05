@@ -14,6 +14,9 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Scale Navigator**: Suggerisce le scale adatte a ogni accordo e al suo contesto.
 - **Snapshots**: Cattura e salva diagrammi della tastiera per creare materiale didattico o promemoria personali.
 
+### 🧭 Lezioni guidate
+- **Orientarsi sul manico**: Sei lezioni in ordine (corde e tasti, note naturali sulle corde basse, diesis e bemolle, forme d'ottava, note su tutte le corde, intervalli come forme). Ogni lezione alterna spiegazioni con le note segnate sul manico, dimostrazioni da rifare (il manico suona e mostra una sequenza, poi la ripeti cliccando o suonando la chitarra, con la nota giusta che lampeggia dopo due errori) ed esercizi con suggerimenti, superati con il 70% di risposte giuste. I progressi restano nel browser e le risposte compaiono anche in Progressi.
+
 ### 🎹 Allenamento e Ear Training
 - **Ear Training (Accordi & Intervalli)**: Moduli per sviluppare l'orecchio riconoscendo qualità di accordi e distanze intervallari, con statistiche persistenti.
 - **Functional Harmony Trainer**: Nuovo modulo interattivo per allenare il riconoscimento dei gradi romani e delle funzioni tonali (II-V-I, ecc.).

@@ -69,7 +69,7 @@ watch(() => appStore.lang, lang => {
 
 function handleNoteClick({ noteIndex, midiNote, stringIndex, fretIndex, element }) {
   const path = route.path
-  if (['/interval-learner', '/note-finder', '/lick-builder', '/triad-trainer', '/seventh-trainer', '/ear-playback', '/changes-trainer', '/scale-tempo', '/transcribe'].includes(path)) {
+  if (['/interval-learner', '/note-finder', '/lick-builder', '/triad-trainer', '/seventh-trainer', '/ear-playback', '/changes-trainer', '/scale-tempo', '/transcribe'].includes(path) || path.startsWith('/lessons/')) {
     window.dispatchEvent(new CustomEvent('fretboard:noteClick', {
       detail: { noteIndex, midiNote, stringIndex, fretIndex, element }
     }))

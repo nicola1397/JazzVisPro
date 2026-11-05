@@ -3,6 +3,10 @@
     <button class="nav-toggle d-lg-none" @click="appStore.closeSidebar()">✕</button>
     <div class="logo">JAZZ<span>VIZ</span> PRO</div>
 
+    <SidebarGroup name="lessons" :label="t('sg.lessons')" :collapsed="false">
+      <RouterLink class="nav-item" to="/lessons" :class="{ 'router-link-active': $route.path.startsWith('/lessons') }" @click="appStore.closeSidebar()">{{ t('nav.lessons') }}</RouterLink>
+    </SidebarGroup>
+
     <SidebarGroup name="explore" :label="t('sg.explore')" :collapsed="false">
       <RouterLink class="nav-item" to="/explorer"        @click="appStore.closeSidebar()">{{ t('nav.explorer') }}</RouterLink>
       <RouterLink class="nav-item" to="/snapshots"       @click="appStore.closeSidebar()">{{ t('nav.snapshots') }}</RouterLink>
