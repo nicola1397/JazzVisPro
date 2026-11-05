@@ -159,16 +159,32 @@ export function detectKey(chords) {
     if (expected === 'm7' && actual === 'm') return 1
     return 0
   }
+  // A major key and its relative minor share the same chords, so they often tie
+  // (Cm7 F7 Bbmaj7 is ii V I in Bb and iv VII7 III in G minor). The tonic chord
+  // settles it: the last chord weighs most, then the first, then any other.
+  const TONIC_QUALITIES = { major: ['maj7', 'maj'], minor: ['m7', 'm', 'mMaj7'] }
+  const parsed = chords.map(c => {
+    const p = parseChord(c); if (!p) return null
+    const ci = getNoteIdx(p.root); if (ci === -1) return null
+    return { ci, group: chordQualityGroup(p.rest) }
+  })
+  function tonicBonus(root, mode) {
+    const isTonic = x => x && x.ci === root && TONIC_QUALITIES[mode].includes(x.group)
+    if (isTonic(parsed[parsed.length - 1])) return 0.75
+    if (isTonic(parsed[0])) return 0.5
+    if (parsed.some(isTonic)) return 0.25
+    return 0
+  }
   let best = null, bestScore = -1
   for (let root = 0; root < 12; root++) {
     for (const [mode, scale] of [['major', MAJOR_SCALE], ['minor', MINOR_SCALE]]) {
       let score = 0
-      for (const c of chords) {
-        const p = parseChord(c); if (!p) continue
-        const ci = getNoteIdx(p.root); if (ci === -1) continue
-        const deg = (ci - root + 12) % 12
-        score += qualityMatch(chordQualityGroup(p.rest), scale[deg].q)
+      for (const x of parsed) {
+        if (!x) continue
+        const deg = (x.ci - root + 12) % 12
+        score += qualityMatch(x.group, scale[deg].q)
       }
+      score += tonicBonus(root, mode)
       if (score > bestScore) { bestScore = score; best = { root, mode } }
     }
   }

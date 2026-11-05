@@ -356,11 +356,13 @@ const soloTotals = computed(() => {
 })
 // Shares that add up to 100 (largest remainder)
 const soloShares = computed(() => {
-  const tot = soloTotals.value.total || 1
+  const tot = soloTotals.value.total
+  if (!tot) return Object.fromEntries(KINDS.map(k => [k, 0]))
   const raw = KINDS.map(k => (soloTotals.value[k] / tot) * 100)
   const out = raw.map(Math.floor)
   const order = raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0])
-  for (let i = 0; i < 100 - out.reduce((a, b) => a + b, 0); i++) out[order[i][1]]++
+  const missing = 100 - out.reduce((a, b) => a + b, 0)
+  for (let i = 0; i < missing; i++) out[order[i % order.length][1]]++
   return Object.fromEntries(KINDS.map((k, i) => [k, out[i]]))
 })
 const soloAria = computed(() => KINDS.map(k => `${t(`ch.kind-${k}`)} ${soloShares.value[k]}%`).join(', '))

@@ -160,7 +160,7 @@ import { ref, reactive, computed } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { usePracticeStore, practiceMsByDay, streakDays, dayKey } from '../stores/practice.js'
 import { useI18n } from '../composables/useI18n.js'
-import { INTERVAL_COLORS, getPitchClass } from '../utils/theory.js'
+import { INTERVAL_COLORS, INTERVAL_DEGREES, getPitchClass } from '../utils/theory.js'
 
 const appStore = useAppStore()
 const practice = usePracticeStore()
@@ -176,7 +176,7 @@ const INTERVALS_EN = ['Unison', 'min 2nd', 'maj 2nd', 'min 3rd', 'maj 3rd', 'P4'
 // Every exercise that records answers, with how to name its items.
 const EXERCISES = [
   { id: 'note-finder',        nav: 'nav.note-finder',           route: '/note-finder',           item: k => appStore.currentNotes[+k] },
-  { id: 'interval-learner',   nav: 'nav.interval-learner',      route: '/interval-learner',      item: k => (INTERVAL_COLORS[parseInt(k)]?.label || k) + (k.endsWith('d') ? ' ↓' : '') },
+  { id: 'interval-learner',   nav: 'nav.interval-learner',      route: '/interval-learner',      item: k => (INTERVAL_DEGREES[parseInt(k)] || k) + (k.endsWith('d') ? ' ↓' : '') },
   { id: 'grade-learner',      nav: 'nav.grade-learner',         route: '/grade-learner',         item: k => INTERVAL_COLORS[+k]?.short || k },
   { id: 'triads',             nav: 'nav.triad-trainer',         route: '/triad-trainer',         item: chordItem },
   { id: 'sevenths',           nav: 'nav.seventh-trainer',       route: '/seventh-trainer',       item: chordItem },

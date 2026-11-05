@@ -172,6 +172,7 @@ function setDifficulty(d) {
 function generateNew() {
   stopListening()
   const next = makeQuestion(difficulty.value)
+  if (!next) return
   // the chord asked is more often one whose degree is often missed
   next.targetIdx = practice.pickWeighted('functional-harmony', next.chords.map((_, i) => i), i => next.chords[i].id)
   q.value = next

@@ -70,6 +70,10 @@ export const INTERVAL_COLORS = {
   11: { label:'maj7', color:'#27ae60', short:'maj7' },
 }
 
+// Intervals named as degrees above the root (b7 = minor seventh, 7 = major seventh),
+// as the Interval Learner asks them and the Progress page lists them.
+export const INTERVAL_DEGREES = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7']
+
 export function getNoteIdx(note) {
   let i = NOTES.indexOf(note)
   if (i !== -1) return i
