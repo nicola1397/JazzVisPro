@@ -195,7 +195,8 @@ const nextLabel  = computed(() => {
 // Mirror: idle → watch (the app plays the sequence) → repeat (the student plays it back) → done
 const m = reactive({ phase: 'idle', idx: 0, watchIdx: -1, miss: 0, errors: 0, tone: '', heard: '' })
 // Quiz: one question at a time, `results` holds true/false per answer
-const q = reactive({ i: 0, results: [], question: null, answered: false, hintShown: false, finished: false, passed: false, heard: '', feedback: [] })
+// Shape questions (`question.shapes`): the notes found so far are in `picked`.
+const q = reactive({ i: 0, results: [], question: null, answered: false, hintShown: false, finished: false, passed: false, heard: '', feedback: [], picked: [] })
 
 // Every step change bumps the token: pending timeouts and demonstrations of the old step stop.
 let token = 0
@@ -263,6 +264,7 @@ function redraw() {
       for (const mk of q.question.hintMarks || []) paint(mk, { color: mk.color, label: mk.label, style: 'ghost' })
     }
     for (const mk of q.question.context || []) paint(mk, { color: mk.color, label: mk.label })
+    for (const mk of q.picked) paint(mk, { color: OK_COLOR, label: mk.label })
     for (const mk of q.feedback) paint(mk, { color: mk.color, label: mk.label })
   }
 }
@@ -304,7 +306,7 @@ function enterStep() {
   cancelAll()
   asked = new Set()
   Object.assign(m, { phase: 'idle', idx: 0, watchIdx: -1, miss: 0, errors: 0, tone: '', heard: '' })
-  Object.assign(q, { i: 0, results: [], question: null, answered: false, hintShown: false, finished: false, passed: false, heard: '', feedback: [] })
+  Object.assign(q, { i: 0, results: [], question: null, answered: false, hintShown: false, finished: false, passed: false, heard: '', feedback: [], picked: [] })
   const s = step.value
   if (!s) return
   setLessonPosition(lesson.value.id, stepIdx.value)
@@ -442,14 +444,14 @@ function newQuestion(prevId) {
   for (let tries = 0; asked.has(next.id) && tries < 40; tries++) next = step.value.ask()
   for (let tries = 0; next.id === prevId && tries < 20; tries++) next = step.value.ask()
   asked.add(next.id)
-  Object.assign(q, { question: next, answered: false, hintShown: false, heard: '', feedback: [] })
+  Object.assign(q, { question: next, answered: false, hintShown: false, heard: '', feedback: [], picked: [] })
   redraw()
 }
 
 function startQuiz() {
   cancelAll()
   asked = new Set()
-  Object.assign(q, { i: 0, results: [], question: null, answered: false, hintShown: false, finished: false, passed: false, heard: '', feedback: [] })
+  Object.assign(q, { i: 0, results: [], question: null, answered: false, hintShown: false, finished: false, passed: false, heard: '', feedback: [], picked: [] })
   newQuestion()
   scrollToBoard()
 }
@@ -459,8 +461,52 @@ function showHint() {
   redraw()
 }
 
+// The shapes still possible after the notes picked so far.
+function openShapes() {
+  const same = (a, b) => a.s === b.s && a.f === b.f
+  return q.question.shapes.filter(shape => q.picked.every(p => shape.some(mk => same(mk, p))))
+}
+
+// Shape questions: every note of one shape, in any order. A note outside it ends the question.
+function answerShape({ pos, midi, played = '' }) {
+  const same = (a, b) => a.s === b.s && a.f === b.f
+  const isPicked = mk => q.picked.some(p => same(p, mk))
+  const hits = mk => (pos ? same(mk, pos) : midiOf(mk) === midi)
+  q.heard = played
+  // The same note again (clicked twice, or still ringing): nothing to judge.
+  if (q.picked.some(hits)) return
+  const shapes = openShapes()
+  const found = shapes.flatMap(shape => shape.filter(mk => hits(mk) && !isPicked(mk)))[0]
+  if (found) {
+    q.picked.push(found)
+    const done = openShapes().some(shape => shape.every(isPicked))
+    if (!done) {
+      for (const shape of openShapes()) for (const mk of shape) if (!isPicked(mk)) guitar.allowRepeat(pcOf(mk))
+      redraw()
+      return
+    }
+    q.answered = true
+    q.results.push(true)
+    practice.record('lessons', lesson.value.id, true, pos ? { s: pos.s, f: pos.f } : { guitar: true })
+    redraw()
+    if (!guitar.enabled || guitar.autoNext) later(advanceQuiz, 1500)
+    return
+  }
+  q.answered = true
+  q.results.push(false)
+  practice.record('lessons', lesson.value.id, false, pos ? { s: pos.s, f: pos.f } : { guitar: true })
+  const shape = shapes[0] || q.question.shapes[0]
+  q.feedback = [
+    ...shape.filter(mk => !isPicked(mk)).map(mk => ({ ...mk, color: OK_COLOR })),
+    ...(pos ? [pos] : positionsOfMidi(midi)).map(p => ({ ...p, color: KO_COLOR, label: noteLabel(p) })),
+  ]
+  redraw()
+  if (!guitar.enabled || guitar.autoNext) later(advanceQuiz, 2800)
+}
+
 function answerQuiz({ pos, midi, played = '' }) {
   const qq = q.question
+  if (qq.shapes) return answerShape({ pos, midi, played })
   const ok = pos
     ? qq.accept.some(a => a.s === pos.s && a.f === pos.f)
     : qq.accept.some(a => midiOf(a) === midi)
@@ -480,7 +526,10 @@ function answerQuiz({ pos, midi, played = '' }) {
   }
   const hit = pos ? [pos] : qq.accept.filter(a => midiOf(a) === midi)
   q.feedback = ok
-    ? hit.map(p => ({ ...p, color: OK_COLOR, label: answerLabel || noteLabel(p) }))
+    ? [
+        ...(qq.revealOnRight ? qq.reveal : []),
+        ...hit.map(p => ({ ...p, color: OK_COLOR, label: answerLabel || noteLabel(p) })),
+      ]
     : [
         ...(qq.reveal || qq.accept).map(p => ({ ...p, color: OK_COLOR, label: p.label || answerLabel })),
         ...(pos ? [pos] : positionsOfMidi(midi)).map(p => ({ ...p, color: KO_COLOR, label: wrongLabel(p) })),
@@ -506,10 +555,14 @@ function advanceQuiz() {
 
 const quizStatus = computed(() => {
   const heard = q.heard ? ` · 🎸 ${q.heard}` : ''
+  if (!q.answered && q.question?.shapes) {
+    if (q.picked.length) return fmt('ls.q-partial', q.picked.length, q.question.shapes[0].length) + heard
+    return guitar.enabled ? t('ls.q-play-shape') : t('ls.q-click-shape')
+  }
   if (!q.answered) return guitar.enabled ? t('ls.q-play') : t('ls.q-click')
   return (q.results[q.results.length - 1] ? t('ls.q-correct') : t('ls.q-wrong')) + heard
 })
-const quizTone = computed(() => (!q.answered ? '' : q.results[q.results.length - 1] ? 'is-ok' : 'is-ko'))
+const quizTone = computed(() => (!q.answered ? (q.picked.length ? 'is-ok' : '') : q.results[q.results.length - 1] ? 'is-ok' : 'is-ko'))
 const quizResult = computed(() => {
   const count = step.value?.count || 0
   const right = q.results.filter(Boolean).length

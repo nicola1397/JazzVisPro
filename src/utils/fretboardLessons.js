@@ -10,7 +10,7 @@
 // Positions are { s, f }: s = string index (0 = 1st/high E … 5 = 6th/low E, as on screen), f = fret.
 // The lessons assume standard tuning (E A D G B E).
 
-import { TUNINGS, INTERVAL_COLORS, getAbsoluteNote, getPitchClass } from './theory.js'
+import { TUNINGS, INTERVAL_COLORS, ROOT_NAMES, CAGED_SHAPES_MAJOR, getAbsoluteNote, getPitchClass, spellAbove } from './theory.js'
 
 export const LESSON_TUNING = 'E Standard'
 const TUNING = TUNINGS[LESSON_TUNING]
@@ -105,7 +105,8 @@ function landmarkHint(string, fret, name) {
 }
 
 // ── Question makers ──────────────────────────────────────────────────────────
-// A question: { id, prompt, hint, accept: [{s,f}], context: [mark], reveal: [mark], hintMarks: [mark], root? }
+// A question: { id, prompt, hint, accept: [{s,f}], context: [mark], reveal: [mark], hintMarks: [mark], root?, revealOnRight? }
+// or, for a group of notes: { id, prompt, hint, context, shapes: [[mark]] } (every note of one of the shapes)
 // `accept` are the positions that count as right; a played guitar note is right when its pitch
 // matches one of them. With `root`, a wrong answer is labelled with its degree above the root.
 
@@ -264,6 +265,185 @@ function askInterval() {
       root,
       accept: positionsOfMidi(midiOf(root) + iv),
       reveal: [ivMark(n - up, f + move, iv)],
+    }
+  }
+}
+
+// ── Triads on the top three strings (3rd, 2nd, 1st) ─────────────────────────
+// Each shape from the fret x of its lowest note, on the 3rd string: [string, frets from x, degree].
+const TRIAD_SHAPES = {
+  maj: [
+    [[3, 0, 'R'], [2, 0, '3'], [1, -2, '5']],
+    [[3, 0, '3'], [2, -1, '5'], [1, -1, 'R']],
+    [[3, 0, '5'], [2, 1, 'R'], [1, 0, '3']],
+  ],
+  min: [
+    [[3, 0, 'R'], [2, -1, 'b3'], [1, -2, '5']],
+    [[3, 0, 'b3'], [2, 0, '5'], [1, 0, 'R']],
+    [[3, 0, '5'], [2, 1, 'R'], [1, -1, 'b3']],
+  ],
+}
+const DEGREE_SEMIS = { R: 0, b3: 3, 3: 4, 5: 7 }
+const DEGREE_STEPS = { R: 0, b3: 2, 3: 2, 5: 4 }
+const degreeMark = (string, fret, degree) => at(string, fret, degree, INTERVAL_COLORS[DEGREE_SEMIS[degree]].color)
+const INV_NAME = {
+  it: ['posizione fondamentale', '1° rivolto', '2° rivolto'],
+  en: ['root position', '1st inversion', '2nd inversion'],
+}
+const QUALITY_NAME = { it: { maj: 'maggiore', min: 'minore' }, en: { maj: 'major', min: 'minor' } }
+const TRIAD_HINT = {
+  maj: [
+    { it: 'Fondamentale: R e 3 allo stesso tasto sulla 3ª e sulla 2ª corda, la 5 due tasti indietro sulla 1ª.', en: 'Root position: R and 3 at the same fret on the 3rd and 2nd strings, the 5 two frets lower on the 1st.' },
+    { it: '1° rivolto: la 3 sulla 3ª corda, poi 5 e R un tasto indietro, allo stesso tasto sulla 2ª e sulla 1ª.', en: '1st inversion: the 3 on the 3rd string, then 5 and R one fret lower, at the same fret on the 2nd and 1st.' },
+    { it: '2° rivolto: 5 e 3 allo stesso tasto sulla 3ª e sulla 1ª corda, la R un tasto avanti sulla 2ª.', en: '2nd inversion: 5 and 3 at the same fret on the 3rd and 1st strings, the R one fret higher on the 2nd.' },
+  ],
+  min: [
+    { it: 'Fondamentale: la b3 un tasto indietro rispetto alla R, sulla 2ª corda; la 5 due tasti indietro sulla 1ª.', en: 'Root position: the b3 one fret behind the R, on the 2nd string; the 5 two frets lower on the 1st.' },
+    { it: '1° rivolto: b3, 5 e R tutte allo stesso tasto, un barré con un dito.', en: '1st inversion: b3, 5 and R all at the same fret, a one-finger barre.' },
+    { it: '2° rivolto: la R un tasto avanti sulla 2ª corda, la b3 un tasto indietro sulla 1ª.', en: '2nd inversion: the R one fret higher on the 2nd string, the b3 one fret lower on the 1st.' },
+  ],
+}
+
+// Every place up to `maxFret` where this triad shape fits on the top three strings, lowest first.
+function triadShapes(rootPc, quality, inv, maxFret = 15) {
+  const tpl = TRIAD_SHAPES[quality][inv]
+  const bassPc = (rootPc + DEGREE_SEMIS[tpl[0][2]]) % 12
+  return fretsOf(3, bassPc)
+    .map(x => tpl.map(([string, move, degree]) => degreeMark(string, x + move, degree)))
+    .filter(shape => shape.every(mk => mk.f >= 0 && mk.f <= maxFret))
+}
+
+// Usual root names: Db major but C# minor, Ab major but G# minor.
+const MINOR_ROOT_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B']
+
+// "D (Re) maggiore" / "D major", the inversion apart, and the spelled note of a degree.
+function triadText(rootPc, quality, inv) {
+  const root = (quality === 'min' ? MINOR_ROOT_NAMES : ROOT_NAMES)[rootPc]
+  return {
+    chord: both(lang => lang === 'it' ? `${noteName(root, lang)} ${QUALITY_NAME.it[quality]}` : `${root} ${QUALITY_NAME.en[quality]}`),
+    inv: both(lang => INV_NAME[lang][inv]),
+    bass: degree => spellAbove(root, DEGREE_SEMIS[degree], DEGREE_STEPS[degree]) || ROOT_NAMES[(rootPc + DEGREE_SEMIS[degree]) % 12],
+  }
+}
+
+// The lowest note of a triad is shown: click the other two.
+function askTriadComplete(qualities) {
+  for (;;) {
+    const quality = pick(qualities)
+    const inv = pick([0, 1, 2])
+    const rootPc = Math.floor(Math.random() * 12)
+    const options = triadShapes(rootPc, quality, inv, 14)
+    if (!options.length) continue
+    const [bass, ...rest] = pick(options)
+    const txt = triadText(rootPc, quality, inv)
+    return {
+      id: `tc-${rootPc}-${quality}-${inv}-${bass.f}`,
+      prompt: both(lang => lang === 'it' ? `Completa la triade di ${txt.chord.it}, ${txt.inv.it}` : `Complete the ${txt.chord.en} triad, ${txt.inv.en}`),
+      hint: TRIAD_HINT[quality][inv],
+      context: [bass],
+      shapes: [rest],
+    }
+  }
+}
+
+// The whole triad on strings 3-2-1, in any octave.
+function askTriadBuild(qualities) {
+  for (;;) {
+    const quality = pick(qualities)
+    const inv = pick([0, 1, 2])
+    const rootPc = Math.floor(Math.random() * 12)
+    const options = triadShapes(rootPc, quality, inv, 15)
+    if (!options.length) continue
+    const txt = triadText(rootPc, quality, inv)
+    const low = options[0][0].label
+    const bassName = txt.bass(low)
+    return {
+      id: `tb-${rootPc}-${quality}-${inv}`,
+      prompt: both(lang => lang === 'it' ? `Suona la triade di ${txt.chord.it}, ${txt.inv.it}, sulle corde 3-2-1` : `Play the ${txt.chord.en} triad, ${txt.inv.en}, on strings 3-2-1`),
+      hint: both(lang => lang === 'it'
+        ? `La nota sulla 3ª corda è ${bassName} (${low}). ${TRIAD_HINT[quality][inv].it}`
+        : `The note on the 3rd string is ${bassName} (${low}). ${TRIAD_HINT[quality][inv].en}`),
+      hintMarks: options.map(sh => ({ ...sh[0], label: bassName })),
+      shapes: options,
+    }
+  }
+}
+
+// ── CAGED: the five open major chords moved along the neck ───────────────────
+const CAGED_ORDER = ['C', 'A', 'G', 'E', 'D']
+const CAGED_HINT = {
+  C: { it: 'Come il Do aperto: R sulla 5ª corda, 3 un tasto indietro sulla 4ª, 5 tre tasti indietro sulla 3ª, R due tasti indietro sulla 2ª, 3 tre tasti indietro sulla 1ª.',
+       en: 'Like open C: R on the 5th string, 3 one fret lower on the 4th, 5 three frets lower on the 3rd, R two frets lower on the 2nd, 3 three frets lower on the 1st.' },
+  A: { it: 'Come il La aperto: R sulla 5ª corda, poi 5, R e 3 due tasti avanti sulla 4ª, 3ª e 2ª, e la 5 sulla 1ª allo stesso tasto della tonica.',
+       en: 'Like open A: R on the 5th string, then 5, R and 3 two frets higher on the 4th, 3rd and 2nd, and the 5 on the 1st at the same fret as the root.' },
+  G: { it: 'Come il Sol aperto: R sulla 6ª corda, 3 un tasto indietro sulla 5ª, poi 5, R e 3 tre tasti indietro sulla 4ª, 3ª e 2ª, e R sulla 1ª allo stesso tasto della tonica.',
+       en: 'Like open G: R on the 6th string, 3 one fret lower on the 5th, then 5, R and 3 three frets lower on the 4th, 3rd and 2nd, and R on the 1st at the same fret as the root.' },
+  E: { it: 'Come il Mi aperto: R sulla 6ª corda, 5 e R due tasti avanti sulla 5ª e sulla 4ª, 3 un tasto avanti sulla 3ª, 5 e R allo stesso tasto della tonica sulla 2ª e sulla 1ª.',
+       en: 'Like open E: R on the 6th string, 5 and R two frets higher on the 5th and 4th, 3 one fret higher on the 3rd, 5 and R at the same fret as the root on the 2nd and 1st.' },
+  D: { it: 'Come il Re aperto: R sulla 4ª corda, 5 due tasti avanti sulla 3ª, R tre tasti avanti sulla 2ª, 3 due tasti avanti sulla 1ª.',
+       en: 'Like open D: R on the 4th string, 5 two frets higher on the 3rd, R three frets higher on the 2nd, 3 two frets higher on the 1st.' },
+}
+
+// Every place up to `maxFret` where a CAGED shape of this major chord fits, lowest first.
+// Notes low to high, the first one is the root on the shape's main string.
+export function cagedShapes(rootPc, shapeName, maxFret = 17) {
+  const def = CAGED_SHAPES_MAJOR[shapeName]
+  const anchor = def[0].s
+  const out = []
+  for (let f = 0; f <= MAX_FRET; f++) {
+    if ((TUNING[anchor] + f) % 12 !== rootPc) continue
+    const shape = def.map(o => ({ s: o.s, f: f + o.f }))
+    if (shape.some(p => p.f < 0 || p.f > maxFret)) continue
+    const rootMidi = getAbsoluteNote(TUNING, anchor, f)
+    out.push(shape.map(p => {
+      const iv = (((midiOf(p) - rootMidi) % 12) + 12) % 12
+      return { ...p, label: iv === 0 ? 'R' : iv === 4 ? '3' : iv === 7 ? '5' : '?', color: INTERVAL_COLORS[iv].color }
+    }))
+  }
+  return out
+}
+const cagedString = shapeName => CAGED_SHAPES_MAJOR[shapeName][0].s + 1
+
+function askCagedRoot() {
+  for (;;) {
+    const name = pick(CAGED_ORDER)
+    const rootPc = Math.floor(Math.random() * 12)
+    const options = cagedShapes(rootPc, name, 22)
+    if (!options.length) continue
+    const root = ROOT_NAMES[rootPc]
+    const roots = []
+    for (const mk of options.flatMap(sh => sh.filter(x => x.label === 'R'))) {
+      if (!roots.some(r => r.s === mk.s && r.f === mk.f)) roots.push(mk)
+    }
+    const n = cagedString(name)
+    return {
+      id: `cr-${name}-${rootPc}`,
+      prompt: both(lang => lang === 'it' ? `Forma ${name} di ${noteName(root, lang)}: clicca una tonica` : `${name} shape of ${root}: click a root`),
+      hint: both(lang => lang === 'it'
+        ? `Nella forma ${name} la tonica principale è sulla ${n}ª corda: cerca ${root} lì.`
+        : `In the ${name} shape the main root is on the ${ORD_EN[n]} string: look for ${root} there.`),
+      accept: roots,
+      reveal: options[0],
+      revealOnRight: true,   // a right root also shows the whole shape
+    }
+  }
+}
+
+// The root of the shape is shown: click the other notes.
+function askCagedComplete() {
+  for (;;) {
+    const name = pick(CAGED_ORDER)
+    const rootPc = Math.floor(Math.random() * 12)
+    const options = cagedShapes(rootPc, name, 15)
+    if (!options.length) continue
+    const [root, ...rest] = pick(options)
+    const rootName = ROOT_NAMES[rootPc]
+    return {
+      id: `cc-${name}-${rootPc}-${root.f}`,
+      prompt: both(lang => lang === 'it' ? `Completa la forma ${name} di ${noteName(rootName, lang)}` : `Complete the ${name} shape of ${rootName}`),
+      hint: CAGED_HINT[name],
+      context: [root],
+      shapes: [rest],
     }
   }
 }
@@ -577,6 +757,152 @@ export const LESSONS = [
           en: 'The root (R) is marked on the fretboard: find the interval asked above it. Any position with the right pitch counts, but try the shapes.',
         },
         ask: askInterval },
+    ],
+  },
+
+  {
+    id: 'triads',
+    title: { it: 'Le triadi sulle corde acute', en: 'Triads on the top strings' },
+    summary: {
+      it: 'Triadi maggiori e minori sulla 3ª, 2ª e 1ª corda: tre forme, una per rivolto, che salgono lungo il manico.',
+      en: 'Major and minor triads on the 3rd, 2nd and 1st strings: three shapes, one per inversion, climbing the neck.',
+    },
+    practice: { path: '/triad-trainer', nav: 'nav.triad-trainer' },
+    steps: [
+      { id: 'triad-idea', type: 'explain', play: true,
+        title: { it: 'Tre note, tre forme', en: 'Three notes, three shapes' },
+        text: {
+          it: 'Una triade sono tre note: tonica (<strong>R</strong>), terza e quinta (<strong>5</strong>). Nella triade maggiore la terza è maggiore (<strong>3</strong>), in quella minore è minore (<strong>b3</strong>). Sulle tre corde acute (3ª, 2ª e 1ª: G, B, E) ogni triade ha tre forme, una per rivolto: in <strong>posizione fondamentale</strong> la nota più bassa è la R, nel <strong>1° rivolto</strong> è la 3, nel <strong>2° rivolto</strong> è la 5. Qui sopra: C maggiore in posizione fondamentale.',
+          en: 'A triad is three notes: root (<strong>R</strong>), third and fifth (<strong>5</strong>). In a major triad the third is major (<strong>3</strong>), in a minor one it is minor (<strong>b3</strong>). On the three top strings (3rd, 2nd and 1st: G, B, E) each triad has three shapes, one per inversion: in <strong>root position</strong> the lowest note is the R, in the <strong>1st inversion</strong> it is the 3, in the <strong>2nd inversion</strong> the 5. Above: C major in root position.',
+        },
+        marks: [degreeMark(3, 5, 'R'), degreeMark(2, 5, '3'), degreeMark(1, 3, '5')] },
+      { id: 'major-shapes', type: 'explain', play: true,
+        title: { it: 'Le tre forme maggiori', en: 'The three major shapes' },
+        text: {
+          it: 'Ecco le tre forme di C maggiore, dalla più bassa alla più alta. Ogni forma parte dalla nota che la forma precedente aveva in mezzo: i rivolti si danno il cambio salendo lungo il manico.',
+          en: 'Here are the three shapes of C major, from the lowest to the highest. Each shape starts from the note the previous shape had in the middle: the inversions take turns as you climb the neck.',
+        },
+        list: {
+          it: [['Fondamentale:', 'R e 3 allo stesso tasto, la 5 due tasti indietro sulla 1ª corda.'], ['1° rivolto:', 'la 3 sulla 3ª corda, 5 e R un tasto indietro, allo stesso tasto.'], ['2° rivolto:', '5 e 3 allo stesso tasto sulla 3ª e sulla 1ª, la R un tasto avanti in mezzo.']],
+          en: [['Root position:', 'R and 3 at the same fret, the 5 two frets lower on the 1st string.'], ['1st inversion:', 'the 3 on the 3rd string, 5 and R one fret lower, at the same fret.'], ['2nd inversion:', '5 and 3 at the same fret on the 3rd and 1st, the R one fret higher in the middle.']],
+        },
+        marks: [
+          degreeMark(3, 5, 'R'), degreeMark(2, 5, '3'), degreeMark(1, 3, '5'),
+          degreeMark(3, 9, '3'), degreeMark(2, 8, '5'), degreeMark(1, 8, 'R'),
+          degreeMark(3, 12, '5'), degreeMark(2, 13, 'R'), degreeMark(1, 12, '3'),
+        ] },
+      { id: 'c-cycle', type: 'mirror', guide: true,
+        title: { it: 'C maggiore lungo il manico', en: 'C major along the neck' },
+        text: {
+          it: 'Guarda le tre forme di C maggiore suonate una nota alla volta, dal basso verso l\'alto: fondamentale al 5° tasto, 1° rivolto all\'8°, 2° rivolto al 12°. Poi ripeti.',
+          en: 'Watch the three shapes of C major played one note at a time, low to high: root position at fret 5, 1st inversion at fret 8, 2nd inversion at fret 12. Then repeat.',
+        },
+        seq: [
+          degreeMark(3, 5, 'R'), degreeMark(2, 5, '3'), degreeMark(1, 3, '5'),
+          degreeMark(3, 9, '3'), degreeMark(2, 8, '5'), degreeMark(1, 8, 'R'),
+          degreeMark(3, 12, '5'), degreeMark(2, 13, 'R'), degreeMark(1, 12, '3'),
+        ] },
+      { id: 'quiz-complete-major', type: 'quiz', count: 6,
+        title: { it: 'Completa la triade maggiore', en: 'Complete the major triad' },
+        text: {
+          it: 'Sul manico c\'è la nota più bassa della triade, sulla 3ª corda. Clicca le altre due, sulla 2ª e sulla 1ª corda, in qualsiasi ordine.',
+          en: 'The lowest note of the triad is on the fretboard, on the 3rd string. Click the other two, on the 2nd and 1st strings, in any order.',
+        },
+        ask: () => askTriadComplete(['maj']) },
+      { id: 'minor-shapes', type: 'explain', play: true,
+        title: { it: 'Le forme minori', en: 'The minor shapes' },
+        text: {
+          it: 'Per passare da maggiore a minore basta abbassare la 3 di un tasto: diventa <strong>b3</strong>. Le tre forme cambiano solo in quel punto. Qui sopra le tre forme di A minore: fondamentale in prima posizione, 1° rivolto al 5° tasto (un barré di un dito) e 2° rivolto tra l\'8° e il 10°.',
+          en: 'To turn major into minor, just lower the 3 by one fret: it becomes <strong>b3</strong>. The three shapes change only there. Above, the three shapes of A minor: root position in first position, 1st inversion at fret 5 (a one-finger barre) and 2nd inversion between frets 8 and 10.',
+        },
+        marks: [
+          degreeMark(3, 2, 'R'), degreeMark(2, 1, 'b3'), degreeMark(1, 0, '5'),
+          degreeMark(3, 5, 'b3'), degreeMark(2, 5, '5'), degreeMark(1, 5, 'R'),
+          degreeMark(3, 9, '5'), degreeMark(2, 10, 'R'), degreeMark(1, 8, 'b3'),
+        ] },
+      { id: 'am-cycle', type: 'mirror', guide: false,
+        title: { it: 'A minore lungo il manico', en: 'A minor along the neck' },
+        text: {
+          it: 'Guarda le tre forme di A minore, dal basso verso l\'alto, poi ripetile a memoria.',
+          en: 'Watch the three shapes of A minor, low to high, then repeat them from memory.',
+        },
+        seq: [
+          degreeMark(3, 2, 'R'), degreeMark(2, 1, 'b3'), degreeMark(1, 0, '5'),
+          degreeMark(3, 5, 'b3'), degreeMark(2, 5, '5'), degreeMark(1, 5, 'R'),
+          degreeMark(3, 9, '5'), degreeMark(2, 10, 'R'), degreeMark(1, 8, 'b3'),
+        ] },
+      { id: 'quiz-build', type: 'quiz', count: 6,
+        title: { it: 'Suona la triade', en: 'Play the triad' },
+        text: {
+          it: 'Ora nessuna nota è segnata: suona la triade richiesta sulle corde 3-2-1, nel rivolto indicato. Vale qualsiasi ottava, ma le tre note devono formare una sola forma.',
+          en: 'Now no note is marked: play the triad asked on strings 3-2-1, in the given inversion. Any octave counts, but the three notes must make one shape.',
+        },
+        ask: () => askTriadBuild(['maj', 'min']) },
+    ],
+  },
+
+  {
+    id: 'caged',
+    title: { it: 'Il sistema CAGED', en: 'The CAGED system' },
+    summary: {
+      it: 'I cinque accordi aperti C, A, G, E e D come forme mobili: ogni accordo maggiore in cinque posizioni collegate lungo il manico.',
+      en: 'The five open chords C, A, G, E and D as movable shapes: every major chord in five linked positions along the neck.',
+    },
+    practice: { path: '/triad-trainer', nav: 'nav.triad-trainer' },
+    steps: [
+      { id: 'caged-idea', type: 'explain', play: true,
+        title: { it: 'Cinque accordi aperti, cinque forme', en: 'Five open chords, five shapes' },
+        text: {
+          it: 'Gli accordi aperti di <strong>C, A, G, E e D</strong> sono cinque forme. Spostate lungo il manico, con l\'indice o un barré al posto del capotasto, suonano qualsiasi accordo maggiore. Per uno stesso accordo le forme si susseguono sempre nell\'ordine <strong>C-A-G-E-D</strong>, poi ricominciano: insieme coprono tutto il manico. Qui sopra la forma C di C maggiore, cioè il Do aperto.',
+          en: 'The open chords of <strong>C, A, G, E and D</strong> are five shapes. Moved along the neck, with the index finger or a barre in place of the nut, they play any major chord. For one chord the shapes always follow each other in the order <strong>C-A-G-E-D</strong>, then start again: together they cover the whole neck. Above, the C shape of C major, the open C chord.',
+        },
+        marks: cagedShapes(0, 'C')[0] },
+      { id: 'caged-roots', type: 'explain', play: true,
+        title: { it: 'Dov\'è la tonica', en: 'Where the root is' },
+        text: {
+          it: 'Ogni forma si riconosce dalla corda della sua tonica principale. Qui sopra le toniche di C maggiore in tutte e cinque le forme, da sinistra a destra.',
+          en: 'Each shape is recognised by the string of its main root. Above, the roots of C major in all five shapes, from left to right.',
+        },
+        list: {
+          it: [['C e A:', 'tonica sulla 5ª corda (nella forma C la suona l\'anulare, nella forma A l\'indice).'], ['G ed E:', 'tonica sulla 6ª corda (nella forma G la suona il mignolo o l\'anulare, nella forma E l\'indice).'], ['D:', 'tonica sulla 4ª corda.']],
+          en: [['C and A:', 'root on the 5th string (in the C shape the ring finger plays it, in the A shape the index).'], ['G and E:', 'root on the 6th string (in the G shape the little or ring finger plays it, in the E shape the index).'], ['D:', 'root on the 4th string.']],
+        },
+        marks: [at(5, 3, 'C·A', ROOT_COLOR), at(6, 8, 'G·E', ROOT_COLOR), at(4, 10, 'D', ROOT_COLOR), at(5, 15, 'C', ROOT_COLOR)] },
+      { id: 'shapes-c-a', type: 'mirror', guide: true,
+        title: { it: 'Forme C e A', en: 'C and A shapes' },
+        text: {
+          it: 'Guarda C maggiore in forma C (il Do aperto) e poi in forma A (barré al 3° tasto), una nota alla volta dal basso verso l\'alto. Le due forme condividono la tonica sulla 5ª corda. Poi ripeti.',
+          en: 'Watch C major in the C shape (open C) and then in the A shape (barre at fret 3), one note at a time from low to high. The two shapes share the root on the 5th string. Then repeat.',
+        },
+        seq: [...cagedShapes(0, 'C')[0], ...cagedShapes(0, 'A')[0]] },
+      { id: 'shape-g', type: 'mirror', guide: true,
+        title: { it: 'Forma G', en: 'G shape' },
+        text: {
+          it: 'La forma G è la più larga: come accordo intero si usa poco, ma le sue note sono preziose per arpeggi e triadi. Guarda C maggiore in forma G, tra il 5° e l\'8° tasto, e ripeti.',
+          en: 'The G shape is the widest: as a full chord it is rarely used, but its notes are precious for arpeggios and triads. Watch C major in the G shape, between frets 5 and 8, and repeat.',
+        },
+        seq: cagedShapes(0, 'G')[0] },
+      { id: 'shapes-e-d', type: 'mirror', guide: true,
+        title: { it: 'Forme E e D', en: 'E and D shapes' },
+        text: {
+          it: 'Ora la forma E (barré all\'8° tasto, tonica sulla 6ª corda) e la forma D (tonica sulla 4ª corda al 10° tasto). Dopo la D la forma C ricomincia al 12° tasto, un\'ottava sopra il Do aperto.',
+          en: 'Now the E shape (barre at fret 8, root on the 6th string) and the D shape (root on the 4th string at fret 10). After the D the C shape starts again at fret 12, an octave above open C.',
+        },
+        seq: [...cagedShapes(0, 'E')[0], ...cagedShapes(0, 'D')[0]] },
+      { id: 'quiz-caged-root', type: 'quiz', count: 6,
+        title: { it: 'Trova la tonica della forma', en: 'Find the root of the shape' },
+        text: {
+          it: 'Clicca una tonica dell\'accordo nella forma richiesta. Dopo la risposta il manico mostra la forma intera.',
+          en: 'Click a root of the chord in the shape asked. After the answer the fretboard shows the whole shape.',
+        },
+        ask: askCagedRoot },
+      { id: 'quiz-caged-complete', type: 'quiz', count: 5,
+        title: { it: 'Completa la forma', en: 'Complete the shape' },
+        text: {
+          it: 'La tonica principale è segnata: clicca tutte le altre note della forma, in qualsiasi ordine.',
+          en: 'The main root is marked: click every other note of the shape, in any order.',
+        },
+        ask: askCagedComplete },
     ],
   },
 ]

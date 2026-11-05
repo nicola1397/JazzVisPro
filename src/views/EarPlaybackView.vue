@@ -42,6 +42,7 @@
         </div>
 
         <div class="jd-question-hint">{{ statusText }}</div>
+        <button v-if="active && settings.retry && misses > 0" type="button" class="jd-toolbtn ep-solution" @click="giveUp">{{ t('pm.show-solution') }}</button>
         <GuitarInputPanel :guitar="guitar" />
       </div>
 
@@ -112,6 +113,14 @@
           </select>
         </div>
       </div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+      <PracticeModes
+        v-model:reference="settings.reference"
+        v-model:retry="settings.retry"
+        :reference-label="t('pm.ref-start')"
+        :reference-help="t('pm.help-ep')"
+      />
     </section>
 
     <div class="teoria-tip" style="margin-top: 20px;">
@@ -129,13 +138,17 @@ import { useI18n }       from '../composables/useI18n.js'
 import { useGuitarInput, midiToName } from '../composables/useGuitarInput.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { getAbsoluteNote } from '../utils/theory.js'
+import { FRETS } from '../utils/constants.js'
+import { positionName, allPositions, paintRing, flashWrong, pickOne } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
+import PracticeModes     from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()
 const audio    = useAudioStore()
 const practice = usePracticeStore()
 const { t }    = useI18n()
 const guitar   = useGuitarInput({ onNote: ({ midi }) => handleNote({ midi }) })
+const fmt = (key, ...args) => args.reduce((s, v, i) => s.replace(`{${i}}`, v), t(key))
 
 const MODES = ['interval', 'phrase', 'arpeggio']
 const PHRASE_SCALES = {
@@ -161,7 +174,8 @@ const STORAGE_KEY = 'jazzVizEarPlayback'
 const SELF_SOUND_HOLDOFF_MS = 600
 
 // ── Settings (remembered) ─────────────────────────────────────────────────────
-const defaults = { mode: 'interval', start: 'given', intervals: 'easy', length: 4, scale: 'major', chords: 'triads', direction: 'both', gap: 480 }
+// reference: the first note at a given string and fret; retry: a wrong note does not end the question
+const defaults = { mode: 'interval', start: 'given', intervals: 'easy', length: 4, scale: 'major', chords: 'triads', direction: 'both', gap: 480, reference: false, retry: false }
 const settings = reactive({ ...defaults, ...(readStorage(STORAGE_KEY, {}) || {}) })
 if (!MODES.includes(settings.mode)) settings.mode = defaults.mode
 if (!PHRASE_SCALES[settings.scale]) settings.scale = defaults.scale
@@ -170,7 +184,8 @@ if (!PHRASE_SCALES[settings.scale]) settings.scale = defaults.scale
 const score  = ref(0)
 const total  = ref(0)
 const target = ref([])          // MIDI notes played by the app
-const info   = ref({})          // what the question was: { key, solution }
+const info   = ref({})          // what the question was: { key, solution, startPos?, startMidi? }
+const misses = ref(0)           // wrong attempts on the current question (retry mode)
 const slots  = ref([])          // { state, played, reveal }
 const active = ref(false)
 const step   = ref(0)
@@ -192,6 +207,9 @@ const questionTitle = computed(() => {
 })
 const questionSub = computed(() => {
   if (!active.value && info.value.solution) return info.value.solution
+  if (info.value.startPos) {
+    return fmt('pm.q-start', `${positionName(info.value.startPos, appStore.lang)} (${appStore.currentNotes[pcOf(info.value.startMidi)]})`)
+  }
   return settings.start === 'given'
     ? t('ep.start-on').replace('{0}', appStore.currentNotes[pcOf(target.value[0])])
     : t('ep.start-anywhere')
@@ -269,9 +287,10 @@ function paint(el, color, label, ring = false) {
 }
 
 // One way to play the phrase: the positions that move the least along the neck.
-function fingering(midis) {
+function fingering(midis, first = null) {
   const tuning = appStore.currentTuning
-  const options = midis.map(m => {
+  const options = midis.map((m, i) => {
+    if (i === 0 && first) return [first]
     const list = []
     for (let s = 0; s < 6; s++) {
       const f = m - getAbsoluteNote(tuning, s, 0)
@@ -296,7 +315,7 @@ function fingering(midis) {
 }
 
 function showSolution(midis) {
-  fingering(midis).forEach(({ s, f }, i) => {
+  fingering(midis, info.value.startPos || null).forEach(({ s, f }, i) => {
     const el = document.querySelector(`.fretboard-layer .note-circle[data-string-index="${s}"][data-fret-index="${f}"]`)
     if (el && !el.dataset.epPlayed) paint(el, i === 0 ? '#e74c3c' : '#FFD60A', String(i + 1), true)
   })
@@ -323,13 +342,16 @@ function start() {
   clearTimeout(nextTimer)
   const q = settings.mode === 'interval' ? makeInterval() : settings.mode === 'phrase' ? makePhrase() : makeArpeggio()
   target.value = q.notes
-  info.value = { key: q.key, solution: q.solution }
+  const startPos = settings.reference ? chooseStart(q.notes) : null
+  info.value = { key: q.key, solution: q.solution, startPos, startMidi: startPos ? getAbsoluteNote(appStore.currentTuning, startPos.s, startPos.f) : null }
   slots.value = q.notes.map(() => ({ state: '', played: '', reveal: '' }))
   step.value = 0; offset = null; accepted = []
+  misses.value = 0
   active.value = true
   statusText.value = t('ep.hint')
   clearBoard()
   circles().forEach(c => { delete c.dataset.epPlayed })
+  if (startPos) paintRing(startPos, '1')
   playTarget()
 }
 
@@ -346,33 +368,83 @@ function reset() {
   clearBoard()
 }
 
-function scheduleNext(delay) {
+// Next question: always in retry mode once the answer is right, otherwise without leaving
+// the guitar when auto-advance is on.
+function scheduleNext(delay, right = false) {
   clearTimeout(nextTimer)
-  if (!guitar.enabled || !guitar.autoNext) return
-  nextTimer = setTimeout(() => { if (guitar.enabled && guitar.autoNext) start() }, delay)
+  const auto = (right && settings.retry) || (guitar.enabled && guitar.autoNext)
+  if (!auto) return
+  nextTimer = setTimeout(() => { if (!active.value) start() }, delay)
 }
 
 function finish(ok, message, wrongNote) {
   active.value = false
   total.value++
-  if (ok) score.value++
+  if (ok && misses.value === 0) score.value++
   const el = wrongNote?.element
   practice.record('ear-playback', info.value.key, ok, el ? { s: +el.dataset.stringIndex, f: +el.dataset.fretIndex } : {})
   // Expected notes in the key the answer started from (or the closest octave).
-  const shift = offset ?? (wrongNote ? Math.round((wrongNote.midi - target.value[0]) / 12) * 12 : 0)
+  const shift = offset ?? (info.value.startMidi !== null && info.value.startMidi !== undefined
+    ? info.value.startMidi - target.value[0]
+    : wrongNote ? Math.round((wrongNote.midi - target.value[0]) / 12) * 12 : 0)
   const expected = target.value.map(m => m + shift)
   slots.value.forEach((slot, i) => { if (!slot.played) slot.reveal = noteName(expected[i]) })
   showSolution(expected)
   statusText.value = message
-  scheduleNext(ok ? 2000 : 3200)
+  scheduleNext(ok ? 2000 : 3200, ok)
+}
+
+// Reference mode: where the first note goes, so that the whole answer fits on the neck.
+// With "given" start the position holds the note heard, otherwise any note (a transposition).
+function chooseStart(notes) {
+  const tuning = appStore.currentTuning
+  const low = Math.min(...tuning.map((_, s) => getAbsoluteNote(tuning, s, 0)))
+  const high = Math.max(...tuning.map((_, s) => getAbsoluteNote(tuning, s, FRETS - 5)))
+  const options = allPositions((s, f) => {
+    if (f > 12) return false
+    const m = getAbsoluteNote(tuning, s, f)
+    if (settings.start === 'given' && pcOf(m) !== pcOf(notes[0])) return false
+    const shift = m - notes[0]
+    return notes.every(n => n + shift >= low && n + shift <= high)
+  })
+  return options.length ? pickOne(options) : null
+}
+
+// Retry mode: stop trying and see the answer.
+function giveUp() {
+  if (!active.value) return
+  finish(false, t('pm.solution-shown'))
+}
+
+// A wrong note in retry mode: it flashes, the question stays on the same note.
+function retryWrong(note, message) {
+  misses.value++
+  const el = note.element
+  practice.record('ear-playback', info.value.key, false, el ? { s: +el.dataset.stringIndex, f: +el.dataset.fretIndex } : {})
+  if (el) flashWrong(el, appStore.currentNotes[pcOf(note.midi)])
+  statusText.value = message
 }
 
 function handleNote(note) {
   if (!active.value) return
   const i = step.value
   const slot = slots.value[i]
+  const heard = note.element ? '' : ` · 🎸 ${noteName(note.midi)}`
   if (i === 0) {
-    if (settings.start === 'given' && pcOf(note.midi) !== pcOf(target.value[0])) {
+    const sp = info.value.startPos
+    if (sp) {
+      const there = note.element
+        ? +note.element.dataset.stringIndex === sp.s && +note.element.dataset.fretIndex === sp.f
+        : note.midi === info.value.startMidi
+      if (!there) {
+        const where = positionName(sp, appStore.lang)
+        if (settings.retry) return retryWrong(note, fmt('pm.wrong-place', where) + heard)
+        slot.state = 'wrong'; slot.played = noteName(note.midi)
+        markClick(note, false)
+        return finish(false, fmt('pm.wrong-place', where), note)
+      }
+    } else if (settings.start === 'given' && pcOf(note.midi) !== pcOf(target.value[0])) {
+      if (settings.retry) return retryWrong(note, fmt('pm.retry-wrong', noteName(note.midi)) + heard)
       slot.state = 'wrong'; slot.played = noteName(note.midi)
       markClick(note, false)
       return finish(false, t('ep.wrong-start').replace('{0}', appStore.currentNotes[pcOf(target.value[0])]), note)
@@ -383,6 +455,7 @@ function handleNote(note) {
     if (note.midi !== want) {
       // With the guitar, a note of the phrase still ringing is not a new one.
       if (!note.element && accepted.includes(note.midi)) { guitar.allowRepeat(pcOf(want)); return }
+      if (settings.retry) return retryWrong(note, fmt('pm.retry-wrong', noteName(note.midi)) + heard)
       slot.state = 'wrong'; slot.played = noteName(note.midi)
       markClick(note, false)
       const msg = pcOf(note.midi) === pcOf(want) ? t('ep.wrong-octave') : t('ep.wrong-note')
@@ -393,7 +466,7 @@ function handleNote(note) {
   accepted.push(note.midi)
   markClick(note, true)
   step.value++
-  if (step.value === target.value.length) return finish(true, t('ep.correct'))
+  if (step.value === target.value.length) return finish(true, misses.value ? fmt('pm.right-after', misses.value + 1) : t('ep.correct'))
   guitar.allowRepeat(pcOf(target.value[step.value] + offset))
 }
 
@@ -427,6 +500,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.ep-solution {
+  margin-top: 12px;
+  border-color: var(--jd-line-strong);
+  color: var(--jd-text-soft);
+}
+
 .jd-question-box {
   background: rgba(58, 154, 217, 0.05);
   border: 1px solid rgba(58, 154, 217, 0.2);

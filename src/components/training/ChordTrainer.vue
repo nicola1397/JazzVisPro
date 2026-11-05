@@ -51,6 +51,7 @@
         </div>
 
         <div class="jd-question-hint">{{ statusText }}</div>
+        <button v-if="active && settings.retry && misses > 0" type="button" class="jd-toolbtn tt-solution" @click="giveUp">{{ t('pm.show-solution') }}</button>
         <GuitarInputPanel :guitar="guitar" />
       </div>
 
@@ -109,6 +110,14 @@
           </select>
         </div>
       </div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+      <PracticeModes
+        v-model:reference="settings.reference"
+        v-model:retry="settings.retry"
+        :reference-label="t('pm.ref-chord')"
+        :reference-help="t('pm.help-ct')"
+      />
     </section>
 
     <div class="teoria-tip" style="margin-top: 20px;">
@@ -127,7 +136,12 @@ import { readStorage, writeStorage } from '../../composables/useLocalStorage.js'
 import { usePracticeStore } from '../../stores/practice.js'
 import { INTERVAL_COLORS, getAbsoluteNote } from '../../utils/theory.js'
 import { FRETS } from '../../utils/constants.js'
+import {
+  stringSetName, zoneName, randomZone, inZone, playableInZone, cagedOptions, midiAt,
+  paintArea, paintRing, flashWrong, clearArea, pickOne,
+} from '../../utils/fretRefs.js'
 import GuitarInputPanel from '../shared/GuitarInputPanel.vue'
+import PracticeModes from '../shared/PracticeModes.vue'
 
 // Chord tone exercise shared by "Triadi e Rivolti" and "Settime e Drop":
 // - chord:   the chord tones in any order and octave;
@@ -186,11 +200,14 @@ const SELF_SOUND_HOLDOFF_MS = 600
 const appStore = useAppStore()
 const audio    = useAudioStore()
 const { t }    = useI18n()
+const fmt = (key, ...args) => args.reduce((s, v, i) => s.replace(`{${i}}`, v), t(key))
 const guitar   = useGuitarInput({ onNote: onGuitarNote })
 const practice = usePracticeStore()
 
 // ── Settings (remembered) ─────────────────────────────────────────────────────
-const defaults = { mode: 'chord', qualities: cfg.defaultQualities, voicings: [cfg.voicings[0]], inversions: inversionKeys, root: -1 }
+// reference: each question also says where to play (string set, CAGED shape or zone of frets);
+// retry: a wrong note does not end the question
+const defaults = { mode: 'chord', qualities: cfg.defaultQualities, voicings: [cfg.voicings[0]], inversions: inversionKeys, root: -1, reference: false, retry: false }
 const stored = readStorage(cfg.storageKey, {}) || {}
 const LEGACY_MODES = { triad: 'chord', inversion: 'voicing' }   // first version of the triad exercise
 const settings = reactive({ ...defaults, ...stored })
@@ -217,7 +234,8 @@ function modeLabel(m) {
 // ── State ─────────────────────────────────────────────────────────────────────
 const score      = ref(0)
 const total      = ref(0)
-const question   = ref(null)   // { rootPc, quality, voicing, bass }
+const question   = ref(null)   // { rootPc, quality, voicing, bass, ref? }
+const misses     = ref(0)      // wrong attempts on the current question (retry mode)
 const slots      = ref([])     // notes to play: { id, group, idx, pc, interval, label, state, played }
 const statusText = ref(t('ct.status'))
 const active     = ref(false)
@@ -239,6 +257,7 @@ const questionSub = computed(() => {
   if (settings.mode !== 'chord' && cfg.voicings.length > 1) parts.push(t(`ct.v-${q.voicing}`))
   if (settings.mode === 'voicing') parts.push(t(`ct.inv-${q.bass}`))
   if (settings.mode === 'cycle') parts.push(t('ct.cycle-from').replace('{0}', t(`ct.inv-${q.bass}`)))
+  if (q.ref) parts.push(refText(q.ref))
   return parts.join(' · ')
 })
 
@@ -336,6 +355,71 @@ function voicingShapes(midis, voicing) {
   return shapes
 }
 
+// ── Reference mode ────────────────────────────────────────────────────────────
+// The notes of a voicing on one string set (low to high), or null if it does not fit.
+function shapeOnSet(midis, strings) {
+  const tuning = appStore.currentTuning
+  const frets = strings.map((str, i) => midis[i] - getAbsoluteNote(tuning, str, 0))
+  if (frets.some(f => f < 0 || f > FRETS)) return null
+  const fretted = frets.filter(f => f > 0)
+  if (fretted.length && Math.max(...fretted) - Math.min(...fretted) > cfg.maxStretch) return null
+  return strings.map((str, i) => ({ s: str, f: frets[i] }))
+}
+
+// Does the voicing (every inversion, in the cycle) from this bass fit on the string set?
+function fitsOnSet(strings, bassMidi) {
+  return groupsOf(expectedFrom(bassMidi)).every(midis => shapeOnSet(midis, strings))
+}
+
+// Where the question must be played: a string set (inversions), a CAGED shape (major and
+// minor triads) or a zone of frets (other chords).
+function chooseRef(q) {
+  if (!settings.reference) return null
+  const tuning = appStore.currentTuning
+  if (settings.mode !== 'chord') {
+    const bassPc = slots.value[0].pc
+    const sets = stringSets(q.voicing).filter(strings => {
+      for (let f = 0; f <= 12; f++) {
+        const m = getAbsoluteNote(tuning, strings[0], f)
+        if (pcOf(m) === bassPc && fitsOnSet(strings, m)) return true
+      }
+      return false
+    })
+    return sets.length ? { type: 'strings', strings: pickOne(sets) } : null
+  }
+  if (props.kind === 'triads' && ['maj', 'min'].includes(q.quality) && appStore.tuningName === 'E Standard') {
+    const options = cagedOptions(tuning, q.rootPc, q.quality, 15)
+    if (options.length) return { type: 'caged', ...pickOne(options) }
+  }
+  return { type: 'zone', zone: randomZone() }
+}
+
+// Inside a sentence: "(sulle corde 3-2-1)"
+const refInline = r => { const x = refText(r); return x.charAt(0).toLowerCase() + x.slice(1) }
+
+function refText(r) {
+  const lang = appStore.lang
+  if (r.type === 'strings') return fmt('pm.q-strings', stringSetName(r.strings, lang))
+  if (r.type === 'caged') return fmt('pm.q-caged', r.name)
+  return fmt('pm.q-zone', zoneName(r.zone, lang))
+}
+
+// Chord mode: is this note inside the CAGED shape / zone asked?
+function inChordRef(r, note, pos) {
+  const tuning = appStore.currentTuning
+  if (r.type === 'caged') {
+    return pos ? r.shape.some(p => p.s === pos.s && p.f === pos.f) : r.shape.some(p => midiAt(tuning, p) === note.midi)
+  }
+  return pos ? inZone(pos.f, r.zone) : playableInZone(tuning, note.midi, r.zone)
+}
+
+function paintRef(r) {
+  if (!r) return
+  if (r.type === 'strings') paintArea(s => r.strings.includes(s))
+  else if (r.type === 'zone') paintArea((s, f) => inZone(f, r.zone))
+  else paintRing(r.root, 'R', INTERVAL_COLORS[0].color)
+}
+
 function noteName(midi) {
   return midiToName(midi, appStore.currentNotes)
 }
@@ -377,16 +461,31 @@ function groupsOf(midis) {
 
 // After an attempt: every chord tone on the neck, plus the voicing(s) on string sets.
 function reveal(voicings) {
+  clearArea()
+  const r = question.value.ref
   const pcs = new Set(slots.value.map(s => s.pc))
+  if (r?.type === 'caged') {
+    // the shape asked, every note of it
+    r.shape.forEach(p => {
+      const c = circleAt(p.s, p.f)
+      if (!c || marked.has(c)) return
+      const slot = slotForPc(parseInt(c.dataset.noteIndex))
+      if (slot) paint(c, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
+    })
+    return false   // shown, but it is not a fingering on a string set
+  }
   circles().forEach(c => {
     const pc = parseInt(c.dataset.noteIndex)
     if (!pcs.has(pc) || marked.has(c)) return
+    if (r?.type === 'zone' && !inZone(+c.dataset.fretIndex, r.zone)) return
+    if (r?.type === 'strings' && !r.strings.includes(+c.dataset.stringIndex)) return
     const slot = slotForPc(pc)
     paint(c, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, opacity: '0.35' })
   })
   let shown = false
   voicings.forEach(midis => {
-    const shapes = voicingShapes(midis, question.value.voicing)
+    let shapes = voicingShapes(midis, question.value.voicing)
+    if (r?.type === 'strings') shapes = shapes.filter(sh => sh.every((p, i) => p.s === r.strings[i]))
     const cells = shapes.length
       ? shapes.flat().map(({ s, f }) => circleAt(s, f))
       : midis.flatMap(m => fretboardCirclesForMidi(appStore.currentTuning, m))
@@ -432,9 +531,12 @@ async function start() {
   question.value = pickQuestion()
   slots.value = buildSlots(question.value)
   step.value = 0; expected = null; accepted = []
+  misses.value = 0
+  question.value = { ...question.value, ref: chooseRef(question.value) }
   active.value = true
   statusText.value = hintText()
   clearBoard()
+  paintRef(question.value.ref)
   await audio.init()
   playPrompt()
 }
@@ -477,12 +579,13 @@ function endQuestion() {
 }
 
 // Next question without leaving the guitar, when auto-advance is on.
-function scheduleNext(delay) {
+// Next question: always in retry mode once the answer is right, otherwise without leaving
+// the guitar when auto-advance is on.
+function scheduleNext(delay, right = false) {
   clearTimeout(nextTimer)
-  if (!guitar.enabled || !guitar.autoNext) return
-  nextTimer = setTimeout(() => {
-    if (guitar.enabled && guitar.autoNext) start()
-  }, delay)
+  const auto = (right && settings.retry) || (guitar.enabled && guitar.autoNext)
+  if (!auto) return
+  nextTimer = setTimeout(() => { if (!active.value) start() }, delay)
 }
 
 function accept(slot, note) {
@@ -497,7 +600,8 @@ function accept(slot, note) {
 
 function succeed(fromClick) {
   active.value = false
-  score.value++; total.value++
+  total.value++
+  if (misses.value === 0) score.value++
   practice.record(props.kind, itemKey(question.value), true, { guitar: !fromClick })
   const voicings = settings.mode === 'chord' ? [] : groupsOf(expected)
   if (settings.mode === 'chord' && !fromClick) {
@@ -509,12 +613,24 @@ function succeed(fromClick) {
     }))
   }
   const shapesShown = reveal(voicings)
-  statusText.value = t('ct.correct') + (shapesShown ? ' ' + t('ct.shapes') : '')
+  statusText.value = (misses.value ? fmt('pm.right-after', misses.value + 1) : t('ct.correct')) + (shapesShown ? ' ' + t('ct.shapes') : '')
   if (fromClick) setTimeout(() => playNotes(accepted.slice(-SIZE)), 350)
-  scheduleNext(settings.mode === 'cycle' ? 2500 : 1800)
+  scheduleNext(settings.mode === 'cycle' ? 2500 : 1800, true)
 }
 
-function fail(note, message, slot) {
+// `place`: the note is right but not where the reference asks.
+function fail(note, message, slot, place = false) {
+  if (settings.retry) {
+    misses.value++
+    const where = note.element
+      ? { s: parseInt(note.element.dataset.stringIndex), f: parseInt(note.element.dataset.fretIndex) }
+      : { guitar: true }
+    practice.record(props.kind, itemKey(question.value), false, where)
+    const cells = note.element ? [note.element] : fretboardCirclesForMidi(appStore.currentTuning, note.midi)
+    cells.forEach(c => { if (!marked.has(c)) flashWrong(c, appStore.currentNotes[pcOf(note.midi)]) })
+    statusText.value = place ? fmt('pm.wrong-place', refInline(question.value.ref)) : fmt('pm.retry-wrong', noteName(note.midi))
+    return
+  }
   active.value = false
   total.value++
   const pos = note.element
@@ -530,7 +646,9 @@ function fail(note, message, slot) {
   // Show the voicing that was asked, from the bass played or the closest one.
   let voicings = []
   if (settings.mode !== 'chord') {
-    if (!expected) {
+    if (!expected && question.value.ref?.type === 'strings') {
+      expected = expectedFrom(defaultBass())
+    } else if (!expected) {
       let bass = note.midi - 6
       while (pcOf(bass) !== slots.value[0].pc) bass++
       expected = expectedFrom(bass)
@@ -542,15 +660,49 @@ function fail(note, message, slot) {
   scheduleNext(3000)
 }
 
+// A bass for showing the voicing when none was played: on the string set asked, or near E3.
+function defaultBass() {
+  const r = question.value.ref
+  const pc = slots.value[0].pc
+  if (r?.type === 'strings') {
+    for (let f = 0; f <= FRETS; f++) {
+      const m = getAbsoluteNote(appStore.currentTuning, r.strings[0], f)
+      if (pcOf(m) === pc && fitsOnSet(r.strings, m)) return m
+    }
+  }
+  let bass = 46
+  while (pcOf(bass) !== pc) bass++
+  return bass
+}
+
+// Retry mode: stop trying and see the answer.
+function giveUp() {
+  if (!active.value) return
+  active.value = false
+  total.value++
+  let voicings = []
+  if (settings.mode !== 'chord') {
+    if (!expected) expected = expectedFrom(defaultBass())
+    voicings = groupsOf(expected)
+  }
+  reveal(voicings)
+  statusText.value = t('pm.solution-shown')
+  scheduleNext(3000)
+}
+
 // `note`: { midi, element? } — `element` is the clicked circle (absent for the guitar).
 function handleNote(note) {
   if (!active.value) return
   const pc = pcOf(note.midi)
   const chordPcs = new Set(slots.value.map(s => s.pc))
 
+  const r = question.value.ref
+  const pos = note.element ? { s: parseInt(note.element.dataset.stringIndex), f: parseInt(note.element.dataset.fretIndex) } : null
+
   if (settings.mode === 'chord') {
     const slot = slotForPc(pc)
     if (!slot) return fail(note, t('ct.wrong-note').replace('{0}', noteName(note.midi)))
+    if (r && !inChordRef(r, note, pos)) return fail(note, fmt('pm.wrong-place', refInline(r)), null, true)
     if (slot.state === 'ok') return   // the same chord tone again (another octave): fine
     accept(slot, note)
     if (slots.value.every(s => s.state === 'ok')) succeed(!!note.element)
@@ -561,6 +713,10 @@ function handleNote(note) {
   if (step.value === 0) {
     if (pc !== slot.pc) {
       return fail(note, t('ct.wrong-bass').replace('{0}', appStore.currentNotes[slot.pc]).replace('{1}', slot.label), slot)
+    }
+    // On the string set asked: the bass on its lowest string, with room for the whole voicing.
+    if (r && ((pos && pos.s !== r.strings[0]) || !fitsOnSet(r.strings, note.midi))) {
+      return fail(note, fmt('pm.wrong-place', refInline(r)), slot, true)
     }
     expected = expectedFrom(note.midi)
   } else if (note.midi !== expected[step.value]) {
@@ -573,6 +729,9 @@ function handleNote(note) {
     }
     if (pc === slot.pc) return fail(note, t('ct.wrong-octave').replace('{0}', noteName(want)), slot)
     return fail(note, t('ct.wrong-next').replace('{0}', noteName(want)).replace('{1}', slot.label), slot)
+  } else if (r && pos && pos.s !== r.strings[step.value % SIZE]) {
+    // right pitch on another string: the shape asked uses one note per string of the set
+    return fail(note, fmt('pm.wrong-place', refInline(r)), slot, true)
   }
 
   accept(slot, note)
@@ -628,6 +787,12 @@ onUnmounted(() => {
   font-weight: 900;
   letter-spacing: 2px;
   color: var(--jd-bass);
+}
+
+.tt-solution {
+  margin-top: 12px;
+  border-color: var(--jd-line-strong);
+  color: var(--jd-text-soft);
 }
 
 .tt-question-sub {

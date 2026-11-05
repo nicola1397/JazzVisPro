@@ -122,6 +122,14 @@
           </div>
         </div>
       </div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+      <PracticeModes
+        v-model:reference="settings.reference"
+        :reference-label="t('pm.ref-position')"
+        :reference-help="t('pm.help-sc')"
+        :show-retry="false"
+      />
     </section>
 
     <div class="teoria-tip" style="margin-top: 20px;">
@@ -140,21 +148,25 @@ import { useGuitarInput } from '../composables/useGuitarInput.js'
 import { audioTimeToPerf } from '../composables/useBackingTrack.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { getInputLatency, setInputLatency } from '../utils/latency.js'
-import { SCALES, INTERVAL_COLORS } from '../utils/theory.js'
+import { SCALES, INTERVAL_COLORS, getAbsoluteNote } from '../utils/theory.js'
+import { stringName, zoneName, inZone, positionsOfMidi, pickOne } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
+import PracticeModes     from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()
 const audio    = useAudioStore()
 const practice = usePracticeStore()
 const { t }    = useI18n()
 const guitar   = useGuitarInput({ onNote: ({ midi, time }) => onNote({ midi, rawTime: time, time: time - latency.value }) })
+const fmt = (key, ...args) => args.reduce((s, v, i) => s.replace(`{${i}}`, v), t(key))
 
 const STORAGE_KEY = 'jazzVizScaleTempo'
 const CHART_H = 120
 const COUNT_IN = 4
 const scaleNames = Object.keys(SCALES)
 
-const defaults = { scale: 'Ionio (Maj7)', root: 0, octaves: 1, direction: 'updown', sub: 2, bpm: 70, speedUp: true, targetBpm: 140, step: 4 }
+// reference: the scale in one position (root at a given string and fret, every note in a zone)
+const defaults = { scale: 'Ionio (Maj7)', root: 0, octaves: 1, direction: 'updown', sub: 2, bpm: 70, speedUp: true, targetBpm: 140, step: 4, reference: false }
 const settings = reactive({ ...defaults, ...(readStorage(STORAGE_KEY, {}) || {}) })
 if (!SCALES[settings.scale]) settings.scale = defaults.scale
 
@@ -168,6 +180,7 @@ const statusText = ref(t('sc.status'))
 const timing     = ref([])        // { name, delta } of the notes played in place
 const cleanRuns  = ref(0)
 const summaryText = ref('')
+const position   = ref(null)      // reference mode: { root: { s, f }, rootMidi, zone }
 let wrongNotes = 0
 let firstBeat = 0                 // performance time of the first note's beat
 let subMs = 0
@@ -187,7 +200,34 @@ const scaleSub = computed(() => [
   settings.direction === 'up' ? t('ep.dir-up') : t('sc.updown'),
   t(`sc.sub-${settings.sub}`),
   `${settings.bpm} bpm`,
+  ...(position.value ? [fmt('pm.q-position', zoneName(position.value.zone, appStore.lang), stringName(position.value.root.s, appStore.lang))] : []),
 ].join(' · '))
+
+// ── Reference mode: one position ──────────────────────────────────────────────
+// The root on the 6th or 5th string, and the narrowest zone of frets (5, then 6) around it
+// where every note of the run can be played.
+function choosePosition() {
+  const tuning = appStore.currentTuning
+  const options = []
+  for (const s of [5, 4]) {
+    for (let f = 1; f <= 12; f++) {
+      const rootMidi = getAbsoluteNote(tuning, s, f)
+      if (rootMidi % 12 !== rootPc.value) continue
+      const midis = seq.value.map(x => rootMidi + x.iv)
+      const zone = [5, 6].flatMap(w => [f - 2, f - 1, f].map(lo => ({ lo: Math.max(0, lo), hi: Math.max(0, lo) + w - 1 })))
+        .find(z => z.lo <= f && z.hi >= f && midis.every(m => positionsOfMidi(tuning, m, (_, ff) => inZone(ff, z)).length))
+      if (zone) options.push({ root: { s, f }, rootMidi, zone })
+    }
+  }
+  return options.length ? pickOne(options) : null
+}
+
+// Does a note match this slot? By pitch class, or in reference mode by exact pitch in the zone.
+function matches(slot, midi, fret) {
+  if (!slot) return false
+  if (!position.value) return ((midi % 12) + 12) % 12 === slot.pc
+  return midi === position.value.rootMidi + slot.iv && (fret === undefined || inZone(fret, position.value.zone))
+}
 
 function deltaText(ms) {
   const v = Math.round(ms)
@@ -211,12 +251,30 @@ function buildSequence() {
 function paintBoard() {
   const pcs = new Map(seq.value.map(s => [s.pc, s]))
   const next = running.value ? seq.value[step.value]?.pc : -1
+  const pos = position.value
+  const tuning = appStore.currentTuning
+  // in reference mode: only the notes of the run, inside the zone
+  const runMidis = pos ? new Set(seq.value.map(x => pos.rootMidi + x.iv)) : null
+  const nextMidi = pos && running.value && seq.value[step.value] ? pos.rootMidi + seq.value[step.value].iv : null
   document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
     const pc = parseInt(c.dataset.noteIndex)
-    const s = pcs.get(pc)
+    const sIdx = +c.dataset.stringIndex, fIdx = +c.dataset.fretIndex
+    const midi = getAbsoluteNote(tuning, sIdx, fIdx)
+    const s = pos ? (runMidis.has(midi) && inZone(fIdx, pos.zone) ? pcs.get(pc) : null) : pcs.get(pc)
     c.className = 'note-circle'
     c.style.cssText = ''
     if (!s) { c.innerText = ''; c.style.opacity = '0.04'; return }
+    if (pos) {
+      const isNext = midi === nextMidi
+      const isRoot = sIdx === pos.root.s && fIdx === pos.root.f
+      c.style.backgroundColor = INTERVAL_COLORS[s.iv % 12].color
+      c.style.color = 'rgba(0,0,0,0.8)'
+      c.innerText = s.label
+      c.style.opacity = isNext || (!running.value && isRoot) ? '1' : '0.45'
+      if (isNext || isRoot) { c.style.border = '2px solid white' }
+      if (isNext) c.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)'
+      return
+    }
     c.style.backgroundColor = INTERVAL_COLORS[s.iv % 12].color
     c.style.color = 'rgba(0,0,0,0.8)'
     c.innerText = s.label
@@ -258,6 +316,7 @@ async function run() {
   await audio.init()
   rootPc.value = settings.root >= 0 ? settings.root : Math.floor(Math.random() * 12)
   seq.value = buildSequence()
+  position.value = settings.reference ? choosePosition() : null
   step.value = 0; wrongNotes = 0
   timing.value = []; summaryText.value = ''
   subMs = 60000 / settings.bpm / settings.sub
@@ -281,7 +340,8 @@ function stop() {
   paintBoard()
 }
 
-function onNote({ midi, time, rawTime }) {
+// `fret`: of a clicked note (none from the guitar, which is checked by exact pitch)
+function onNote({ midi, time, rawTime, fret }) {
   if (calibrating) { calibNotes.push(rawTime ?? time); return }
   if (!running.value || !firstBeat) return
   const k = step.value
@@ -290,11 +350,11 @@ function onNote({ midi, time, rawTime }) {
   const pc = ((midi % 12) + 12) % 12
   const prev = seq.value[k - 1]
   // A quick correction of the note just missed: not a new note.
-  if (prev && prev.state === 'wrong' && pc === prev.pc && time < (prev.ideal + slot.ideal) / 2) return
+  if (prev && prev.state === 'wrong' && matches(prev, midi, fret) && time < (prev.ideal + slot.ideal) / 2) return
   const next = seq.value[k + 1]
-  if (pc === slot.pc) {
+  if (matches(slot, midi, fret)) {
     take(slot, time)
-  } else if (next && pc === next.pc && Math.abs(time - next.ideal) < Math.abs(time - slot.ideal)) {
+  } else if (next && matches(next, midi, fret) && Math.abs(time - next.ideal) < Math.abs(time - slot.ideal)) {
     slot.state = 'missed'                  // a note skipped, the player went on in time
     step.value++
     take(next, time)
@@ -380,14 +440,15 @@ async function calibrate() {
 
 async function onNoteClick(e) {
   if (calibrating) return
-  onNote({ midi: e.detail.midiNote, time: performance.now() })
+  onNote({ midi: e.detail.midiNote, time: performance.now(), fret: e.detail.fretIndex })
 }
 
 watch(settings, () => writeStorage(STORAGE_KEY, { ...settings }), { deep: true })
-watch(() => [settings.scale, settings.root, settings.octaves, settings.direction], () => {
+watch(() => [settings.scale, settings.root, settings.octaves, settings.direction, settings.reference], () => {
   if (running.value) return
   rootPc.value = settings.root >= 0 ? settings.root : rootPc.value
   seq.value = buildSequence()
+  position.value = null
   timing.value = []
   paintBoard()
 })

@@ -36,9 +36,11 @@
         <div class="jd-question-text" style="font-size: 24px;">
           {{ questionText }}
         </div>
+        <div v-if="refText" class="il-ref">{{ refText }}</div>
         <div class="jd-question-hint">
           {{ statusText }}
         </div>
+        <button v-if="active && settings.retry && misses > 0" type="button" class="jd-toolbtn il-solution" @click="giveUp">{{ t('pm.show-solution') }}</button>
         <div class="jd-modes" style="justify-content: center; margin-top: 15px;">
           <label class="jd-mode" :class="{ on: descending }">
             <input type="checkbox" v-model="descending">
@@ -48,6 +50,13 @@
         </div>
         <GuitarInputPanel :guitar="guitar" />
       </div>
+
+      <PracticeModes
+        v-model:reference="settings.reference"
+        v-model:retry="settings.retry"
+        :reference-label="t('pm.ref-root')"
+        :reference-help="t('pm.help-il')"
+      />
     </section>
 
     <div class="teoria-tip" style="margin-top: 20px;">
@@ -57,54 +66,90 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
 import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { usePracticeStore } from '../stores/practice.js'
-import { INTERVAL_COLORS, INTERVAL_DEGREES, TUNINGS, NOTES, NOTES_FLAT, ROOT_NAMES } from '../utils/theory.js'
+import { INTERVAL_COLORS, INTERVAL_DEGREES, TUNINGS, NOTES, NOTES_FLAT, ROOT_NAMES, getAbsoluteNote } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
+import { positionName, positionsOfMidi, allPositions, flashWrong, circleAt, pickOne } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
+import PracticeModes     from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()
 const audio    = useAudioStore()
 const { t }    = useI18n()
 const guitar   = useGuitarInput({ onNote: onGuitarNote })
 const practice = usePracticeStore()
+const fmt = (key, ...args) => args.reduce((s, v, i) => s.replace(`{${i}}`, v), t(key))
 
 // While the app plays a note, a microphone may hear it: ignore that pitch for a moment.
 const SELF_SOUND_HOLDOFF_MS = 600
+const STORAGE_KEY = 'jazzVizIntervalLearner'
+
+// reference: one root at a given string and fret, the interval from that very note;
+// retry: a wrong note does not end the question
+const settings = reactive({ reference: false, retry: false, ...(readStorage(STORAGE_KEY, {}) || {}) })
 
 const questionText = ref(t('il.ready'))
 const statusText   = ref(t('il.status'))
+const refText      = ref('')
 const score        = ref(0)
 const total        = ref(0)
 const descending   = ref(false)
 // True once a question has been asked, until the game is reset: Replay needs a root to play.
 const hasQuestion  = ref(false)
-let active = false
+const active       = ref(false)
+const misses       = ref(0)        // wrong attempts on the current question (retry mode)
 let root   = 0
 let targetInterval = 0
+let rootPos = null                 // reference mode: { s, f } of the root
+let rootMidi = null
+let targetMidi = null              // reference mode: the exact note to find
 let nextTimer = null
 
 function reset() {
   clearTimeout(nextTimer)
-  score.value = 0; total.value = 0; active = false
-  hasQuestion.value = false
+  score.value = 0; total.value = 0
+  endQuestion()
+}
+
+function endQuestion() {
+  active.value = false; hasQuestion.value = false; misses.value = 0
+  rootPos = null; rootMidi = null; targetMidi = null
   questionText.value = t('il.ready')
   statusText.value   = t('il.status')
+  refText.value = ''
   clearBoard()
+}
+
+// Interval names as degrees above the root (b7 = minor seventh, 7 = major seventh)
+const tuning = () => appStore.currentTuning
+
+// Reference mode: a root position whose interval (up or down) is on the neck, frets 0-12.
+function pickRootPosition(iv) {
+  const options = allPositions((s, f) => {
+    if (f > 12 || (tuning()[s] + f) % 12 !== root) return false
+    const m = getAbsoluteNote(tuning(), s, f)
+    return positionsOfMidi(tuning(), descending.value ? m - iv : m + iv, (_, ff) => ff <= 15).length > 0
+  })
+  return options.length ? pickOne(options) : null
 }
 
 async function start() {
   clearTimeout(nextTimer)
-  active = true
-  hasQuestion.value = true
+  active.value = true; hasQuestion.value = true; misses.value = 0
   root           = Math.floor(Math.random() * 12)
   targetInterval = practice.pickWeighted('interval-learner', [...Array(11).keys()].map(i => i + 1), iv => intervalKey(iv))
+  rootPos = settings.reference ? pickRootPosition(targetInterval) : null
+  rootMidi = rootPos ? getAbsoluteNote(tuning(), rootPos.s, rootPos.f) : null
+  targetMidi = rootPos ? rootMidi + (descending.value ? -targetInterval : targetInterval) : null
   const rootName = ROOT_NAMES[root]
   questionText.value = `${t('il.find-prefix')}: ${INTERVAL_DEGREES[targetInterval]} ${t('il.find-of')} ${rootName}${descending.value ? ' ↓' : ''}`
+  refText.value = rootPos ? fmt('pm.q-root', positionName(rootPos, appStore.lang)) : ''
   statusText.value   = guitar.enabled ? t('il.play-status') : t('il.click-status')
   await audio.init()
   playRoot()
@@ -119,18 +164,24 @@ async function replay() {
 
 function playRoot() {
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, root)
-  audio.playChord([0], root, 0, 1, 0.2, 'Electric Piano', 3)
+  if (rootMidi !== null) audio.playChord([0], rootMidi, 0, 1, 0.2, 'Electric Piano')
+  else audio.playChord([0], root, 0, 1, 0.2, 'Electric Piano', 3)
 }
 
+// Every root on the neck, or only the one given in reference mode.
 function drawBoard() {
   document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
     const nIdx = parseInt(c.dataset.noteIndex)
     c.className = 'note-circle'
     c.innerText  = ''
     c.style.cssText = ''
-    if (nIdx === root) {
+    const isRoot = rootPos
+      ? +c.dataset.stringIndex === rootPos.s && +c.dataset.fretIndex === rootPos.f
+      : nIdx === root
+    if (isRoot) {
       c.style.backgroundColor = INTERVAL_COLORS[0].color
       c.innerText = 'R'; c.style.opacity = '1'; c.style.color = 'rgba(0,0,0,0.8)'
+      if (rootPos) { c.style.border = '2px solid white'; c.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.45)' }
     } else {
       c.style.opacity = '0.04'
     }
@@ -148,91 +199,125 @@ function intervalKey(iv) {
   return `${iv}${descending.value ? 'd' : ''}`
 }
 
-// Next question without leaving the guitar, when auto-advance is on.
-function scheduleNext(delay) {
+// Next question: always in retry mode once the answer is right, otherwise without leaving
+// the guitar when auto-advance is on.
+function scheduleNext(delay, right) {
   clearTimeout(nextTimer)
-  if (!guitar.enabled || !guitar.autoNext) return
-  nextTimer = setTimeout(() => {
-    if (guitar.enabled && guitar.autoNext) start()
-  }, delay)
+  const auto = (right && settings.retry) || (guitar.enabled && guitar.autoNext)
+  if (!auto) return
+  nextTimer = setTimeout(() => { if (!active.value) start() }, delay)
+}
+
+function targetPc() {
+  return descending.value ? (root - targetInterval + 12) % 12 : (root + targetInterval) % 12
 }
 
 // `elements`: the circles to mark (the clicked one, or every position of the played pitch).
-// `oct`: octave of the answer, used to play the right note back after a mistake.
+// `midi`: exact note clicked or played. `oct`: octave of the answer, to play the right note back.
 // `played`: name of the note played on the guitar, if the answer came from it.
 // `pos`: string and fret of a clicked answer.
-function checkAnswer({ noteIndex, elements, oct, played = '', pos = {} }) {
-  if (!active) return
-  active = false
-  total.value++
+function checkAnswer({ noteIndex, midi, elements, oct, played = '', pos = {} }) {
+  if (!active.value) return
   const clicked = descending.value
     ? (root - noteIndex + 12) % 12
     : (noteIndex - root + 12) % 12
-  const correct = clicked === targetInterval
+  const rightDegree = clicked === targetInterval
+  const correct = rightDegree && (targetMidi === null || midi === targetMidi)
   practice.record('interval-learner', intervalKey(targetInterval), correct, { ...pos, guitar: !!played })
+  const label = INTERVAL_COLORS[clicked]?.short || '?'
+  const playedSuffix = played ? ` · 🎸 ${played}` : ''
+
+  if (!correct && settings.retry) {
+    misses.value++
+    elements.forEach(el => flashWrong(el, label))
+    statusText.value = (rightDegree ? fmt('pm.wrong-place', t('pm.ref-octave')) : fmt('pm.retry-wrong', label)) + playedSuffix
+    return
+  }
+
+  active.value = false
+  total.value++
   elements.forEach(el => {
     el.style.transition = 'all 0.2s ease'
     el.style.backgroundColor = correct ? '#2ecc71' : '#e74c3c'
     el.style.opacity = '1'
     el.style.color   = 'rgba(0,0,0,0.8)'
-    el.innerText     = INTERVAL_COLORS[clicked]?.short || '?'
+    el.innerText     = label
     if (played) { el.style.border = '2px solid white'; el.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)' }
   })
-  const playedSuffix = played ? ` · 🎸 ${played}` : ''
   if (correct) {
-    score.value++
-    statusText.value = t('il.correct') + playedSuffix
+    if (misses.value === 0) score.value++
+    statusText.value = (misses.value ? fmt('pm.right-after', misses.value + 1) : t('il.correct')) + playedSuffix
   } else {
-    statusText.value = t('il.wrong') + playedSuffix
+    statusText.value = (rightDegree ? fmt('pm.wrong-place', t('pm.ref-octave')) : t('il.wrong')) + playedSuffix
     revealCorrect()
-    const targetNote = descending.value
-      ? (root - targetInterval + 12) % 12
-      : (root + targetInterval) % 12
-    setTimeout(() => {
-      guitar.holdOff(SELF_SOUND_HOLDOFF_MS, targetNote)
-      audio.playChord([0], targetNote, 0, 1.2, 0.2, 'Electric Piano', oct)
-    }, 800)
+    setTimeout(() => playTargetNote(oct), 800)
   }
-  scheduleNext(correct ? 1500 : 2800)
+  scheduleNext(correct ? 1500 : 2800, correct)
 }
 
+function playTargetNote(oct) {
+  const pc = targetPc()
+  guitar.holdOff(SELF_SOUND_HOLDOFF_MS, pc)
+  if (targetMidi !== null) audio.playChord([0], targetMidi, 0, 1.2, 0.2, 'Electric Piano')
+  else audio.playChord([0], pc, 0, 1.2, 0.2, 'Electric Piano', oct)
+}
+
+// The right answer: every position of the interval, or the exact note in reference mode.
 function revealCorrect() {
-  const targetNote = descending.value
-    ? (root - targetInterval + 12) % 12
-    : (root + targetInterval) % 12
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    if (parseInt(c.dataset.noteIndex) === targetNote) {
-      c.style.transition = 'all 0.2s ease'
-      c.classList.add('note-highlighted')
-      c.style.backgroundColor = INTERVAL_COLORS[targetInterval].color
-      c.innerText = INTERVAL_COLORS[targetInterval].short
-      c.style.color   = 'rgba(0,0,0,0.8)'
-      c.style.opacity = '1'
-    }
+  const cells = targetMidi !== null
+    ? positionsOfMidi(tuning(), targetMidi).map(circleAt)
+    : [...document.querySelectorAll('.fretboard-layer .note-circle')].filter(c => parseInt(c.dataset.noteIndex) === targetPc())
+  cells.forEach(c => {
+    if (!c) return
+    c.style.transition = 'all 0.2s ease'
+    c.classList.add('note-highlighted')
+    c.style.backgroundColor = INTERVAL_COLORS[targetInterval].color
+    c.innerText = INTERVAL_COLORS[targetInterval].short
+    c.style.color   = 'rgba(0,0,0,0.8)'
+    c.style.opacity = '1'
   })
+}
+
+// Retry mode: stop trying and see the answer.
+function giveUp() {
+  if (!active.value) return
+  active.value = false; total.value++
+  statusText.value = t('pm.solution-shown')
+  revealCorrect()
+  playTargetNote(rootMidi === null ? 3 : undefined)
+  scheduleNext(2800, false)
 }
 
 async function onNoteClick(e) {
-  const { noteIndex, stringIndex, fretIndex, element } = e.detail
+  const { noteIndex, midiNote, stringIndex, fretIndex, element } = e.detail
   // Play the note
-  const tuning = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
-  const oct = BASE_OCTAVES[stringIndex] + Math.floor((tuning[stringIndex] + fretIndex) / 12)
+  const tun = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
+  const oct = BASE_OCTAVES[stringIndex] + Math.floor((tun[stringIndex] + fretIndex) / 12)
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, noteIndex)
   audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
-  checkAnswer({ noteIndex, elements: [element], oct, pos: { s: stringIndex, f: fretIndex } })
+  checkAnswer({ noteIndex, midi: midiNote, elements: [element], oct, pos: { s: stringIndex, f: fretIndex } })
 }
 
 function onGuitarNote({ midi, noteIndex }) {
-  if (!active) return
+  if (!active.value) return
   const notes = appStore.accidental === '#' ? NOTES : NOTES_FLAT
   checkAnswer({
     noteIndex,
+    midi,
     elements: fretboardCirclesForMidi(appStore.currentTuning, midi),
     oct: Math.floor(midi / 12),
     played: midiToName(midi, notes),
   })
 }
+
+// Changing a mode drops the current question.
+watch(settings, () => {
+  writeStorage(STORAGE_KEY, { ...settings })
+  clearTimeout(nextTimer)
+  if (hasQuestion.value) endQuestion()
+}, { deep: true })
+watch(descending, () => { if (hasQuestion.value) endQuestion() })
 
 onMounted(() => {
   window.addEventListener('fretboard:noteClick', onNoteClick)
@@ -258,6 +343,22 @@ onUnmounted(() => {
   font-weight: 900;
   color: var(--jd-amber);
   letter-spacing: 1px;
+}
+
+.il-ref {
+  margin-top: 6px;
+  font-family: var(--jd-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--jd-text);
+}
+
+.il-solution {
+  margin-top: 12px;
+  border-color: var(--jd-line-strong);
+  color: var(--jd-text-soft);
 }
 
 .jd-question-hint {

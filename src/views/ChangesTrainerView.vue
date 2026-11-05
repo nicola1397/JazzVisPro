@@ -42,6 +42,7 @@
           <div class="ch-next" v-if="nextEvent">{{ t('ch.next') }}: {{ nextEvent.symbol }}</div>
         </template>
         <div v-else class="ch-idle">{{ statusText }}</div>
+        <div v-if="zone" class="ch-zone">{{ fmt('pm.q-zone', zoneName(zone, appStore.lang)) }}</div>
       </div>
 
       <!-- Chart -->
@@ -130,6 +131,14 @@
           </div>
         </div>
       </div>
+
+      <div class="jd-rule" aria-hidden="true"></div>
+      <PracticeModes
+        v-model:reference="settings.reference"
+        :reference-label="t('pm.ref-zone')"
+        :reference-help="t('pm.help-ch')"
+        :show-retry="false"
+      />
     </section>
 
     <div class="teoria-tip" style="margin-top: 20px;">
@@ -151,12 +160,15 @@ import { STANDARDS, parseChart, classifyNote } from '../utils/standards.js'
 import { setStepDone } from '../utils/studyPath.js'
 import { getInputLatency } from '../utils/latency.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
+import { zoneName, randomZone, inZone, playableInZone, paintArea } from '../utils/fretRefs.js'
 import GuitarInputPanel from '../components/shared/GuitarInputPanel.vue'
+import PracticeModes from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()
 const practice = usePracticeStore()
 const route = useRoute()
 const { t } = useI18n()
+const fmt = (key, ...args) => args.reduce((s, v, i) => s.replace(`{${i}}`, v), t(key))
 const guitar = useGuitarInput({ onNote: ({ midi, time }) => onNote({ midi, time: time - getInputLatency() }) })
 const backing = useBackingTrack()
 
@@ -167,7 +179,8 @@ const KIND_COLORS = { chord: '#b88a00', tension: '#3a9ad9', outside: '#9c5cff' }
 const EARLY_MS = 120          // a note this early still counts for the next chord (anticipation)
 const STORAGE_KEY = 'jazzVizChangesTrainer'
 
-const defaults = { song: 'ii-V-I in C', mode: 'guide', guide: 'both', approach: 'chromatic', bpm: 90, loops: 2, bass: true, drums: true, comp: true, hints: true }
+// reference: each run gives a zone of 5 frets to play in
+const defaults = { song: 'ii-V-I in C', mode: 'guide', guide: 'both', approach: 'chromatic', bpm: 90, loops: 2, bass: true, drums: true, comp: true, hints: true, reference: false }
 const settings = reactive({ ...defaults, ...(readStorage(STORAGE_KEY, {}) || {}) })
 if (!STANDARDS.some(s => s.title === settings.song)) settings.song = defaults.song
 if (!MODES.includes(settings.mode)) settings.mode = defaults.mode
@@ -181,6 +194,7 @@ const bars = computed(() => parseChart(song.value.chords))
 // Per chord event: { result: null|'ok'|'wrong'|'missed'|'held', notes: [{ midi, time, kind, label }], progress, why }
 const results = reactive(new Map())
 const statusText = ref(t('ch.status'))
+const zone = ref(null)          // reference mode: { lo, hi } frets of this run
 const noteLog = []               // every note of the run, for approach notes
 let checkTimers = []
 
@@ -250,6 +264,11 @@ function onNote({ midi, time = performance.now(), element = null }) {
   }
   r.notes.push(note)
   if (r.result) return
+
+  // reference mode: a note outside the zone (clicked there, or not playable there) is a mistake
+  if (zone.value && !(element ? inZone(+element.dataset.fretIndex, zone.value) : playableInZone(appStore.currentTuning, midi, zone.value))) {
+    return settle(ev, 'wrong', t('pm.out-of-zone'))
+  }
 
   if (settings.mode === 'guide') {
     const ok = guideTargets(ev).some(x => x.pc === note.pc)
@@ -377,13 +396,16 @@ function clearBoard() {
 
 function paintHints(ev) {
   clearBoard()
-  if (!settings.hints) return
+  if (!settings.hints) {
+    if (zone.value) paintArea((s, f) => inZone(f, zone.value))
+    return
+  }
   const show = settings.mode === 'guide' ? guideTargets(ev)
     : settings.mode === 'approach' ? [ev.info.guide[0]]
     : ev.info.tones
   document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
     const tone = show.find(x => x.pc === parseInt(c.dataset.noteIndex))
-    if (!tone) return
+    if (!tone || (zone.value && !inZone(+c.dataset.fretIndex, zone.value))) return
     c.style.backgroundColor = INTERVAL_COLORS[tone.iv].color
     c.style.opacity = '0.85'
     c.style.color = 'rgba(0,0,0,0.8)'
@@ -398,6 +420,7 @@ function toggle() {
   noteLog.length = 0
   checkTimers.forEach(clearTimeout); checkTimers = []
   statusText.value = t('ch.status')
+  zone.value = settings.reference ? randomZone() : null
   backing.start({
     bars: bars.value, bpm: Math.max(40, Math.min(260, settings.bpm || 90)), loops: settings.loops,
     bass: settings.bass, drums: settings.drums, comp: settings.comp,
@@ -432,6 +455,7 @@ async function onNoteClick(e) {
 }
 
 watch(settings, () => writeStorage(STORAGE_KEY, { ...settings }), { deep: true })
+watch(() => settings.reference, on => { if (!on && !backing.playing.value) zone.value = null })
 watch(() => [settings.song, settings.mode], () => { if (backing.playing.value) stopRun(); results.clear() })
 
 onMounted(() => {
@@ -445,6 +469,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.ch-zone { font-family: var(--jd-mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--jd-amber); }
 .ch-now { position: relative; z-index: 1; text-align: center; min-height: 110px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
 .ch-count { font-size: 56px; font-weight: 900; color: var(--jd-amber); }
 .ch-chord { font-size: 44px; font-weight: 900; color: var(--jd-text); letter-spacing: 1px; }
