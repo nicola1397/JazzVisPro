@@ -7,6 +7,14 @@
       <RouterLink class="nav-item" to="/lessons" :class="{ 'router-link-active': $route.path.startsWith('/lessons') }" @click="appStore.closeSidebar()">{{ t('nav.lessons') }}</RouterLink>
     </SidebarGroup>
 
+    <SidebarGroup name="course" :label="t('sg.course')" :collapsed="false">
+      <RouterLink class="nav-item" to="/percorso" exact-active-class="router-link-exact-active" active-class="" @click="appStore.closeSidebar()">{{ t('nav.course') }}</RouterLink>
+      <RouterLink
+        v-for="(m, i) in COURSE" :key="m.id" class="nav-item nav-item--course"
+        :to="`/percorso/${m.id}`" @click="appStore.closeSidebar()"
+      ><span class="nav-course-num">{{ i + 1 }}</span>{{ m.title[appStore.lang] ?? m.title.it }}</RouterLink>
+    </SidebarGroup>
+
     <SidebarGroup name="explore" :label="t('sg.explore')" :collapsed="false">
       <RouterLink class="nav-item" to="/explorer"        @click="appStore.closeSidebar()">{{ t('nav.explorer') }}</RouterLink>
       <RouterLink class="nav-item" to="/snapshots"       @click="appStore.closeSidebar()">{{ t('nav.snapshots') }}</RouterLink>
@@ -64,7 +72,16 @@ import { useAppStore }   from '../../stores/app.js'
 import { useI18n }       from '../../composables/useI18n.js'
 import SidebarGroup from './SidebarGroup.vue'
 import FretboardControls from '../fretboard/FretboardControls.vue'
+import { COURSE } from '../../course/index.js'
 
 const appStore   = useAppStore()
 const { t }      = useI18n()
 </script>
+
+<style scoped>
+.nav-course-num {
+  display: inline-block; min-width: 1.4em; margin-right: 6px;
+  font-family: var(--jd-mono); font-size: 0.85em; color: var(--jd-muted);
+}
+.router-link-active .nav-course-num { color: var(--accent); }
+</style>

@@ -48,6 +48,12 @@
         </li>
       </ol>
 
+      <RouterLink to="/percorso" class="lsl-next">
+        <span class="lsl-next-kicker">{{ t('cr.after-lessons-kicker') }}</span>
+        <span class="lsl-next-title">{{ t('cr.title') }} →</span>
+        <span class="lsl-next-text">{{ t('cr.after-lessons') }}</span>
+      </RouterLink>
+
       <div class="teoria-tip lsl-tip">
         <strong>{{ t('label.pro-tip') }}:</strong> {{ t('ls.tip') }}
       </div>
@@ -185,6 +191,15 @@ a.jd-toolbtn { text-decoration: none; white-space: nowrap; }
 .lsl-btn { border-color: var(--jd-line-strong); color: var(--jd-text-soft); }
 .lsl-btn:hover { color: var(--jd-amber); border-color: var(--jd-amber); }
 .lsl-tip { padding: 12px 16px; }
+a.lsl-next {
+  display: flex; flex-direction: column; gap: 4px; margin: 0 0 16px; padding: 16px 20px;
+  border: 1px solid var(--jd-line-strong); border-radius: 14px; text-decoration: none;
+  background: rgba(255, 214, 10, 0.05); transition: border-color 0.2s;
+}
+a.lsl-next:hover { border-color: var(--jd-amber); }
+.lsl-next-kicker { font-family: var(--jd-mono); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--jd-amber); }
+.lsl-next-title { font-family: var(--jd-display); font-style: italic; font-size: 24px; color: var(--jd-text); line-height: 1.15; }
+.lsl-next-text { font-size: 13px; line-height: 1.6; color: var(--jd-text-soft); }
 
 @media (max-width: 720px) {
   .lsl-how { grid-template-columns: 1fr; }

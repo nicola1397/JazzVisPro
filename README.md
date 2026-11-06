@@ -17,6 +17,16 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 ### 🧭 Lezioni guidate
 - **Orientarsi sul manico**: Otto lezioni in ordine (corde e tasti, note naturali sulle corde basse, diesis e bemolle, forme d'ottava, note su tutte le corde, intervalli come forme, triadi sulle corde acute con i tre rivolti, sistema CAGED). Ogni lezione alterna spiegazioni con le note segnate sul manico, dimostrazioni da rifare (il manico suona e mostra una sequenza, poi la ripeti cliccando o suonando la chitarra, con la nota giusta che lampeggia dopo due errori) ed esercizi con suggerimenti, superati con il 70% di risposte giuste. I progressi restano nel browser e le risposte compaiono anche in Progressi.
 
+### 🪜 Percorso guidato
+Il passo intermedio tra le Lezioni guidate (introduttive) e gli esercizi avanzati: cinque moduli lunghi, da seguire in ordine (39 passi), che costruiscono la conoscenza del manico un pezzo alla volta. Ogni passo spiega un concetto, lo mostra su un manico interattivo (con il suono, e con etichette commutabili tra note, gradi e dita) e lo fa provare subito con un esercizio: trovare le note sul manico (anche suonando la chitarra collegata) o un quiz. I passi completati restano salvati e le risposte compaiono in Progressi.
+- **Le note sul manico**: alfabeto e semitoni, 6ª e 5ª corda, diesis e bemolle, ottave, la corda di B, le corde centrali, una nota in tutte le posizioni.
+- **Gli intervalli sul manico**: il righello sulla stessa corda, corda vicina, due corde sopra, la mappa attorno alla fondamentale, riconoscere gli intervalli.
+- **Il sistema CAGED**: i cinque accordi aperti, le forme di E, A, C, G e D una per una (costruiscile in ogni tonalità), come si incastrano lungo il manico, come trovarle, le forme minori.
+- **Usare le forme**: arpeggi nelle cinque forme, la scala maggiore attorno a ogni forma, le settime (maj7, 7, m7), le note guida del II-V-I in una posizione, i box della pentatonica e le forme minori.
+- **Triadi sui gruppi di corde**: rivolti lungo il manico sulle corde 1-2-3, 2-3-4, 3-4-5 e 4-5-6, triadi minori, triadi dentro le forme CAGED.
+
+Ogni modulo finisce con i collegamenti agli esercizi avanzati (Note Finder, Interval Learner, Explorer, Triadi e Rivolti, Sui Cambi, Scale a Tempo).
+
 ### 🎹 Allenamento e Ear Training
 - **Ear Training (Accordi & Intervalli)**: Moduli per sviluppare l'orecchio riconoscendo qualità di accordi e distanze intervallari, con statistiche persistenti.
 - **Functional Harmony Trainer**: Nuovo modulo interattivo per allenare il riconoscimento dei gradi romani e delle funzioni tonali (II-V-I, ecc.).

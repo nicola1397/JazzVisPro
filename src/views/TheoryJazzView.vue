@@ -104,6 +104,7 @@
               </div>
             </div>
             <div class="teoria-tip mt-3"><strong>{{ J.caged.tip[0] }}</strong> {{ J.caged.tip[1] }}</div>
+            <RouterLink to="/percorso/caged" class="tl-practice">{{ t('cr.theory-link') }} →</RouterLink>
           </div>
         </Transition>
       </div>

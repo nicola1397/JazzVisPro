@@ -162,6 +162,7 @@ import { usePracticeStore, practiceMsByDay, streakDays, dayKey } from '../stores
 import { useI18n } from '../composables/useI18n.js'
 import { INTERVAL_COLORS, INTERVAL_DEGREES, getPitchClass } from '../utils/theory.js'
 import { lessonTitle } from '../utils/fretboardLessons.js'
+import { stepTitle } from '../course/index.js'
 
 const appStore = useAppStore()
 const practice = usePracticeStore()
@@ -189,6 +190,7 @@ const EXERCISES = [
   { id: 'scale-tempo',        nav: 'nav.scale-tempo',           route: '/scale-tempo',           item: k => k },
   { id: 'functional-harmony', nav: 'nav.functional-harmony',    route: '/functional-harmony',    item: k => k },
   { id: 'quiz',               nav: 'nav.quiz',                  route: '/quiz',                  item: k => t('quiz.cat.' + k) },
+  { id: 'course',             nav: 'cr.title',                  route: '/percorso',              item: k => stepTitle(k, appStore.lang) },
 ]
 
 // 'i:+7' interval up a fifth, 'p:dorian' phrase in a scale, 'a:m7' arpeggio
