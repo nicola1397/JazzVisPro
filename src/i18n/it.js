@@ -494,4 +494,16 @@ export default {
   'cr.wrong-at':'No: {s}ª corda, {f}° tasto = {n}','cr.octave-off':'Nota giusta, ma in un\'altra ottava.','cr.wrong-played':'Hai suonato {n}: non è tra le note cercate.',
   'cr.before':'Se parti da zero, comincia dalle lezioni introduttive:','cr.after-lessons-kicker':'Dopo le lezioni','cr.after-lessons':'Cinque moduli lunghi che approfondiscono passo passo note su tutto il manico, intervalli, tutte le forme CAGED e come usarle (arpeggi, scale, settime, note guida, pentatonica) e le triadi su ogni gruppo di corde.',
   'cr.theory-link':'Studia il CAGED passo passo nel Percorso guidato',
+  // Chord Finder on the neck
+  'cf.mode':'Modalità','cf.mode-notes':'Note','cf.mode-neck':'Sul manico',
+  'cf.subtitle-neck':'Metti le dita sul manico (o scrivi la tablatura): l\'app ti dice che accordo stai suonando.',
+  'cf.neck-title':'Accordo sul manico',
+  'cf.neck-help':'Clicca un tasto per ogni corda che suoni, uno per corda: il tasto 0 è la corda a vuoto, un secondo clic sullo stesso tasto toglie la nota. Le corde senza nota non si suonano (×).',
+  'cf.tab':'Tablatura, dalla 6ª alla 1ª corda',
+  'cf.tab-invalid':'Tablatura non valida: scrivi sei valori dalla 6ª alla 1ª corda, x per una corda non suonata (es. x-3-2-0-1-0 o x32010).',
+  'cf.played':'Note dal basso','cf.pick-two':'Scegli almeno due note sul manico.',
+  'cf.no-chord-neck':'Nessun accordo riconosciuto con queste note.',
+  'cf.in-bass':'al basso','cf.rootless':'senza fondamentale','cf.without':'senza',
+  'cf.voicings':'Altre diteggiature di {0}','cf.load-voicing':'Clicca per metterla sul manico','cf.yours':'La tua',
+  'cf.loading':'Caricamento diteggiature...','cf.no-voicings':'Nessuna diteggiatura disponibile.','cf.no-chord':'Nessun accordo trovato.',
 }

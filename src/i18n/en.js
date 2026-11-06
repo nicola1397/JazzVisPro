@@ -496,4 +496,16 @@ export default {
   'cr.wrong-at':'No: string {s}, fret {f} is {n}','cr.octave-off':'Right note, but in another octave.','cr.wrong-played':'You played {n}: it is not one of the notes asked for.',
   'cr.before':'If you are starting from scratch, begin with the introductory lessons:','cr.after-lessons-kicker':'After the lessons','cr.after-lessons':'Five long modules that go step by step through the notes over the whole neck, intervals, every CAGED shape and how to use it (arpeggios, scales, sevenths, guide tones, pentatonic) and triads on every string set.',
   'cr.theory-link':'Study CAGED step by step in the Guided path',
+  // Chord Finder on the neck
+  'cf.mode':'Mode','cf.mode-notes':'Notes','cf.mode-neck':'On the neck',
+  'cf.subtitle-neck':'Put your fingers on the neck (or type the tab): the app tells you which chord you are playing.',
+  'cf.neck-title':'Chord on the neck',
+  'cf.neck-help':'Click one fret for each string you play, one per string: fret 0 is the open string, a second click on the same fret removes the note. Strings with no note are not played (×).',
+  'cf.tab':'Tab, from the 6th to the 1st string',
+  'cf.tab-invalid':'Invalid tab: write six values from the 6th to the 1st string, x for a string not played (e.g. x-3-2-0-1-0 or x32010).',
+  'cf.played':'Notes from the bass','cf.pick-two':'Pick at least two notes on the neck.',
+  'cf.no-chord-neck':'No chord recognised with these notes.',
+  'cf.in-bass':'in the bass','cf.rootless':'rootless','cf.without':'no',
+  'cf.voicings':'Other fingerings of {0}','cf.load-voicing':'Click to put it on the neck','cf.yours':'Yours',
+  'cf.loading':'Loading fingerings...','cf.no-voicings':'No voicings available.','cf.no-chord':'No chord found.',
 }

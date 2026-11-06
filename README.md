@@ -8,7 +8,7 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 
 ### 🎸 Visualizzazione e Strumenti
 - **Fretboard Interattiva**: Visualizzazione dinamica di scale, arpeggi e intervalli con supporto per diverse accordature.
-- **Chord Finder**: Trova rapidamente tutte le diteggiature di un accordo sulla tastiera con sistema a griglia professionale.
+- **Chord Finder**: Trova rapidamente tutte le diteggiature di un accordo sulla tastiera con sistema a griglia professionale. In modalità **Sul manico** fa la ricerca inversa: metti le dita sul manico (o scrivi la tablatura, es. x-3-2-0-1-0) e ti dice che accordo è, con i gradi di ogni nota, i rivolti e gli accordi con il basso (C/G), le letture alternative (Am7 o C6/A, voicing senza fondamentale come Dm9/F) e le altre diteggiature dello stesso accordo, che puoi caricare sul manico con un clic. Usa l'accordatura scelta.
 - **Scale Explorer**: Esplora oltre venti scale e modi (modi della maggiore e della minore melodica, diminuite, esatonale, pentatoniche, blues, bebop) con forme CAGED, intervalli e nomi delle note.
 - **Voicing degli Accordi**: Formula, note scritte correttamente (Bb7 = Bb D F Ab), scala consigliata e diteggiature di ogni accordo jazz.
 - **Scale Navigator**: Suggerisce le scale adatte a ogni accordo e al suo contesto.

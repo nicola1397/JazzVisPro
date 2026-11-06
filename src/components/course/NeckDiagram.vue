@@ -82,7 +82,7 @@
             :stroke-width="0.7 + (s - 1) * 0.32"
           />
           <text :x="10" :y="stringY(s - 1) + 3.5" class="nd-string-label" :class="{ on: focusSet.has(s - 1) }">
-            <tspan class="nd-string-num">{{ s }}</tspan><tspan dx="2">{{ STRING_LETTERS[s - 1] }}</tspan>
+            <tspan class="nd-string-num">{{ s }}</tspan><tspan dx="2">{{ stringLetters[s - 1] }}</tspan>
           </text>
         </g>
 
@@ -153,7 +153,7 @@
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from '../../composables/useI18n.js'
 import { useAudioStore } from '../../stores/audio.js'
-import { STRING_LETTERS, SHAPE_COLORS, midiAt, pretty } from '../../course/theory.js'
+import { STRING_LETTERS, OPEN_MIDI, SHAPE_COLORS, sharpName, pretty } from '../../course/theory.js'
 
 const props = defineProps({
   from:      { type: Number, default: 0 },
@@ -168,6 +168,7 @@ const props = defineProps({
   clickable: { type: Boolean, default: false },
   play:      { type: String, default: '' },         // arp | updown | chord | seq
   caption:   { type: String, default: '' },
+  openMidi:  { type: Array, default: () => OPEN_MIDI },  // pitch of each open string, s = 0 … 5
 })
 const emit = defineEmits(['pick'])
 
@@ -209,6 +210,11 @@ const minWidth = computed(() => Math.min(W.value, Math.max(320, W.value * 0.62))
 const maxWidth = computed(() => Math.round(W.value * 1.3))
 
 const focusSet = computed(() => new Set(props.focus))
+const isStandard = computed(() => props.openMidi.every((m, i) => m === OPEN_MIDI[i]))
+const stringLetters = computed(() => (isStandard.value
+  ? STRING_LETTERS
+  : props.openMidi.map((m, s) => (s === 0 ? sharpName(m).toLowerCase() : sharpName(m)))))
+const midiAt = (s, f) => props.openMidi[s] + f
 const visibleDots = computed(() =>
   props.dots
     .filter(d => d.f >= props.from && d.f <= props.to)
