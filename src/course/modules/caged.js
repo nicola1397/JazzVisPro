@@ -1,6 +1,6 @@
 // Module 3 — The CAGED system: the five shapes, one by one, then linked along the neck.
 
-import { pcAt, mod12, keyPc, keyDot, colorOf, pick, pickNew, bag, shuffle, pretty, KEY_NAMES, CAGED, CAGED_ORDER, cagedGrip, shapePosition, TRIAD } from '../theory.js'
+import { pcAt, mod12, keyPc, keyDot, colorOf, pick, pickNew, bag, shuffle, pretty, KEY_NAMES, CAGED, CAGED_ORDER, cagedGrip, playableGrip, shapePosition, TRIAD } from '../theory.js'
 import { T, coloured, strIt, strEn, ordEn, chordToneDots, shapesUpTheNeck, keysForShape, shapeWindow, MINOR_KEYS } from '../build.js'
 
 const P = (it, en) => ({ type: 'p', it, en })
@@ -21,6 +21,24 @@ const SHAPE_TEXT = {
   G: T('fondamentale sulla 6ª, sulla 3ª e sulla 1ª corda', 'root on the 6th, 3rd and 1st strings'),
   E: T('fondamentale sulla 6ª, sulla 4ª e sulla 1ª corda', 'root on the 6th, 4th and 1st strings'),
   D: T('fondamentale sulla 4ª corda (indice) e sulla 2ª', 'root on the 4th string (index) and on the 2nd'),
+}
+
+// Which way the grip shown goes from its lowest root: towards the body or the nut.
+function direction(dots) {
+  const root = dots.filter(d => d.semi === 0).sort((a, b) => b.s - a.s)[0]
+  const mean = dots.reduce((sum, d) => sum + d.f, 0) / dots.length
+  return mean > root.f
+    ? T('la forma va verso il corpo', 'the shape goes towards the body')
+    : T('la forma va verso il capotasto', 'the shape goes towards the nut')
+}
+
+// "root on the 6th and 3rd strings", from the roots of the grip shown.
+function gripRoots(dots) {
+  const strings = [...new Set(dots.filter(d => d.semi === 0).map(d => d.s))].sort((a, b) => b - a).map(s => s + 1)
+  const join = (list, and) => list.length < 2 ? list.join('') : `${list.slice(0, -1).join(', ')} ${and} ${list[list.length - 1]}`
+  return T(
+    `fondamentale ${join(strings.map(n => `sulla ${n}ª`), 'e')} corda`,
+    `root on the ${join(strings.map(ordEn), 'and')} string${strings.length > 1 ? 's' : ''}`)
 }
 
 // Frames for one shape: open chord, then the shape moved to other keys.
@@ -72,14 +90,15 @@ function whichShapeQuiz(qualities = ['major']) {
     const quality = pick(qualities)
     const key = pick(keysForShape(shape, 1, 10, quality === 'minor' ? MINOR_KEYS : undefined))
     const name = quality === 'minor' ? MINOR_KEY_NAME(key) : MAJOR_KEY_NAME(key)
-    const g = cagedGrip(key, shape, quality, 1)
+    const g = playableGrip(key, shape, quality, 1)
+    const where = gripRoots(g.dots), way = direction(g.dots)
     return {
       shape, key: `which:${shape}:${quality}`,
       prompt: T(`Questo è un accordo di <strong>${name}</strong>. Con quale forma?`, `This is a <strong>${name}</strong> chord. Which shape?`),
       hint: T('Guarda su quale corda è la fondamentale più grave (R) e da che parte va la forma.', 'Look at which string holds the lowest root (R) and which way the shape goes.'),
       diagram: { from: Math.max(0, g.p - 2), to: g.p + 5, dots: coloured(g.dots), muted: g.muted, barre: g.barre, labels: 'degree', labelsAfter: 'degree', play: 'chord' },
       options: CAGED_ORDER.map(x => ({ label: x, ok: x === shape })),
-      explain: T(`Forma di ${shape} di ${name}: ${SHAPE_TEXT[shape].it}.`, `${shape} shape of ${name}: ${SHAPE_TEXT[shape].en}.`),
+      explain: T(`Forma di ${shape} di ${name}: ${where.it}, ${way.it}.`, `${shape} shape of ${name}: ${where.en}, ${way.en}.`),
     }
   }
 }
@@ -220,8 +239,8 @@ export default {
       id: 'g-shape',
       title: T('La forma di G', 'The G shape'),
       blocks: [
-        P('G aperto (3-2-0-0-0-3) ha la fondamentale sulla 6ª corda, sulla 3ª (a vuoto) e sulla 1ª. Spostata in su, l\'indice fa il barré sulle corde 4-3-2 dove c\'era il capotasto: A con la forma di G è 5-4-2-2-2-5. Come la forma di C si suona raramente intera: se ne usano pezzi (le tre corde gravi, o le tre acute) e l\'arpeggio.',
-          'Open G (3-2-0-0-0-3) has the root on the 6th string, on the 3rd (open) and on the 1st. Moved up, the index bars strings 4-3-2 where the nut was: A with the G shape is 5-4-2-2-2-5. Like the C shape it is rarely played whole: you use parts of it (the three low strings, or the three high ones) and the arpeggio.'),
+        P('G aperto (3-2-0-0-0-3) ha la fondamentale sulla 6ª corda, sulla 3ª (a vuoto) e sulla 1ª. Spostata in su, l\'indice fa il barré sulle corde 4-3-2 dove c\'era il capotasto: A con la forma di G è 5-4-2-2-2-5. È la mappa completa della forma, ma come accordo è molto scomoda (quattro tasti di estensione con il barré in mezzo): si suonano i suoi pezzi e l\'arpeggio.',
+          'Open G (3-2-0-0-0-3) has the root on the 6th string, on the 3rd (open) and on the 1st. Moved up, the index bars strings 4-3-2 where the nut was: A with the G shape is 5-4-2-2-2-5. It is the complete map of the shape, but as a chord it is very awkward (a four-fret stretch with the barre in the middle): you play its pieces and the arpeggio.'),
         { type: 'frames', frames: shapeFrames('G', ['A', 'Bb', 'C']) },
         { type: 'list',
           it: [
@@ -234,6 +253,15 @@ export default {
             ['Thirds (3):', 'on the 5th string and on the 2nd (barre).'],
             ['Fifth (5):', 'on the 4th string (barre).'],
           ] },
+        P('<strong>Come si suona davvero.</strong> Due pezzi della forma stanno comodi sotto le dita: le quattro corde gravi (A = 5-4-2-2-x-x: anulare, medio, indice a barré su 4ª e 3ª) e le quattro acute (A = x-x-2-2-2-5: indice a barré, mignolo sulla 1ª). Il secondo è uno dei voicing più usati per accompagnare sulle corde acute.',
+          '<strong>How it is really played.</strong> Two pieces of the shape sit comfortably under the fingers: the four low strings (A = 5-4-2-2-x-x: ring, middle, index barring the 4th and 3rd) and the four high strings (A = x-x-2-2-2-5: index barre, little finger on the 1st). The second is one of the most used voicings for comping on the top strings.'),
+        { type: 'frames', frames: [0, 1].map(part => ({
+          tab: part === 0 ? T('Corde gravi', 'Low strings') : T('Corde acute', 'High strings'),
+          caption: part === 0
+            ? T('A con la forma di G, quattro corde gravi: R-3-5-R.', 'A with the G shape, four low strings: R-3-5-R.')
+            : T('A con la forma di G, quattro corde acute: 5-R-3-R.', 'A with the G shape, four high strings: 5-R-3-R.'),
+          diagram: { ...gripDiagram('A', 'G', 'major', 1), ...(() => { const g = cagedGrip('A', 'G', 'major', 1, part); return { dots: coloured(g.dots), muted: g.muted, barre: g.barre } })() },
+        })) },
         { type: 'tip', label: T('Sulla 6ª corda, due forme:', 'On the 6th string, two shapes:'),
           it: 'come per A e C sulla 5ª corda: nella forma di E la fondamentale sta sotto l\'indice e la forma va verso il corpo, nella forma di G sotto l\'anulare e la forma va verso il capotasto.',
           en: 'as with A and C on the 5th string: in the E shape the root is under the index and the shape goes towards the body, in the G shape it is under the ring finger and the shape goes towards the nut.' },
@@ -322,8 +350,8 @@ export default {
       id: 'minor',
       title: T('Le forme minori', 'The minor shapes'),
       blocks: [
-        P('Ogni forma ha la sua versione minore: basta <strong>abbassare la terza di un tasto</strong> (3 → b3). Em (0-2-2-0-0-0), Am (x-0-2-2-1-0) e Dm (x-x-0-2-3-1) li conosci già come accordi aperti. Le forme minori di C e di G esistono, ma come accordo pieno sono scomode: si suonano in parte o come arpeggio.',
-          'Every shape has a minor version: just <strong>lower the third by one fret</strong> (3 → b3). Em (0-2-2-0-0-0), Am (x-0-2-2-1-0) and Dm (x-x-0-2-3-1) you already know as open chords. The minor C and G shapes exist, but as full chords they are awkward: you play them in part or as arpeggios.'),
+        P('Ogni forma ha la sua versione minore: basta <strong>abbassare la terza di un tasto</strong> (3 → b3). Em (0-2-2-0-0-0), Am (x-0-2-2-1-0) e Dm (x-x-0-2-3-1) li conosci già come accordi aperti. Le forme minori di C e di G si suonano solo in parte: quella di C sulle quattro corde centrali (Dm = x-5-3-2-3-x), quella di G sulle quattro corde gravi (Am = 5-3-2-2-x-x). Su sei corde la b3 cadrebbe fuori dalla forma; per il resto si usano come arpeggio.',
+          'Every shape has a minor version: just <strong>lower the third by one fret</strong> (3 → b3). Em (0-2-2-0-0-0), Am (x-0-2-2-1-0) and Dm (x-x-0-2-3-1) you already know as open chords. The minor C and G shapes are only played in part: the C one on the four middle strings (Dm = x-5-3-2-3-x), the G one on the four low strings (Am = 5-3-2-2-x-x). On six strings the b3 would fall outside the shape; for the rest you use them as arpeggios.'),
         { type: 'frames', frames: [['E', 'A'], ['A', 'D'], ['D', 'E'], ['C', 'D'], ['G', 'A']].map(([shape, key]) => {
           const minor = cagedGrip(key, shape, 'minor', 1)
           const b3Strings = new Set(minor.dots.filter(d => d.semi === 3).map(d => d.s))
@@ -332,7 +360,8 @@ export default {
             .map(d => ({ ...d, hollow: true, color: colorOf(4), noPlay: true }))
           return {
             tab: `${shape}m`,
-            caption: T(`${pretty(key)}m con la forma di ${shape} minore. Il cerchio vuoto è dove stava la terza maggiore.`, `${pretty(key)}m with the minor ${shape} shape. The empty circle is where the major third was.`),
+            caption: T(`${pretty(key)}m con la forma di ${shape} minore${shape === 'G' ? ', sulle quattro corde gravi' : shape === 'C' ? ', sulle quattro corde centrali' : ''}. Il cerchio vuoto è dove stava la terza maggiore.`,
+              `${pretty(key)}m with the minor ${shape} shape${shape === 'G' ? ', on the four low strings' : shape === 'C' ? ', on the four middle strings' : ''}. The empty circle is where the major third was.`),
             diagram: { from: Math.max(0, minor.p - 1), to: minor.p + 4, dots: [...coloured(minor.dots), ...major3], muted: minor.muted, barre: minor.barre, labels: 'degree', play: 'chord' },
           }
         }) },

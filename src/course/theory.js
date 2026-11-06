@@ -95,9 +95,17 @@ export const CAGED = {
   },
   G: {
     openPc: 7, box: [0, 3], stretch: 'down', rootStrings: [5, 2, 0],
-    grip:  { major: [3, 0, 0, 0, 2, 3], minor: [3, 3, 0, 0, 1, 3] },
+    // Major: the whole shape (A = 5-4-2-2-2-5) is the map, but is rarely played as a chord.
+    // Minor: only the four low strings (Am = 5-3-2-2-x-x); on six strings the b3 would fall
+    // below the barre and the grip is not playable.
+    grip:  { major: [3, 0, 0, 0, 2, 3], minor: [null, null, 0, 0, 1, 3] },
     open:  { major: [3, 0, 0, 0, 1, 2] },
-    moved: { major: [4, 1, 1, 1, 2, 3], minor: [4, 4, 1, 1, 2, 3] },
+    moved: { major: [4, 1, 1, 1, 2, 3], minor: [null, null, 1, 1, 2, 3] },
+    // The pieces of the major shape actually played: four low strings, four high strings.
+    parts: { major: [
+      { grip: [null, null, 0, 0, 2, 3], fingers: [null, null, 1, 1, 2, 3] },
+      { grip: [3, 0, 0, 0, null, null], fingers: [4, 1, 1, 1, null, null] },
+    ] },
   },
   E: {
     openPc: 4, box: [-1, 2], stretch: 'up', rootStrings: [5, 3, 0],
@@ -129,11 +137,13 @@ export function shapePosition(key, shape, minFret = 0) {
 }
 
 // The chord grip of a shape in a key, as diagram dots (with degrees and fingers).
-export function cagedGrip(key, shape, quality = 'major', minFret = 0) {
+// `part`: index of a playable piece of the shape (see CAGED.G.parts) instead of the whole grip.
+export function cagedGrip(key, shape, quality = 'major', minFret = 0, part = null) {
   const def = CAGED[shape]
   const p = shapePosition(key, shape, minFret)
-  const grip = def.grip[quality]
-  const fingers = (p === 0 ? def.open : def.moved)[quality] || def.moved[quality]
+  const piece = part !== null && p > 0 ? def.parts?.[quality]?.[part] : null
+  const grip = piece ? piece.grip : def.grip[quality]
+  const fingers = piece ? piece.fingers : ((p === 0 ? def.open : def.moved)[quality] || def.moved[quality])
   const dots = [], muted = []
   grip.forEach((rel, s) => {
     if (rel === null) { muted.push(s); return }
@@ -141,6 +151,12 @@ export function cagedGrip(key, shape, quality = 'major', minFret = 0) {
     dots.push(keyDot(key, s, f, { finger: fingers[s] || undefined, ...thirdSpelling(quality, pcAt(s, f), key) }))
   })
   return { p, dots, muted, barre: barreOf(p, grip, quality, shape) }
+}
+
+// A grip that is comfortable to play: a random playable piece for shapes that have them.
+export function playableGrip(key, shape, quality = 'major', minFret = 0) {
+  const parts = CAGED[shape].parts?.[quality]
+  return cagedGrip(key, shape, quality, minFret, parts ? Math.floor(Math.random() * parts.length) : null)
 }
 
 function thirdSpelling(quality, pc, key) {
