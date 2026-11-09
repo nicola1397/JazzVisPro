@@ -3,7 +3,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 const routes = [
   { path: '/',                    redirect: '/explorer' },
   { path: '/explorer',            component: () => import('../views/ExplorerView.vue'),            meta: { title:'title.explorer',    fretboard:true,  legend:true  } },
-  { path: '/player',              component: () => import('../views/PlayerView.vue'),               meta: { title:'title.player',      fretboard:true,  legend:false } },
+  { path: '/player',              component: () => import('../views/PlayerView.vue'),               meta: { title:'title.player',      fretboard:true,  legend:false, stage:true } },
   { path: '/calculator',          component: () => import('../views/CalculatorView.vue'),           meta: { title:'title.calculator',  fretboard:false, legend:false } },
   { path: '/lessons',             component: () => import('../views/LessonsView.vue'),              meta: { title:'title.lessons',          fretboard:false,legend:false } },
   { path: '/lessons/:id',         component: () => import('../views/LessonView.vue'),               meta: { title:'title.lessons',          fretboard:true, legend:false, game:'lesson' } },

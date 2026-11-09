@@ -10,31 +10,15 @@
     <section class="jd-console" :class="{ 'jd-playing': backing.playing.value }">
       <div class="jd-grain" aria-hidden="true"></div>
 
-      <div class="jd-master">
-        <div class="jd-bpm">
-          <div class="jd-bpm-frame">
-            <span class="jd-bpm-led" :class="{ on: backing.playing.value }" aria-hidden="true"></span>
-            <input type="number" class="jd-bpm-input" v-model.number="settings.bpm" min="40" max="260" :aria-label="t('label.bpm')">
-            <span class="jd-bpm-unit">{{ t('label.bpm') }}</span>
+      <StageHud :label="t('ch.title')">
+        <template v-if="settings.mode !== 'free'" #score>
+          <div class="jd-score-badge">
+            <span class="jd-score-val">{{ judged.ok }} / {{ judged.total }}</span>
+            <span class="jd-score-label">{{ t('label.score') }}</span>
           </div>
-        </div>
-        <div class="jd-transport">
-          <button class="jd-tbtn jd-tbtn--play" :class="{ 'jd-tbtn--playing': backing.playing.value }" @click="toggle"
-            :aria-label="backing.playing.value ? 'Stop' : 'Play'">
-            <svg v-if="!backing.playing.value" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg v-else viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-          </button>
-        </div>
-        <div class="jd-score-badge" v-if="settings.mode !== 'free'">
-          <span class="jd-score-val">{{ judged.ok }} / {{ judged.total }}</span>
-          <span class="jd-score-label">{{ t('label.score') }}</span>
-        </div>
-      </div>
+        </template>
 
-      <div class="jd-rule" aria-hidden="true"></div>
-
-      <!-- Now playing -->
-      <div class="ch-now">
+        <div class="ch-now">
         <div v-if="backing.countIn.value > 0" class="ch-count">{{ backing.countIn.value }}</div>
         <template v-else-if="nowEvent">
           <div class="ch-chord">{{ nowEvent.symbol }}</div>
@@ -43,6 +27,25 @@
         </template>
         <div v-else class="ch-idle">{{ statusText }}</div>
         <div v-if="zone" class="ch-zone">{{ fmt('pm.q-zone', zoneName(zone, appStore.lang)) }}</div>
+        </div>
+
+        <template #actions>
+          <button class="jd-tbtn jd-tbtn--play" :class="{ 'jd-tbtn--playing': backing.playing.value }" @click="toggle"
+            :aria-label="backing.playing.value ? 'Stop' : 'Play'">
+            <svg v-if="!backing.playing.value" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg v-else viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+        </template>
+      </StageHud>
+
+      <div class="jd-master ch-master">
+        <div class="jd-bpm">
+          <div class="jd-bpm-frame">
+            <span class="jd-bpm-led" :class="{ on: backing.playing.value }" aria-hidden="true"></span>
+            <input type="number" class="jd-bpm-input" v-model.number="settings.bpm" min="40" max="260" :aria-label="t('label.bpm')">
+            <span class="jd-bpm-unit">{{ t('label.bpm') }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Chart -->
@@ -162,6 +165,7 @@ import { getInputLatency } from '../utils/latency.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
 import { zoneName, randomZone, inZone, playableInZone, paintArea } from '../utils/fretRefs.js'
 import GuitarInputPanel from '../components/shared/GuitarInputPanel.vue'
+import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()
@@ -469,6 +473,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.ch-master { display: flex; justify-content: center; margin-bottom: 4px; }
+.stage-hud .ch-now { min-height: 0; padding: 0; margin: 0; gap: 2px; }
+.stage-hud .ch-chord { font-size: clamp(24px, 3.6vw, 44px); line-height: 1.1; }
+.stage-hud .ch-count { font-size: clamp(30px, 4vw, 56px); line-height: 1.1; }
 .ch-zone { font-family: var(--jd-mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--jd-amber); }
 .ch-now { position: relative; z-index: 1; text-align: center; min-height: 110px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
 .ch-count { font-size: 56px; font-weight: 900; color: var(--jd-amber); }

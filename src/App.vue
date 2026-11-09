@@ -2,7 +2,7 @@
   <div class="app-container">
     <AppSidebar />
 
-    <main class="main-content" v-if="appStore.isLoaded">
+    <main class="main-content" :class="{ 'is-game': onStage }" v-if="appStore.isLoaded">
       <AppNavbar />
 
       <CountdownOverlay
@@ -29,11 +29,16 @@
           {{ t('explorer.help') }}
         </div>
 
-        <Fretboard
-          v-show="showFretboard"
-          :game-mode="gameMode"
-          @note-click="handleNoteClick"
-        />
+        <!-- On the fretboard exercises the question bar (StageHud) and the fretboard form one
+             block that stays under the navbar while the settings scroll below it. -->
+        <div class="stage" :class="{ 'stage--game': onStage }">
+          <div v-if="onStage" id="stage-hud" class="stage-hud-slot"></div>
+          <Fretboard
+            v-show="showFretboard"
+            :game-mode="gameMode"
+            @note-click="handleNoteClick"
+          />
+        </div>
 
         <RouterView />
       </div>
@@ -62,6 +67,8 @@ const { t }         = useI18n()
 const showFretboard = computed(() => route.meta?.fretboard !== false)
 const showLegend    = computed(() => route.meta?.legend === true)
 const gameMode      = computed(() => route.meta?.game || '')
+// Exercises (and the Player, which you watch while it plays) keep the fretboard in view.
+const onStage       = computed(() => (!!gameMode.value || !!route.meta?.stage) && showFretboard.value)
 
 watch(() => appStore.lang, lang => {
   document.documentElement.setAttribute('lang', lang)

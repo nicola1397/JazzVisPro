@@ -10,27 +10,14 @@
     <section class="jd-console">
       <div class="jd-grain" aria-hidden="true"></div>
 
-      <div class="jd-master">
-        <div class="jd-score-badge">
-          <span class="jd-score-val">{{ score }} / {{ total }}</span>
-          <span class="jd-score-label">{{ t('label.score') }}</span>
-        </div>
-        <div class="jd-transport">
-          <button class="jd-tbtn jd-tbtn--play" @click="start" :aria-label="t('aria.start-next')">
-            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-          <button class="jd-tbtn jd-tbtn--replay" @click="replay" :disabled="!target.length" :aria-label="t('aria.replay')">
-            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-          </button>
-        </div>
-        <div class="jd-modes">
-          <button class="jd-toolbtn" @click="reset">{{ t('btn.reset-game') }}</button>
-        </div>
-      </div>
+      <StageHud :label="t('ep.title')">
+        <template #score>
+          <div class="jd-score-badge">
+            <span class="jd-score-val">{{ score }} / {{ total }}</span>
+            <span class="jd-score-label">{{ t('label.score') }}</span>
+          </div>
+        </template>
 
-      <div class="jd-rule" aria-hidden="true"></div>
-
-      <div class="jd-question-box">
         <div class="jd-question-text">{{ target.length ? questionTitle : t('ep.ready') }}</div>
         <div v-if="target.length" class="ep-sub">{{ questionSub }}</div>
 
@@ -43,6 +30,19 @@
 
         <div class="jd-question-hint">{{ statusText }}</div>
         <button v-if="active && settings.retry && misses > 0" type="button" class="jd-toolbtn ep-solution" @click="giveUp">{{ t('pm.show-solution') }}</button>
+
+        <template #actions>
+          <button class="jd-tbtn jd-tbtn--play" @click="start" :aria-label="t('aria.start-next')">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="jd-tbtn jd-tbtn--replay" @click="replay" :disabled="!target.length" :aria-label="t('aria.replay')">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+          <button class="jd-toolbtn" @click="reset">{{ t('btn.reset-game') }}</button>
+        </template>
+      </StageHud>
+
+      <div class="stage-rest">
         <GuitarInputPanel :guitar="guitar" />
       </div>
 
@@ -141,6 +141,7 @@ import { getAbsoluteNote } from '../utils/theory.js'
 import { FRETS } from '../utils/constants.js'
 import { positionName, allPositions, paintRing, flashWrong, pickOne } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
+import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes     from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()

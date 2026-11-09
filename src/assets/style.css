@@ -2929,3 +2929,105 @@ button.tap-feedback,
   .control-section { padding: 10px; }
 }
 
+
+/* ═══ Responsive fretboard and practice stage ═════════════════════════════════
+   The fretboard takes the width there is (the whole neck fits on desktop, laptop and
+   tablet; on phones frets 0–12 fit and the rest scrolls), and gets shorter on short
+   screens. On the fretboard exercises the question bar and the fretboard form a stage
+   that stays under the navbar, so the question and the answer area are seen together. */
+:root {
+  --nav-h: 60px;
+  --fb-avail: calc(100vw - var(--sidebar-width) - 54px);
+  --nut-width: 50px;
+  --fret-width: clamp(26px, calc((var(--fb-avail) - var(--nut-width)) / 24), 44px);
+  --string-h: 38px;
+  --note-size: clamp(19px, calc(var(--fret-width) - 10px), 28px);
+}
+@media (max-width: 1024px) { :root { --fb-avail: calc(100vw - 54px); } }
+@media (max-width: 768px)  { :root { --fb-avail: calc(100vw - 24px); --nut-width: 38px; } }
+@media (max-width: 480px)  { :root { --fb-avail: calc(100vw - 20px); --nut-width: 30px; --string-h: 34px; } }
+@media (max-height: 820px) and (min-width: 769px) { :root { --string-h: 33px; } }
+@media (max-height: 520px) { :root { --string-h: 25px; --nav-h: 46px; } }
+
+.navbar { height: var(--nav-h); }
+.string { height: var(--string-h); }
+.note-circle {
+  width: var(--note-size);
+  height: var(--note-size);
+  font-size: clamp(7px, calc(var(--note-size) * 0.36), 10px);
+}
+.fret-marker { width: calc(var(--note-size) * 0.5); height: calc(var(--note-size) * 0.5); }
+.fretboard-container { scroll-margin-top: calc(var(--nav-h) + 16px); }
+@media (max-width: 480px) { .num { font-size: 9px; } }
+
+.stage { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.stage--game { z-index: 40; }
+.stage--game .scroll-wrapper { padding: 8px 0 2px; }
+.stage--game .fret-numbers { padding-top: 6px; margin-bottom: 4px; }
+@media (min-height: 600px) {
+  .stage--game {
+    position: sticky;
+    top: var(--nav-h);
+    background: var(--jd-bg);
+    box-shadow: 0 14px 18px -14px rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid var(--jd-line);
+  }
+}
+
+.stage-hud-slot { width: 100%; max-width: 1180px; }
+.stage-hud-slot:empty { display: none; }
+.stage-hud {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "score main actions";
+  align-items: center;
+  gap: 8px 18px;
+  margin: 8px auto 2px;
+  padding: 10px 16px;
+  background: var(--jd-surface);
+  border: 1px solid var(--jd-line-strong);
+  border-radius: 14px;
+  position: relative;
+}
+.stage-hud--inline { margin: 0 0 16px; }
+.stage-hud-score { grid-area: score; display: flex; align-items: center; gap: 8px; }
+.stage-hud-main { grid-area: main; min-width: 0; text-align: center; }
+.stage-hud-actions { grid-area: actions; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.stage-hud .jd-question-text {
+  font-size: clamp(18px, 2.2vw, 28px) !important;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+}
+.stage-hud .jd-question-hint { margin-top: 4px !important; font-size: 13px; min-height: 0; }
+.stage-hud .jd-score-badge { padding: 4px 12px; }
+.stage-hud .jd-tbtn { flex-shrink: 0; }
+@media (max-width: 700px) {
+  .stage-hud {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "main main" "score actions";
+    padding: 8px 12px;
+    gap: 6px 12px;
+  }
+}
+@media (max-height: 520px) {
+  .stage-hud { margin: 4px auto 0; padding: 5px 12px; gap: 4px 12px; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "score main actions"; }
+  .stage-hud .jd-question-text { font-size: 17px !important; }
+  .stage-hud .jd-question-hint { font-size: 11px; margin-top: 2px !important; }
+  .stage-hud .jd-tbtn { width: 36px; height: 36px; }
+  .stage-hud .jd-score-badge { padding: 2px 8px; }
+  .stage-hud .jd-score-label { display: none; }
+}
+
+/* What stays of the question box below the stage (guitar input, toggles) */
+.stage-rest { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.stage-rest:empty { display: none; }
+
+/* On the exercises the navbar already names the view: the big title only costs room
+   on small or short screens. */
+@media (max-width: 768px), (max-height: 820px) {
+  .is-game .jd-view > .jd-titlebar:not(:has(button, a, input, select)) { display: none; }
+}
+@media (max-height: 520px) {
+  .jd-view { padding-top: 8px !important; }
+}

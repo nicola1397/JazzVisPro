@@ -188,8 +188,9 @@ function hasMarker(s, f) {
   return false
 }
 
+// The whole fret cell answers, not just the circle: on small screens the circles are small.
 function handleClick(e) {
-  const circle = e.target.closest('.note-circle')
+  const circle = e.target.closest('.note-circle') || e.target.closest('.fret')?.querySelector('.note-circle')
   if (!circle) return
   const s = parseInt(circle.dataset.stringIndex)
   const f = parseInt(circle.dataset.fretIndex)

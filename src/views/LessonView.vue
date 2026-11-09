@@ -54,56 +54,58 @@
           <p class="ls-aside">{{ t('ls.explore') }}</p>
         </div>
 
-        <!-- Watch and repeat -->
-        <div v-else-if="step.type === 'mirror'" class="ls-task">
-          <div class="ls-dots" aria-hidden="true">
-            <span
-              v-for="(n, k) in step.seq" :key="k" class="ls-dot"
-              :class="{
-                ok: m.phase === 'done' || (m.phase === 'repeat' && k < m.idx),
-                now: (m.phase === 'watch' && k === m.watchIdx) || (m.phase === 'repeat' && k === m.idx),
-                seen: m.phase === 'watch' && k < m.watchIdx,
-              }"
-            ></span>
-          </div>
-          <div class="ls-status" :class="mirrorTone" aria-live="polite">{{ mirrorStatus }}</div>
-          <div class="ls-actions">
-            <button type="button" class="jd-toolbtn jd-toolbtn--add" :disabled="!standard || m.phase === 'watch'" @click="watchDemo">
-              ▶ {{ m.phase === 'idle' ? t('ls.watch') : t('ls.watch-again') }}
-            </button>
-            <button v-if="(m.phase === 'repeat' && m.idx > 0) || m.phase === 'done'" type="button" class="jd-toolbtn ls-btn" @click="startRepeat">
-              {{ t('ls.repeat-again') }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Practice -->
-        <div v-else-if="step.type === 'quiz'" class="ls-task">
-          <template v-if="q.finished">
-            <div class="ls-prompt" :class="q.passed ? 'is-ok' : 'is-ko'">{{ q.passed ? t('ls.q-passed') : t('ls.q-failed') }}</div>
-            <div class="ls-status" aria-live="polite">{{ quizResult }}</div>
-            <div class="ls-actions">
-              <button type="button" class="jd-toolbtn" :class="q.passed ? 'ls-btn' : 'jd-toolbtn--add'" @click="startQuiz">{{ t('ls.retry') }}</button>
+        <!-- Watch and repeat, practice: on the stage, right above the fretboard -->
+        <StageHud v-else :label="L(step.title)">
+          <!-- Watch and repeat -->
+          <div v-if="step.type === 'mirror'" class="ls-task">
+            <div class="ls-dots" aria-hidden="true">
+              <span
+                v-for="(n, k) in step.seq" :key="k" class="ls-dot"
+                :class="{
+                  ok: m.phase === 'done' || (m.phase === 'repeat' && k < m.idx),
+                  now: (m.phase === 'watch' && k === m.watchIdx) || (m.phase === 'repeat' && k === m.idx),
+                  seen: m.phase === 'watch' && k < m.watchIdx,
+                }"
+              ></span>
             </div>
-          </template>
-          <template v-else-if="q.question">
-            <div class="ls-q-meta">{{ fmt('ls.q-of', q.i + 1, step.count) }}</div>
-            <div class="ls-prompt">{{ L(q.question.prompt) }}</div>
-            <div class="ls-status" :class="quizTone" aria-live="polite">{{ quizStatus }}</div>
-            <p v-if="q.hintShown && !q.answered" class="ls-hint">{{ L(q.question.hint) }}</p>
+            <div class="ls-status" :class="mirrorTone" aria-live="polite">{{ mirrorStatus }}</div>
             <div class="ls-actions">
-              <button v-if="!q.answered" type="button" class="jd-toolbtn ls-btn" :disabled="!standard || q.hintShown" @click="showHint">{{ t('ls.hint') }}</button>
-              <button v-else type="button" class="jd-toolbtn jd-toolbtn--add" @click="advanceQuiz">{{ q.i + 1 >= step.count ? t('ls.q-results') : t('ls.q-next') }} →</button>
+              <button type="button" class="jd-toolbtn jd-toolbtn--add" :disabled="!standard || m.phase === 'watch'" @click="watchDemo">
+                ▶ {{ m.phase === 'idle' ? t('ls.watch') : t('ls.watch-again') }}
+              </button>
+              <button v-if="(m.phase === 'repeat' && m.idx > 0) || m.phase === 'done'" type="button" class="jd-toolbtn ls-btn" @click="startRepeat">
+                {{ t('ls.repeat-again') }}
+              </button>
             </div>
-          </template>
-          <div class="ls-dots" aria-hidden="true">
-            <span
-              v-for="k in step.count" :key="k" class="ls-dot"
-              :class="{ ok: q.results[k - 1] === true, ko: q.results[k - 1] === false, now: !q.finished && k - 1 === q.i && !q.answered }"
-            ></span>
           </div>
-        </div>
 
+          <!-- Practice -->
+          <div v-else-if="step.type === 'quiz'" class="ls-task">
+            <template v-if="q.finished">
+              <div class="ls-prompt" :class="q.passed ? 'is-ok' : 'is-ko'">{{ q.passed ? t('ls.q-passed') : t('ls.q-failed') }}</div>
+              <div class="ls-status" aria-live="polite">{{ quizResult }}</div>
+              <div class="ls-actions">
+                <button type="button" class="jd-toolbtn" :class="q.passed ? 'ls-btn' : 'jd-toolbtn--add'" @click="startQuiz">{{ t('ls.retry') }}</button>
+              </div>
+            </template>
+            <template v-else-if="q.question">
+              <div class="ls-q-meta">{{ fmt('ls.q-of', q.i + 1, step.count) }}</div>
+              <div class="ls-prompt">{{ L(q.question.prompt) }}</div>
+              <div class="ls-status" :class="quizTone" aria-live="polite">{{ quizStatus }}</div>
+              <p v-if="q.hintShown && !q.answered" class="ls-hint">{{ L(q.question.hint) }}</p>
+              <div class="ls-actions">
+                <button v-if="!q.answered" type="button" class="jd-toolbtn ls-btn" :disabled="!standard || q.hintShown" @click="showHint">{{ t('ls.hint') }}</button>
+                <button v-else type="button" class="jd-toolbtn jd-toolbtn--add" @click="advanceQuiz">{{ q.i + 1 >= step.count ? t('ls.q-results') : t('ls.q-next') }} →</button>
+              </div>
+            </template>
+            <div class="ls-dots" aria-hidden="true">
+              <span
+                v-for="k in step.count" :key="k" class="ls-dot"
+                :class="{ ok: q.results[k - 1] === true, ko: q.results[k - 1] === false, now: !q.finished && k - 1 === q.i && !q.answered }"
+              ></span>
+            </div>
+          </div>
+        </StageHud>
         <GuitarInputPanel v-if="step.type !== 'explain'" :guitar="guitar" />
 
         <div class="jd-rule" aria-hidden="true"></div>
@@ -151,6 +153,7 @@ import { INTERVAL_DEGREES } from '../utils/theory.js'
 import { LESSONS, LESSON_TUNING, NOTE_COLOR, INTERACTIVE, findLesson, midiOf, pcOf, positionsOfMidi } from '../utils/fretboardLessons.js'
 import { lessonState, markStepDone, setLessonPosition, lessonCounts, isLessonDone } from '../utils/lessonProgress.js'
 import GuitarInputPanel from '../components/shared/GuitarInputPanel.vue'
+import StageHud from '../components/shared/StageHud.vue'
 
 // While the app plays a note, a microphone may hear it: ignore that pitch for a moment.
 const SELF_SOUND_HOLDOFF_MS = 600
@@ -611,6 +614,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.stage-hud .ls-task { margin: 0; padding: 0; border: 0; background: none; }
+.stage-hud .ls-actions { justify-content: center; }
 .ls-view { padding-top: 6px; }
 
 .ls-head {

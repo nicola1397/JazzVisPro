@@ -10,30 +10,14 @@
     <section class="jd-console" :class="{ 'jd-playing': running }">
       <div class="jd-grain" aria-hidden="true"></div>
 
-      <div class="jd-master">
-        <div class="jd-bpm">
-          <div class="jd-bpm-frame">
-            <span class="jd-bpm-led" :class="{ on: running }" aria-hidden="true"></span>
-            <input type="number" class="jd-bpm-input" v-model.number="settings.bpm" min="40" max="300" :disabled="running" :aria-label="t('label.bpm')">
-            <span class="jd-bpm-unit">{{ t('label.bpm') }}</span>
+      <StageHud :label="t('sc.title')">
+        <template #score>
+          <div class="jd-score-badge">
+            <span class="jd-score-val">{{ cleanRuns }}</span>
+            <span class="jd-score-label">{{ t('sc.clean-runs') }}</span>
           </div>
-        </div>
-        <div class="jd-transport">
-          <button class="jd-tbtn jd-tbtn--play" :class="{ 'jd-tbtn--playing': running }" @click="running ? stop() : run()"
-            :aria-label="running ? 'Stop' : 'Play'">
-            <svg v-if="!running" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg v-else viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-          </button>
-        </div>
-        <div class="jd-score-badge">
-          <span class="jd-score-val">{{ cleanRuns }}</span>
-          <span class="jd-score-label">{{ t('sc.clean-runs') }}</span>
-        </div>
-      </div>
+        </template>
 
-      <div class="jd-rule" aria-hidden="true"></div>
-
-      <div class="jd-question-box">
         <div class="jd-question-text">{{ countLeft > 0 ? countLeft : scaleTitle }}</div>
         <div class="sc-sub">{{ scaleSub }}</div>
 
@@ -47,6 +31,26 @@
 
         <div class="jd-question-hint">{{ statusText }}</div>
 
+        <template #actions>
+          <button class="jd-tbtn jd-tbtn--play" :class="{ 'jd-tbtn--playing': running }" @click="running ? stop() : run()"
+            :aria-label="running ? 'Stop' : 'Play'">
+            <svg v-if="!running" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg v-else viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+        </template>
+      </StageHud>
+
+      <div class="jd-master sc-master">
+        <div class="jd-bpm">
+          <div class="jd-bpm-frame">
+            <span class="jd-bpm-led" :class="{ on: running }" aria-hidden="true"></span>
+            <input type="number" class="jd-bpm-input" v-model.number="settings.bpm" min="40" max="300" :disabled="running" :aria-label="t('label.bpm')">
+            <span class="jd-bpm-unit">{{ t('label.bpm') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-rest">
         <!-- Timing of each note -->
         <div v-if="timing.length" class="sc-timing">
           <div class="jd-section-label"><span>{{ t('sc.timing-title') }}</span><span class="jd-section-rule"></span></div>
@@ -151,6 +155,7 @@ import { getInputLatency, setInputLatency } from '../utils/latency.js'
 import { SCALES, INTERVAL_COLORS, getAbsoluteNote } from '../utils/theory.js'
 import { stringName, zoneName, inZone, positionsOfMidi, pickOne } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
+import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes     from '../components/shared/PracticeModes.vue'
 
 const appStore = useAppStore()
@@ -465,6 +470,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.sc-master { display: flex; justify-content: center; margin-bottom: 4px; }
 .jd-question-box { background: rgba(255, 109, 0, 0.05); border: 1px solid rgba(255, 109, 0, 0.18); border-radius: 16px; padding: 26px; text-align: center; margin: 10px 0; position: relative; z-index: 1; }
 .jd-question-text { font-size: 28px; font-weight: 900; color: var(--jd-drums); }
 .sc-sub { font-family: var(--jd-mono); font-size: 11px; letter-spacing: 1px; color: var(--jd-text-soft); margin-top: 6px; }

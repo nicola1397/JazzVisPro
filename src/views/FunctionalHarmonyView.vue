@@ -263,4 +263,16 @@ onUnmounted(stopListening)
 .fh-analysis summary { cursor: pointer; font-family: var(--jd-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--jd-muted); }
 .fh-analysis ul { margin: 8px 0 0; padding-left: 18px; font-size: 0.85em; color: var(--jd-text-soft); line-height: 1.6; }
 .fh-analysis strong { color: var(--jd-text); }
+
+/* Short screens (phones held sideways): the chords, the buttons and the answers in one view */
+@media (max-height: 520px) {
+  .fh-levels, .fh-score { margin-bottom: 8px; }
+  .fh-prog { padding: 8px 10px; margin-bottom: 8px; }
+  .fh-chords { gap: 6px; }
+  .fh-chord { padding: 6px 10px; min-width: 64px; }
+  .fh-chord-name { font-size: 1.05em; }
+  .fh-actions { margin-bottom: 8px; }
+  .fh-grid { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .fh-grid .et-choice-btn { padding: 6px 2px; min-height: 0; }
+}
 </style>

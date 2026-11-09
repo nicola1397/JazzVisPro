@@ -73,7 +73,7 @@ I passi completati e le medaglie restano salvati; le risposte compaiono in Progr
 ## Caratteristiche Tecniche
 - Realizzato con **Vue.js 3** e **Vite** per una reattività estrema.
 - Motore audio avanzato basato su **Tone.js** con sintesi sonora e campionamento.
-- Design ottimizzato per desktop e tablet.
+- Interfaccia adattiva da desktop a telefono (anche in orizzontale): il manico si adatta alla larghezza dello schermo (intero su desktop, laptop e tablet; tasti 0-12 sul telefono) e alla sua altezza; negli allenamenti domanda, punteggio e pulsanti stanno in una barra subito sopra il manico e restano visibili insieme a lui mentre si scorrono le impostazioni; sul manico si risponde toccando l'intera casella del tasto.
 - Supporto multilingua completo (Italiano/Inglese).
 
 ## Sviluppo
