@@ -300,6 +300,35 @@ export const useAppStore = defineStore('app', () => {
     explorerMode.value = v
     scheduleSave()
   }
+  // ── Whole Explorer state (snapshots) ─────────────────────────────
+  function captureState() {
+    return {
+      root: root.value, scaleName: scaleName.value, tuningName: tuningName.value,
+      notation: notation.value, accidental: accidental.value, cagedShape: cagedShape.value,
+      hideUnused: hideUnused.value, soloArp: soloArp.value, add9: add9.value, add11: add11.value, add13: add13.value,
+      explorerMode: explorerMode.value,
+      highlightedIntervals: [...highlightedIntervals.value], manualNotes: [...manualNotes.value],
+      customScale: [...customScaleNotes.value], customZone: { ...customZone.value },
+    }
+  }
+  function applyState(st) {
+    if (!st) return
+    if (st.root) root.value = st.root
+    if (st.scaleName && SCALES[st.scaleName]) scaleName.value = st.scaleName
+    if (st.tuningName && TUNINGS[st.tuningName]) tuningName.value = st.tuningName
+    if (st.notation) notation.value = st.notation
+    if (st.accidental) accidental.value = st.accidental
+    if (typeof st.cagedShape === 'string') cagedShape.value = st.cagedShape
+    for (const [k, r] of [['hideUnused', hideUnused], ['soloArp', soloArp], ['add9', add9], ['add11', add11], ['add13', add13]])
+      if (typeof st[k] === 'boolean') r.value = st[k]
+    if (['normal', 'highlight', 'custom'].includes(st.explorerMode)) explorerMode.value = st.explorerMode
+    highlightedIntervals.value = new Set((st.highlightedIntervals || []).map(Number))
+    manualNotes.value = new Set(st.manualNotes || [])
+    customScaleNotes.value = new Set(st.customScale || [])
+    if (st.customZone) setCustomZone(st.customZone.from, st.customZone.to, false)
+    scheduleSave()
+  }
+
   function toggleLang() {
     lang.value = lang.value === 'it' ? 'en' : 'it'
     try { localStorage.setItem('jv-lang', lang.value) } catch {}
@@ -319,6 +348,7 @@ export const useAppStore = defineStore('app', () => {
     customPitchState, toggleCustomPitch, selectAllCustom, invertCustom,
     customZone, setCustomZone, customPitchClasses,
     savedCustomScales, saveCustomScale, loadCustomScale, deleteCustomScale, restoreCustomScale,
+    captureState, applyState,
     setRoot, setScaleName, setTuningName, setTunerMode, setNotation, setAccidental,
     setCagedShape, setExplorerMode, toggleLang, toggleSidebar, closeSidebar,
     scaleQuality, isCagedCompatible,

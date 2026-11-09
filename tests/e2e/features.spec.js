@@ -39,6 +39,17 @@ test.describe('features', () => {
     await expect(page.locator('.cst-item')).toHaveCount(1)
   })
 
+  test('snapshots restore the whole Explorer', async ({ page }) => {
+    await open(page, '/explorer')
+    await page.locator('.jd-mode', { hasText: /personalizzato|custom/i }).click()
+    await page.locator('#legend .color-option').nth(0).click()
+    await page.locator('button', { hasText: /salva snapshot|save snapshot/i }).click()
+    await page.locator('.jd-mode', { hasText: /normale|normal/i }).click()
+    await page.locator('.explorer-snap-select').selectOption({ index: 1 })
+    await expect(page.locator('.jd-mode.on')).toContainText(/personalizzato|custom/i)
+    expect(await page.locator('.note-circle.active-note').count()).toBe(12)
+  })
+
   test('Quiz: switching language mid-quiz, language remembered', async ({ page }) => {
     const errors = collectErrors(page)
     await open(page, '/quiz')

@@ -65,3 +65,11 @@ test('explorer in custom mode', async ({ page }, info) => {
   for (const i of [0, 4, 7]) await page.locator('#legend .color-option').nth(i).click()
   expect(await page.evaluate(lint, info.project.name !== 'desktop')).toEqual([])
 })
+
+test('snapshots page with saved snapshots', async ({ page }, info) => {
+  await open(page, '/explorer')
+  await page.locator('button', { hasText: /salva snapshot|save snapshot/i }).click()
+  await open(page, '/snapshots')
+  await expect(page.locator('.snapshot-card')).toHaveCount(1)
+  expect(await page.evaluate(lint, info.project.name !== 'desktop')).toEqual([])
+})

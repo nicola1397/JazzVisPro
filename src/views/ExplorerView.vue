@@ -158,6 +158,10 @@
               </button>
               <button class="jd-toolbtn" :class="{ 'jd-toolbtn--saved': snapshotSaved }" @click="createSnapshot">{{
                 snapshotSaved ? '✓ ' + t('snap.saved') : t('btn.save-snapshot') }}</button>
+              <select v-if="snaps.list.length" class="jd-select explorer-snap-select" :aria-label="t('snap.restore')" value="" @change="restoreSnapshot($event)">
+                <option value="" disabled>{{ t('snap.restore') }}</option>
+                <option v-for="s in snaps.list" :key="s.id" :value="s.id">{{ s.label }}</option>
+              </select>
             </div>
           </div>
         </div>
@@ -175,12 +179,15 @@
 
 <script setup>
 import CustomScaleTools from '../components/explorer/CustomScaleTools.vue'
+import { useSnapshotsStore } from '../stores/snapshots.js'
+import { toast } from '../composables/useToast.js'
 import { computed, ref } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
 import { NOTES, SCALES, TUNINGS } from '../utils/theory.js'
 
 const appStore = useAppStore()
+const snaps = useSnapshotsStore()
 const { t } = useI18n()
 
 const snapshotSaved = ref(false)
@@ -190,21 +197,16 @@ const tuningKeys = computed(() => Object.keys(TUNINGS))
 const scaleKeys = computed(() => Object.keys(SCALES))
 
 function createSnapshot() {
-  const snap = {
-    root: appStore.root,
-    scale: appStore.scaleName,
-    label: appStore.root + ' ' + appStore.scaleName,
-    manualNotes: Array.from(appStore.manualNotes),
-    customScale: Array.from(appStore.customScaleNotes),
-    date: new Date().toLocaleString()
-  }
-  let list = []
-  try { list = JSON.parse(localStorage.getItem('jv_snapshots') || '[]') } catch {}
-  if (!Array.isArray(list)) list = []
-  list.unshift(snap)
-  localStorage.setItem('jv_snapshots', JSON.stringify(list))
+  snaps.add(t)
   snapshotSaved.value = true
   setTimeout(() => { snapshotSaved.value = false }, 1500)
+}
+
+// One tap back to a saved Explorer state
+function restoreSnapshot(e) {
+  const s = snaps.apply(e.target.value)
+  e.target.value = ''
+  if (s) toast(t('snap.opened').replace('{s}', s.label))
 }
 
 const modeDesc = computed(() => {
@@ -216,6 +218,7 @@ const modeDesc = computed(() => {
 </script>
 
 <style scoped>
+.explorer-snap-select { width: auto; max-width: 220px; height: 34px; }
 .explorer-controls {
   display: flex;
   flex-direction: column;

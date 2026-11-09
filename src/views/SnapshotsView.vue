@@ -15,49 +15,42 @@
 
     <div class="snapshot-area">
       <TransitionGroup name="jd-fade">
-        <div
-          v-for="(snap, idx) in snapshots"
-          :key="snap.date"
-          class="snapshot-card"
-        >
+        <div v-for="snap in snaps.list" :key="snap.id" class="snapshot-card">
           <!-- Meta -->
           <div class="snapshot-meta">
             <div class="snapshot-title-row">
               <input
-                v-if="renamingIdx === idx"
+                v-if="renamingId === snap.id"
                 v-model="editLabel"
                 class="snapshot-rename-input"
-                @keyup.enter="commitRename(idx)"
-                @keyup.esc="renamingIdx = -1"
-                @blur="commitRename(idx)"
+                :aria-label="t('btn.rename')"
+                @keyup.enter="commitRename(snap.id)"
+                @keyup.esc="renamingId = null"
+                @blur="commitRename(snap.id)"
               />
-              <h3 v-else>{{ snap.label || (snap.root + ' ' + snap.scale) }}</h3>
+              <h3 v-else>{{ snap.label }}</h3>
               <button
-                v-if="renamingIdx !== idx"
+                v-if="renamingId !== snap.id"
                 class="jd-iconbtn jd-iconbtn--rename"
-                @click="startRename(idx, snap)"
-                :title="t('btn.rename')"
+                :title="t('btn.rename')" :aria-label="t('btn.rename')"
+                @click="startRename(snap)"
               >✎</button>
             </div>
-            <div class="snapshot-date">{{ snap.date }}</div>
+            <div class="snapshot-date">{{ when(snap.date) }} · {{ summary(snap.state) }}</div>
             <div class="snapshot-actions">
-              <button class="jd-extra" @click="loadSnapshot(snap)">{{ t('btn.load') }}</button>
-              <button class="jd-iconbtn jd-iconbtn--delete" @click="deleteSnapshot(idx)" :title="t('btn.delete')">
+              <button class="jd-extra" @click="load(snap)">{{ t('snap.open') }}</button>
+              <button class="jd-iconbtn jd-iconbtn--delete" :title="t('btn.delete')" :aria-label="t('btn.delete')" @click="remove(snap)">
                 <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
               </button>
             </div>
           </div>
 
-          <!-- Mini Fretboard (Analog monitor style) -->
-          <div class="mini-fretboard-wrap">
+          <!-- Mini Fretboard (Analog monitor style): high E on top, frets 0–15 -->
+          <div class="mini-fretboard-wrap" aria-hidden="true">
             <div class="mini-fretboard">
               <div v-for="s in 6" :key="s" class="mini-string">
                 <div v-for="f in 16" :key="f" class="mini-fret" :class="{ 'mini-fret-0': f === 1 }">
-                  <div
-                    v-if="hasNote(snap, 6-s, f-1)"
-                    class="mini-note"
-                    :style="{ background: getColor(snap, 6-s, f-1) }"
-                  ></div>
+                  <div v-if="dotsOf(snap).has(`${s - 1}-${f - 1}`)" class="mini-note" :style="{ background: dotsOf(snap).get(`${s - 1}-${f - 1}`) }"></div>
                 </div>
               </div>
             </div>
@@ -65,7 +58,7 @@
         </div>
       </TransitionGroup>
 
-      <div v-if="snapshots.length === 0" class="jd-empty-state">
+      <div v-if="snaps.list.length === 0" class="jd-empty-state">
         <span class="jd-empty-icon">📂</span>
         <p>{{ t('snap.empty') }}</p>
       </div>
@@ -74,105 +67,68 @@
 </template>
 
 <script setup>
-import { confirmDialog } from '../composables/useToast.js'
-import { ref, onMounted, nextTick } from 'vue'
-import { useAppStore }    from '../stores/app.js'
-import { useI18n }        from '../composables/useI18n.js'
-import { INTERVAL_COLORS, SCALES } from '../utils/theory.js'
+import { ref, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { confirmDialog, toast } from '../composables/useToast.js'
+import { useAppStore } from '../stores/app.js'
+import { useSnapshotsStore } from '../stores/snapshots.js'
+import { useI18n } from '../composables/useI18n.js'
+import { snapshotDots } from '../utils/snapshotPreview.js'
 
 const appStore = useAppStore()
-const { t }    = useI18n()
+const snaps = useSnapshotsStore()
+const router = useRouter()
+const { t } = useI18n()
 
-const snapshots = ref([])
-const renamingIdx = ref(-1)
+snaps.reload()
+const renamingId = ref(null)
 const editLabel = ref('')
 
-onMounted(() => {
-  loadSnapshots()
-})
-
-function loadSnapshots() {
-  const saved = localStorage.getItem('jv_snapshots')
-  if (saved) {
-    try {
-      const list = JSON.parse(saved)
-      snapshots.value = Array.isArray(list) ? list : []
-    } catch { snapshots.value = [] }
-  }
+const previews = new WeakMap()
+function dotsOf(snap) {
+  if (!previews.has(snap)) previews.set(snap, snapshotDots(snap.state))
+  return previews.get(snap)
 }
 
-function saveSnapshots() {
-  localStorage.setItem('jv_snapshots', JSON.stringify(snapshots.value))
+function when(date) {
+  const d = new Date(date)
+  return isNaN(d) ? date : d.toLocaleString(appStore.lang === 'en' ? 'en-GB' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })
+}
+function summary(st) {
+  return [st.tuningName, t('opt.' + (st.explorerMode || 'normal'))].filter(Boolean).join(' · ')
 }
 
 function createSnapshot() {
-  const snap = {
-    root: appStore.root,
-    scale: appStore.scaleName,
-    label: appStore.root + ' ' + appStore.scaleName,
-    manualNotes: Array.from(appStore.manualNotes),
-    customScale: Array.from(appStore.customScaleNotes),
-    date: new Date().toLocaleString()
-  }
-  snapshots.value.unshift(snap)
-  saveSnapshots()
+  const s = snaps.add(t)
+  toast(t('snap.saved-one').replace('{s}', s.label), { type: 'success' })
 }
 
-function deleteSnapshot(idx) {
-  snapshots.value.splice(idx, 1)
-  saveSnapshots()
-}
-
-async function startRename(idx, snap) {
-  renamingIdx.value = idx
-  editLabel.value = snap.label || (snap.root + ' ' + snap.scale)
+async function startRename(snap) {
+  renamingId.value = snap.id
+  editLabel.value = snap.label
   await nextTick()
   document.querySelector('.snapshot-rename-input')?.focus()
 }
+function commitRename(id) {
+  if (renamingId.value !== id) return
+  snaps.rename(id, editLabel.value)
+  renamingId.value = null
+}
 
-function commitRename(idx) {
-  if (renamingIdx.value !== idx) return
-  const label = editLabel.value.trim()
-  if (label) {
-    snapshots.value[idx].label = label
-    saveSnapshots()
-  }
-  renamingIdx.value = -1
+function remove(snap) {
+  const removed = snaps.remove(snap.id)
+  if (removed) toast(t('snap.deleted').replace('{s}', snap.label), { timeout: 6000, action: { label: t('cst.undo'), run: () => snaps.restore(removed) } })
 }
 
 async function clearSnapshots() {
-  if (await confirmDialog({ message: t('snap.confirm-clear'), confirmLabel: t('btn.delete-all'), danger: true })) {
-    snapshots.value = []
-    saveSnapshots()
-  }
+  if (await confirmDialog({ message: t('snap.confirm-clear'), confirmLabel: t('btn.delete-all'), danger: true })) snaps.clear()
 }
 
-function loadSnapshot(snap) {
-  appStore.setRoot(snap.root)
-  appStore.setScaleName(snap.scale)
-  appStore.manualNotes = new Set(snap.manualNotes)
-  appStore.customScaleNotes = new Set(snap.customScale)
-}
-
-function getInterval(snap, s, f) {
-  const tuning = [4, 9, 14, 19, 23, 28] 
-  const noteIdx = (tuning[s] + f) % 12
-  const rootIdx = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].indexOf(snap.root)
-  if (rootIdx === -1) return -1
-  return (noteIdx - rootIdx + 12) % 12
-}
-
-function hasNote(snap, s, f) {
-  const posKey = `${s}-${f}`
-  if (snap.manualNotes.includes(posKey)) return true
-  const scale = SCALES[snap.scale] || SCALES['Ionio (Maj7)']
-  const intv  = getInterval(snap, s, f)
-  return intv >= 0 && scale.includes(intv)
-}
-
-function getColor(snap, s, f) {
-  const intv = getInterval(snap, s, f)
-  return INTERVAL_COLORS[intv]?.color || '#aaa'
+// Restores the whole Explorer as it was and opens it
+function load(snap) {
+  snaps.apply(snap.id)
+  router.push('/explorer')
+  toast(t('snap.opened').replace('{s}', snap.label))
 }
 </script>
 
@@ -211,8 +167,8 @@ function getColor(snap, s, f) {
 }
 
 .jd-iconbtn--rename {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   font-size: 14px;
   color: var(--jd-muted);
   flex-shrink: 0;
@@ -237,8 +193,8 @@ function getColor(snap, s, f) {
 }
 
 .jd-iconbtn--delete {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-color: rgba(255, 69, 58, 0.2);
   color: rgba(255, 69, 58, 0.6);
 }
