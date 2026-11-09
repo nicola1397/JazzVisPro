@@ -46,6 +46,7 @@ import CountdownOverlay from './components/shared/CountdownOverlay.vue'
 import Fretboard        from './components/fretboard/Fretboard.vue'
 import FretboardLegend  from './components/fretboard/FretboardLegend.vue'
 import ToastHost        from './components/shared/ToastHost.vue'
+import { recordVisit }  from './composables/useRecentPages.js'
 
 const appStore      = useAppStore()
 const playbackStore = usePlaybackStore()
@@ -62,6 +63,9 @@ const onStage       = computed(() => (!!gameMode.value || !!route.meta?.stage) &
 // The page scrolls inside .main-content, which the router does not reset: without this a
 // new view opens at the previous view's scroll offset. Views that only change a param
 // (course steps) keep handling their own scroll.
+// Pages opened, for "recently used" on the Today page
+watch(() => route.path, path => recordVisit(path), { immediate: true })
+
 watch(() => route.matched[0]?.path, (now, before) => {
   if (before === undefined || now === before) return
   document.querySelector('.main-content')?.scrollTo({ top: 0 })

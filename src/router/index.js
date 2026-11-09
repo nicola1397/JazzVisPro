@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const routes = [
-  { path: '/',                    redirect: '/explorer' },
+  { path: '/',                    component: () => import('../views/HomeView.vue'),                 meta: { title:'title.home',        fretboard:false, legend:false } },
   { path: '/explorer',            component: () => import('../views/ExplorerView.vue'),            meta: { title:'title.explorer',    fretboard:true,  legend:true  } },
   { path: '/player',              component: () => import('../views/PlayerView.vue'),               meta: { title:'title.player',      fretboard:true,  legend:false, stage:true } },
   { path: '/calculator',          component: () => import('../views/CalculatorView.vue'),           meta: { title:'title.calculator',  fretboard:false, legend:false } },

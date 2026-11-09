@@ -3,6 +3,8 @@
     <button class="nav-toggle d-lg-none" @click="appStore.closeSidebar()">✕</button>
     <div class="logo">JAZZ<span>VIZ</span> PRO</div>
 
+    <RouterLink class="nav-item nav-item--home" to="/" exact-active-class="router-link-exact-active" active-class="" @click="appStore.closeSidebar()">{{ t('nav.home') }}</RouterLink>
+
     <SidebarGroup v-for="g in GROUPS" :key="g.name" :name="g.name" :label="t(g.label)" :collapsed="!g.open">
       <template v-for="(e, k) in g.items" :key="k">
         <div v-if="e.sub" class="nav-sub">{{ t(e.sub) }}</div>
@@ -34,65 +36,12 @@ import { useI18n }       from '../../composables/useI18n.js'
 import SidebarGroup from './SidebarGroup.vue'
 import FretboardControls from '../fretboard/FretboardControls.vue'
 import { COURSE } from '../../course/index.js'
+import { MENU_GROUPS as GROUPS } from './menu.js'
 
 const appStore   = useAppStore()
 const { t }      = useI18n()
 
-// From everyday use down to study: tools you grab while playing, playing along, looking
-// things up, then lessons, exercises and reading. `open` is only the first-visit state:
-// the groups remember how they were left, and the one holding the open page always opens.
-const GROUPS = [
-  { name: 'tools', label: 'sg.tools', open: true, items: [
-    { to: '/tuner',          label: 'nav.tuner' },
-    { to: '/groove-trainer', label: 'nav.groove-trainer' },
-    { to: '/chord-finder',   label: 'nav.chord-finder' },
-    { to: '/transposer',     label: 'nav.transposer' },
-    { to: '/transcribe',     label: 'nav.transcribe' },
-  ] },
-  { name: 'play', label: 'sg.play', open: true, items: [
-    { to: '/player',       label: 'nav.player' },
-    { to: '/real-book',    label: 'nav.real-book' },
-    { to: '/calculator',   label: 'nav.calculator' },
-    { to: '/lick-builder', label: 'nav.lick-builder' },
-  ] },
-  { name: 'explore', label: 'sg.explore', open: true, items: [
-    { to: '/explorer',        label: 'nav.explorer' },
-    { to: '/scale-navigator', label: 'nav.scale-navigator' },
-    { to: '/chord-voicing',   label: 'nav.chord-voicing' },
-    { to: '/reharmonizer',    label: 'nav.reharmonizer' },
-    { to: '/snapshots',       label: 'nav.snapshots' },
-  ] },
-  { name: 'learn', label: 'sg.learn', open: false, items: [
-    { sub: 'sg.lessons' },
-    { to: '/lessons', label: 'nav.lessons', prefix: '/lessons' },
-    { sub: 'sg.course' },
-    { to: '/percorso', label: 'nav.course', exact: true },
-    { course: true },
-  ] },
-  { name: 'training', label: 'sg.training', open: false, items: [
-    { to: '/progress', label: 'nav.progress' },
-    { sub: 'nsub.fretboard' },
-    { to: '/note-finder',      label: 'nav.note-finder' },
-    { to: '/interval-learner', label: 'nav.interval-learner' },
-    { to: '/grade-learner',    label: 'nav.grade-learner' },
-    { to: '/triad-trainer',    label: 'nav.triad-trainer' },
-    { to: '/seventh-trainer',  label: 'nav.seventh-trainer' },
-    { to: '/scale-tempo',      label: 'nav.scale-tempo' },
-    { to: '/changes-trainer',  label: 'nav.changes-trainer' },
-    { sub: 'nsub.ear' },
-    { to: '/interval-ear-training', label: 'nav.interval-ear-training' },
-    { to: '/ear-training',          label: 'nav.ear-training' },
-    { to: '/ear-playback',          label: 'nav.ear-playback' },
-    { sub: 'nsub.harmony' },
-    { to: '/functional-harmony', label: 'nav.functional-harmony' },
-    { to: '/quiz',               label: 'nav.quiz' },
-  ] },
-  { name: 'theory', label: 'sg.theory', open: false, items: [
-    { to: '/teoria-generale', label: 'nav.teoria-generale' },
-    { to: '/teoria-chitarra', label: 'nav.teoria-chitarra' },
-    { to: '/teoria',          label: 'nav.teoria' },
-  ] },
-]
+// Menu content (groups, order, labels) lives in menu.js, shared with Today and search
 </script>
 
 <style scoped>

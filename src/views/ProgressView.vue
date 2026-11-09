@@ -156,6 +156,7 @@
 </template>
 
 <script setup>
+import { EXERCISES as EXERCISE_CATALOG } from '../utils/exerciseCatalog.js'
 import { confirmDialog } from '../composables/useToast.js'
 import { ref, reactive, computed } from 'vue'
 import { useAppStore } from '../stores/app.js'
@@ -176,23 +177,24 @@ const HEAT = ['#8b2d26', '#b2352d', '#da3d34', '#ff453a']
 const INTERVALS_IT = ['Unisono', '2ª min', '2ª magg', '3ª min', '3ª magg', '4ª giusta', 'Tritono', '5ª giusta', '6ª min', '6ª magg', '7ª min', '7ª magg', 'Ottava']
 const INTERVALS_EN = ['Unison', 'min 2nd', 'maj 2nd', 'min 3rd', 'maj 3rd', 'P4', 'Tritone', 'P5', 'min 6th', 'maj 6th', 'min 7th', 'maj 7th', 'Octave']
 
-// Every exercise that records answers, with how to name its items.
-const EXERCISES = [
-  { id: 'lessons',            nav: 'nav.lessons',               route: '/lessons',               item: k => lessonTitle(k, appStore.lang) },
-  { id: 'note-finder',        nav: 'nav.note-finder',           route: '/note-finder',           item: k => appStore.currentNotes[+k] },
-  { id: 'interval-learner',   nav: 'nav.interval-learner',      route: '/interval-learner',      item: k => (INTERVAL_DEGREES[parseInt(k)] || k) + (k.endsWith('d') ? ' ↓' : '') },
-  { id: 'grade-learner',      nav: 'nav.grade-learner',         route: '/grade-learner',         item: k => INTERVAL_COLORS[+k]?.short || k },
-  { id: 'triads',             nav: 'nav.triad-trainer',         route: '/triad-trainer',         item: chordItem },
-  { id: 'sevenths',           nav: 'nav.seventh-trainer',       route: '/seventh-trainer',       item: chordItem },
-  { id: 'ear-chords',         nav: 'nav.ear-training',          route: '/ear-training',          item: k => k },
-  { id: 'ear-intervals',      nav: 'nav.interval-ear-training', route: '/interval-ear-training', item: k => (appStore.lang === 'it' ? INTERVALS_IT : INTERVALS_EN)[+k] || `${k}` },
-  { id: 'ear-playback',       nav: 'nav.ear-playback',          route: '/ear-playback',          item: playbackItem },
-  { id: 'changes',            nav: 'nav.changes-trainer',       route: '/changes-trainer',       item: k => `${t('ch.mode-' + k.split(':')[0])} · ${t('ch.group-' + k.split(':')[1])}` },
-  { id: 'scale-tempo',        nav: 'nav.scale-tempo',           route: '/scale-tempo',           item: k => k },
-  { id: 'functional-harmony', nav: 'nav.functional-harmony',    route: '/functional-harmony',    item: k => k },
-  { id: 'quiz',               nav: 'nav.quiz',                  route: '/quiz',                  item: k => t('quiz.cat.' + k) },
-  { id: 'course',             nav: 'cr.title',                  route: '/percorso',              item: k => stepTitle(k, appStore.lang) },
-]
+// Every exercise that records answers (utils/exerciseCatalog.js), with how to name its items.
+const ITEM_NAMES = {
+  'lessons': k => lessonTitle(k, appStore.lang),
+  'note-finder': k => appStore.currentNotes[+k],
+  'interval-learner': k => (INTERVAL_DEGREES[parseInt(k)] || k) + (k.endsWith('d') ? ' ↓' : ''),
+  'grade-learner': k => INTERVAL_COLORS[+k]?.short || k,
+  'triads': chordItem,
+  'sevenths': chordItem,
+  'ear-chords': k => k,
+  'ear-intervals': k => (appStore.lang === 'it' ? INTERVALS_IT : INTERVALS_EN)[+k] || `${k}`,
+  'ear-playback': playbackItem,
+  'changes': k => `${t('ch.mode-' + k.split(':')[0])} · ${t('ch.group-' + k.split(':')[1])}`,
+  'scale-tempo': k => k,
+  'functional-harmony': k => k,
+  'quiz': k => t('quiz.cat.' + k),
+  'course': k => stepTitle(k, appStore.lang),
+}
+const EXERCISES = EXERCISE_CATALOG.map(ex => ({ ...ex, item: ITEM_NAMES[ex.id] || (k => k) }))
 
 // 'i:+7' interval up a fifth, 'p:dorian' phrase in a scale, 'a:m7' arpeggio
 function playbackItem(k) {

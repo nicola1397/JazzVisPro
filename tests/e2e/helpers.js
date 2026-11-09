@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 // Every page without parameters, plus a few pages with them
 export const ROUTES = readFileSync(new URL('../../src/router/index.js', import.meta.url), 'utf8')
   .match(/path: '([^']+)'/g).map(x => x.slice(7, -1))
-  .filter(p => !p.includes(':') && p !== '/')
+  .filter(p => !p.includes(':'))
   .concat(['/percorso/notes/1', '/percorso/degrees/4', '/percorso/caged/2', '/lessons/naturals', '/chord-finder?mode=neck'])
 
 // Errors that come from the network (fonts, offline CI) or the audio device, not from the app

@@ -11,10 +11,12 @@ const state = reactive({
   last: saved.last && typeof saved.last === 'object' ? saved.last : {},
   // Best result of each timed drill: { level (1 bronze … 3 gold), avg (ms), acc (0-1) }
   medals: saved.medals && typeof saved.medals === 'object' ? saved.medals : {},
+  // Module opened most recently (the Today page offers to continue it)
+  recent: typeof saved.recent === 'string' ? saved.recent : null,
 })
 
 function save() {
-  writeStorage(STORAGE_KEY, { done: state.done, last: state.last, medals: state.medals })
+  writeStorage(STORAGE_KEY, { done: state.done, last: state.last, medals: state.medals, recent: state.recent })
 }
 
 export function getMedal(key) {
@@ -60,9 +62,14 @@ export function lastStep(moduleId) {
 }
 
 export function setLastStep(moduleId, index) {
-  if (state.last[moduleId] === index) return
+  if (state.last[moduleId] === index && state.recent === moduleId) return
   state.last[moduleId] = index
+  state.recent = moduleId
   save()
+}
+
+export function recentModuleId() {
+  return state.recent
 }
 
 // First step not done yet (or the last one when the module is complete).
