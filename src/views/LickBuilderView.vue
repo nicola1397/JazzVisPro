@@ -126,6 +126,7 @@
 </template>
 
 <script setup>
+import { toast } from '../composables/useToast.js'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import draggable from 'vuedraggable'
 import { useI18n } from '../composables/useI18n.js'
@@ -321,8 +322,11 @@ function importJson(event) {
           id: n.id || (Date.now() + Math.random())
         }))
         if (data.bpm) bpm.value = data.bpm
+        toast(t('toast.imported'), { type: 'success' })
+      } else {
+        toast(t('err.invalid-json'), { type: 'error' })
       }
-    } catch { alert(t('err.invalid-json')) }
+    } catch { toast(t('err.invalid-json'), { type: 'error' }) }
   }
   reader.readAsText(file)
   event.target.value = ''

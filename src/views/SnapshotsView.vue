@@ -74,6 +74,7 @@
 </template>
 
 <script setup>
+import { confirmDialog } from '../composables/useToast.js'
 import { ref, onMounted, nextTick } from 'vue'
 import { useAppStore }    from '../stores/app.js'
 import { useI18n }        from '../composables/useI18n.js'
@@ -139,8 +140,8 @@ function commitRename(idx) {
   renamingIdx.value = -1
 }
 
-function clearSnapshots() {
-  if (confirm(t('snap.confirm-clear'))) {
+async function clearSnapshots() {
+  if (await confirmDialog({ message: t('snap.confirm-clear'), confirmLabel: t('btn.delete-all'), danger: true })) {
     snapshots.value = []
     saveSnapshots()
   }

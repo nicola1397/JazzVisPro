@@ -186,6 +186,7 @@
 </template>
 
 <script setup>
+import { toast } from '../composables/useToast.js'
 import { computed, ref } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
@@ -241,8 +242,11 @@ function importCustomScale(event) {
       if (Array.isArray(data.customScale)) {
         appStore.customScaleNotes = new Set(data.customScale.filter(k => /^[0-5]-\d{1,2}$/.test(k)))
         appStore.scheduleSave()
+        toast(t('toast.imported'), { type: 'success' })
+      } else {
+        toast(t('err.invalid-json'), { type: 'error' })
       }
-    } catch { alert(t('err.invalid-json')) }
+    } catch { toast(t('err.invalid-json'), { type: 'error' }) }
   }
   reader.readAsText(file)
   event.target.value = ''

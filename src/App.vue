@@ -29,6 +29,7 @@
       </div>
     </main>
     <div v-else>{{ t('label.loading-app') }}</div>
+    <ToastHost />
   </div>
 </template>
 
@@ -43,6 +44,7 @@ import AppNavbar        from './components/layout/AppNavbar.vue'
 import CountdownOverlay from './components/shared/CountdownOverlay.vue'
 import Fretboard        from './components/fretboard/Fretboard.vue'
 import FretboardLegend  from './components/fretboard/FretboardLegend.vue'
+import ToastHost        from './components/shared/ToastHost.vue'
 
 const appStore      = useAppStore()
 const playbackStore = usePlaybackStore()

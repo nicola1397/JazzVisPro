@@ -350,6 +350,7 @@
 </template>
 
 <script setup>
+import { toast } from '../composables/useToast.js'
 import { computed, ref, watch } from 'vue'
 import { usePlaybackStore } from '../stores/playback.js'
 import { useAudioStore } from '../stores/audio.js'
@@ -441,7 +442,8 @@ function importProgression(event) {
       const data = JSON.parse(e.target.result)
       pb.clearProgression()
       pb.loadFromData(data)
-    } catch { alert(t('err.invalid-json')) }
+      toast(t('toast.imported'), { type: 'success' })
+    } catch { toast(t('err.invalid-json'), { type: 'error' }) }
   }
   reader.readAsText(file)
   event.target.value = ''

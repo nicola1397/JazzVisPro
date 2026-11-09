@@ -17,6 +17,7 @@ export default {
   'legend.all':'All','legend.none':'None','legend.aria':'Scale intervals','legend.custom-aria':'Quick note selection',
   'explorer.help-custom':'Click a note to take (or drop) it in every position on the neck; click a fret for a single position.',
   'quiz.load-error':'Could not load the questions: check your connection and try again.',
+  'label.close':'Close','btn.cancel':'Cancel','btn.confirm':'Confirm','btn.delete-all':'Delete all','toast.imported':'File imported.',
   'explorer.help':'Click a swatch to highlight all intervals. Click a fret to toggle a note.',
   'label.display-mode':'Display Mode','opt.normal':'Normal','opt.highlight':'Highlight','opt.custom':'Custom',
   'btn.export-json':'Export JSON','btn.import-json':'Import JSON',

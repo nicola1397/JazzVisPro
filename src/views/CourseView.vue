@@ -93,6 +93,7 @@
 </template>
 
 <script setup>
+import { confirmDialog } from '../composables/useToast.js'
 import { computed, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CourseStep from '../components/course/CourseStep.vue'
@@ -169,8 +170,8 @@ function finish() {
   nextTick(() => document.querySelector('.cv-complete')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
 }
 
-function restart() {
-  if (!confirm(t('cr.reset-confirm'))) return
+async function restart() {
+  if (!(await confirmDialog({ message: t('cr.reset-confirm'), confirmLabel: t('cr.reset'), danger: true }))) return
   resetModule(mod.value.id)
   router.push(`/percorso/${mod.value.id}/1`)
 }

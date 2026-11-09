@@ -156,6 +156,7 @@
 </template>
 
 <script setup>
+import { confirmDialog } from '../composables/useToast.js'
 import { ref, reactive, computed } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { usePracticeStore, practiceMsByDay, streakDays, dayKey } from '../stores/practice.js'
@@ -369,8 +370,8 @@ function hideTip() {
   tip.show = false
 }
 
-function clearHistory() {
-  if (window.confirm(t('pg.clear-confirm'))) practice.clear()
+async function clearHistory() {
+  if (await confirmDialog({ message: t('pg.clear-confirm'), confirmLabel: t('pg.clear'), danger: true })) practice.clear()
 }
 </script>
 

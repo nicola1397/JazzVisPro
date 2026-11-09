@@ -19,6 +19,7 @@ export default {
   'legend.all':'Tutte','legend.none':'Nessuna','legend.aria':'Intervalli della scala','legend.custom-aria':'Selezione rapida delle note',
   'explorer.help-custom':'Clicca una nota per prenderla (o toglierla) in tutte le posizioni del manico; clicca un tasto per una posizione sola.',
   'quiz.load-error':'Non riesco a caricare le domande: controlla la connessione e riprova.',
+  'label.close':'Chiudi','btn.cancel':'Annulla','btn.confirm':'Conferma','btn.delete-all':'Cancella tutto','toast.imported':'File importato.',
   'explorer.help':'Clicca una swatch per evidenziare tutti gli intervalli. Clicca un tasto per attivare/disattivare la nota.',
   'label.display-mode':'Modalità Display','opt.normal':'Normale','opt.highlight':'Highlight','opt.custom':'Personalizzato',
   'btn.export-json':'Esporta JSON','btn.import-json':'Importa JSON',
