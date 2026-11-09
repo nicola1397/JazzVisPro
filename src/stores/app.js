@@ -51,6 +51,10 @@ export const useAppStore = defineStore('app', () => {
     data.soloArp    = soloArp.value
     data.tunerMode  = tunerMode.value
     data.customScale = Array.from(customScaleNotes.value)
+    data.explorerMode = explorerMode.value
+    data.cagedShape   = cagedShape.value
+    data.manualNotes  = Array.from(manualNotes.value)
+    data.highlightedIntervals = Array.from(highlightedIntervals.value)
     writeStorage('jazzVizData', data)
   }
 
@@ -68,6 +72,10 @@ export const useAppStore = defineStore('app', () => {
     if (data.soloArp !== undefined)    soloArp.value    = data.soloArp
     if (data.tunerMode) tunerMode.value = data.tunerMode
     if (data.customScale) customScaleNotes.value = new Set(data.customScale)
+    if (['normal', 'highlight', 'custom'].includes(data.explorerMode)) explorerMode.value = data.explorerMode
+    if (typeof data.cagedShape === 'string') cagedShape.value = data.cagedShape
+    if (Array.isArray(data.manualNotes)) manualNotes.value = new Set(data.manualNotes)
+    if (Array.isArray(data.highlightedIntervals)) highlightedIntervals.value = new Set(data.highlightedIntervals.map(Number))
     isLoaded.value = true // Set to true after loading
     return data
   }
@@ -147,12 +155,14 @@ export const useAppStore = defineStore('app', () => {
     const s = new Set(highlightedIntervals.value)
     s.has(idx) ? s.delete(idx) : s.add(idx)
     highlightedIntervals.value = s
+    scheduleSave()
   }
 
   function toggleManualNote(key) {
     const s = new Set(manualNotes.value)
     s.has(key) ? s.delete(key) : s.add(key)
     manualNotes.value = s
+    scheduleSave()
   }
 
   function toggleCustomNote(key) {
@@ -202,6 +212,7 @@ export const useAppStore = defineStore('app', () => {
     highlightedIntervals.value = new Set()
     manualNotes.value = new Set()
     customScaleNotes.value = new Set()
+    scheduleSave()
   }
 
   function setRoot(v)        { root.value = v;        scheduleSave() }
@@ -211,15 +222,10 @@ export const useAppStore = defineStore('app', () => {
   function setNotation(v)    { notation.value = v;    scheduleSave() }
   function setAccidental(v)  { accidental.value = v;  scheduleSave() }
   function setCagedShape(v)  { cagedShape.value = v;   scheduleSave() }
+  // Each mode keeps its own selection: switching mode no longer wipes the custom scale
+  // (it used to, so a saved custom scale could never be seen again).
   function setExplorerMode(v){
     explorerMode.value = v
-    if (v === 'custom') {
-      customScaleNotes.value = new Set()
-      highlightedIntervals.value = new Set()
-      manualNotes.value = new Set()
-      cagedShape.value = 'none'
-      notation.value = 'note'
-    }
     scheduleSave()
   }
   function toggleLang()      { lang.value = lang.value === 'it' ? 'en' : 'it' }
