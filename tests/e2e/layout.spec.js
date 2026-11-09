@@ -58,3 +58,10 @@ test.describe('layout', () => {
     })
   }
 })
+
+test('explorer in custom mode', async ({ page }, info) => {
+  await open(page, '/explorer')
+  await page.locator('.jd-mode', { hasText: /personalizzato|custom/i }).click()
+  for (const i of [0, 4, 7]) await page.locator('#legend .color-option').nth(i).click()
+  expect(await page.evaluate(lint, info.project.name !== 'desktop')).toEqual([])
+})

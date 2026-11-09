@@ -21,6 +21,7 @@
 
       <div v-if="custom" class="legend-bulk">
         <button type="button" class="jd-toolbtn" @click="appStore.selectAllCustom()">{{ t('legend.all') }}</button>
+        <button type="button" class="jd-toolbtn" @click="appStore.invertCustom()">{{ t('legend.invert') }}</button>
         <button type="button" class="jd-toolbtn jd-toolbtn--reset" @click="appStore.clearCustomScale()">{{ t('legend.none') }}</button>
       </div>
     </div>

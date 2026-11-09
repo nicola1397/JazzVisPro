@@ -8,6 +8,13 @@ export function savedLang() {
   try { return localStorage.getItem('jv-lang') === 'en' ? 'en' : 'it' } catch { return 'it' }
 }
 
+function readSavedScales() {
+  try {
+    const list = JSON.parse(localStorage.getItem('jv-custom-scales') || '[]')
+    return Array.isArray(list) ? list.filter(x => x && x.id && Array.isArray(x.notes)) : []
+  } catch { return [] }
+}
+
 export const useAppStore = defineStore('app', () => {
   // ── Fretboard state ──────────────────────────────────────────────
   const root        = ref('C')
@@ -26,6 +33,10 @@ export const useAppStore = defineStore('app', () => {
   const highlightedIntervals = ref(new Set())
   const manualNotes        = ref(new Set())
   const customScaleNotes   = ref(new Set())
+  // Custom mode: the frets the whole-note picker, all / none and invert act on
+  const customZone         = ref({ from: 0, to: FRETS })
+  // Custom scales saved with a name (Explorer, custom mode)
+  const savedCustomScales  = ref(readSavedScales())
 
   // ── Loading state ────────────────────────────────────────────────
   const isLoaded = ref(false)
@@ -60,6 +71,7 @@ export const useAppStore = defineStore('app', () => {
     data.cagedShape   = cagedShape.value
     data.manualNotes  = Array.from(manualNotes.value)
     data.highlightedIntervals = Array.from(highlightedIntervals.value)
+    data.customZone   = customZone.value
     writeStorage('jazzVizData', data)
   }
 
@@ -81,6 +93,7 @@ export const useAppStore = defineStore('app', () => {
     if (typeof data.cagedShape === 'string') cagedShape.value = data.cagedShape
     if (Array.isArray(data.manualNotes)) manualNotes.value = new Set(data.manualNotes)
     if (Array.isArray(data.highlightedIntervals)) highlightedIntervals.value = new Set(data.highlightedIntervals.map(Number))
+    if (data.customZone && Number.isInteger(data.customZone.from) && Number.isInteger(data.customZone.to)) setCustomZone(data.customZone.from, data.customZone.to, false)
     isLoaded.value = true // Set to true after loading
     return data
   }
@@ -177,19 +190,75 @@ export const useAppStore = defineStore('app', () => {
     scheduleSave()
   }
 
+  // ── Custom mode: whole-note selection ────────────────────────────
+  // Every position ("string-fret") inside the zone, optionally of one pitch class only.
+  function zoneKeys(pc = null) {
+    const out = []
+    const { from, to } = customZone.value
+    for (let s = 0; s < STRINGS; s++)
+      for (let f = from; f <= to; f++)
+        if (pc === null || getPitchClass(currentTuning.value, s, f) === pc) out.push(`${s}-${f}`)
+    return out
+  }
+  const positionsOf = pc => zoneKeys(pc)
+  const inZone = key => { const f = Number(key.split('-')[1]); return f >= customZone.value.from && f <= customZone.value.to }
+
+  // Clears the zone (the whole neck when the zone is the whole neck)
   function clearCustomScale() {
-    customScaleNotes.value = new Set()
+    customScaleNotes.value = new Set([...customScaleNotes.value].filter(k => !inZone(k)))
     scheduleSave()
   }
+  function invertCustom() {
+    const s = new Set(customScaleNotes.value)
+    for (const k of zoneKeys()) s.has(k) ? s.delete(k) : s.add(k)
+    customScaleNotes.value = s
+    scheduleSave()
+  }
+  function setCustomZone(from, to, save = true) {
+    let a = Math.max(0, Math.min(FRETS, Math.round(from))), b = Math.max(0, Math.min(FRETS, Math.round(to)))
+    if (a > b) [a, b] = [b, a]
+    customZone.value = { from: a, to: b }
+    if (save) scheduleSave()
+  }
 
-  // ── Custom mode: whole-note selection ────────────────────────────
-  // Every position ("string-fret") of a pitch class in the current tuning.
-  function positionsOf(pc) {
-    const out = []
-    for (let s = 0; s < STRINGS; s++)
-      for (let f = 0; f <= FRETS; f++)
-        if (getPitchClass(currentTuning.value, s, f) === pc) out.push(`${s}-${f}`)
-    return out
+  // Pitch classes taken anywhere on the neck
+  const customPitchClasses = computed(() => {
+    const pcs = new Set()
+    for (const k of customScaleNotes.value) { const [s, f] = k.split('-').map(Number); pcs.add(getPitchClass(currentTuning.value, s, f)) }
+    return [...pcs]
+  })
+
+  // ── Saved custom scales ──────────────────────────────────────────
+  function persistSavedScales() {
+    try { localStorage.setItem('jv-custom-scales', JSON.stringify(savedCustomScales.value)) } catch {}
+  }
+  function saveCustomScale(name) {
+    const item = { id: Date.now().toString(36), name: name.trim(), notes: [...customScaleNotes.value], tuning: tuningName.value, date: new Date().toISOString() }
+    savedCustomScales.value = [item, ...savedCustomScales.value]
+    persistSavedScales()
+    return item
+  }
+  function loadCustomScale(id) {
+    const item = savedCustomScales.value.find(x => x.id === id)
+    if (!item) return
+    customScaleNotes.value = new Set(item.notes)
+    explorerMode.value = 'custom'
+    scheduleSave()
+  }
+  // Returns what was removed, so it can be put back (undo)
+  function deleteCustomScale(id) {
+    const i = savedCustomScales.value.findIndex(x => x.id === id)
+    if (i < 0) return null
+    const removed = { item: savedCustomScales.value[i], index: i }
+    savedCustomScales.value = savedCustomScales.value.filter(x => x.id !== id)
+    persistSavedScales()
+    return removed
+  }
+  function restoreCustomScale({ item, index }) {
+    const list = [...savedCustomScales.value]
+    list.splice(Math.min(index, list.length), 0, item)
+    savedCustomScales.value = list
+    persistSavedScales()
   }
   // Per pitch class (0 = C): 'all', 'some' or 'none' of its positions selected.
   const customPitchState = computed(() => Array.from({ length: 12 }, (_, pc) => {
@@ -207,9 +276,7 @@ export const useAppStore = defineStore('app', () => {
     scheduleSave()
   }
   function selectAllCustom() {
-    const s = new Set()
-    for (let st = 0; st < STRINGS; st++) for (let f = 0; f <= FRETS; f++) s.add(`${st}-${f}`)
-    customScaleNotes.value = s
+    customScaleNotes.value = new Set([...customScaleNotes.value, ...zoneKeys()])
     scheduleSave()
   }
 
@@ -249,7 +316,9 @@ export const useAppStore = defineStore('app', () => {
     loadFromStorage, scheduleSave,
     toggleHighlightInterval, toggleManualNote, toggleCustomNote,
     clearCustomScale, resetFretboard,
-    customPitchState, toggleCustomPitch, selectAllCustom,
+    customPitchState, toggleCustomPitch, selectAllCustom, invertCustom,
+    customZone, setCustomZone, customPitchClasses,
+    savedCustomScales, saveCustomScale, loadCustomScale, deleteCustomScale, restoreCustomScale,
     setRoot, setScaleName, setTuningName, setTunerMode, setNotation, setAccidental,
     setCagedShape, setExplorerMode, toggleLang, toggleSidebar, closeSidebar,
     scaleQuality, isCagedCompatible,

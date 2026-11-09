@@ -54,3 +54,41 @@ describe('Explorer custom mode', () => {
     expect(t.cagedShape).toBe('E')
   })
 })
+
+describe('Explorer custom tools', () => {
+  it('limits picking, all, none and invert to the zone', () => {
+    const s = useAppStore()
+    s.setCustomZone(8, 5)                                // swapped on purpose
+    expect(s.customZone).toEqual({ from: 5, to: 8 })
+    s.selectAllCustom()
+    expect(s.customScaleNotes.size).toBe(6 * 4)
+    s.setCustomZone(0, 24)
+    s.toggleCustomNote('0-0')
+    s.setCustomZone(5, 8)
+    s.invertCustom()
+    expect([...s.customScaleNotes]).toEqual(['0-0'])     // outside the zone, untouched
+    s.selectAllCustom()
+    s.clearCustomScale()
+    expect([...s.customScaleNotes]).toEqual(['0-0'])
+  })
+  it('lists the pitch classes picked anywhere', () => {
+    const s = useAppStore()
+    s.toggleCustomPitch(0); s.toggleCustomPitch(4); s.toggleCustomPitch(7)
+    expect([...s.customPitchClasses].sort((a, b) => a - b)).toEqual([0, 4, 7])
+  })
+  it('saves, loads, deletes and restores named scales', () => {
+    const s = useAppStore()
+    s.toggleCustomPitch(0)
+    const item = s.saveCustomScale('  Solo C  ')
+    expect(item.name).toBe('Solo C')
+    s.clearCustomScale()
+    s.loadCustomScale(item.id)
+    expect(s.customScaleNotes.size).toBe(12)
+    expect(s.explorerMode).toBe('custom')
+    const removed = s.deleteCustomScale(item.id)
+    expect(s.savedCustomScales).toEqual([])
+    s.restoreCustomScale(removed)
+    expect(s.savedCustomScales.map(x => x.name)).toEqual(['Solo C'])
+    expect(JSON.parse(localStorage.getItem('jv-custom-scales')).length).toBe(1)
+  })
+})

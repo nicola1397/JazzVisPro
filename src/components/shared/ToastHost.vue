@@ -4,6 +4,7 @@
       <div v-for="x in toastState.toasts" :key="x.id" class="th-toast" :class="`th-toast--${x.type}`" role="status">
         <span class="th-dot" aria-hidden="true"></span>
         <span class="th-msg">{{ x.message }}</span>
+        <button v-if="x.action" type="button" class="th-action" @click="x.action.run(); dismissToast(x.id)">{{ x.action.label }}</button>
         <button type="button" class="th-close" :aria-label="t('label.close')" @click="dismissToast(x.id)">✕</button>
       </div>
     </TransitionGroup>
@@ -60,6 +61,11 @@ function answer(v) { toastState.confirm?.resolve(v) }
 .th-toast--error { border-color: rgba(255, 69, 58, 0.5); }
 .th-toast--error .th-dot { background: var(--jd-red); }
 .th-msg { flex: 1; }
+.th-action {
+  flex-shrink: 0; min-height: 0; height: 30px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(255, 214, 10, 0.45); color: var(--jd-amber);
+  font-family: var(--jd-mono); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+}
 .th-close {
   flex-shrink: 0; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 8px;
   background: transparent; border: 1px solid transparent; color: var(--jd-muted); cursor: pointer;

@@ -5,10 +5,10 @@ import { reactive } from 'vue'
 export const toastState = reactive({ toasts: [], confirm: null })
 let nextId = 1
 
-// type: 'info' | 'success' | 'error'
-export function toast(message, { type = 'info', timeout = 4000 } = {}) {
+// type: 'info' | 'success' | 'error'; action: { label, run } adds a button (e.g. Undo)
+export function toast(message, { type = 'info', timeout = 4000, action = null } = {}) {
   const id = nextId++
-  toastState.toasts.push({ id, message, type })
+  toastState.toasts.push({ id, message, type, action })
   if (timeout) setTimeout(() => dismissToast(id), timeout)
   return id
 }

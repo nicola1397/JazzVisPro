@@ -145,6 +145,9 @@ function getCircleClass(s, f) {
   }
 }
 
+// Custom mode: frets outside the zone the note picker works on are dimmer
+const inCustomZone = f => f >= appStore.customZone.from && f <= appStore.customZone.to
+
 function getCircleStyle(s, f) {
   if (isGameMode.value) return { opacity: '0.04', visibility: 'visible', pointerEvents: 'auto' }
   const state = boardState.value[s][f]
@@ -155,7 +158,7 @@ function getCircleStyle(s, f) {
     backgroundColor: state.col?.color || 'white',
     visibility: 'visible',
     pointerEvents: 'auto',
-    opacity: state.isActive ? '1' : (appStore.explorerMode === 'custom' ? '0.15' : '0.4')
+    opacity: state.isActive ? '1' : (appStore.explorerMode === 'custom' ? (inCustomZone(f) ? '0.15' : '0.05') : '0.4')
   }
   if (state.isActive) {
     if (state.isCaged) {

@@ -25,6 +25,20 @@ test.describe('features', () => {
     expect(errors).toEqual([])
   })
 
+  test('Explorer custom tools: recognise, save, delete with undo', async ({ page }) => {
+    await open(page, '/explorer')
+    await page.locator('.jd-mode', { hasText: /personalizzato|custom/i }).click()
+    for (const i of [0, 2, 4, 5, 7, 9, 11]) await page.locator('#legend .color-option').nth(i).click()
+    await expect(page.locator('.cst-chip').first()).toContainText('Ionio')
+    await page.locator('.cst-name').fill('Do maggiore')
+    await page.locator('.cst-save button[type=submit]').click()
+    await expect(page.locator('.cst-item')).toHaveCount(1)
+    await page.locator('.cst-del').click()
+    await expect(page.locator('.cst-item')).toHaveCount(0)
+    await page.locator('.th-action').click()
+    await expect(page.locator('.cst-item')).toHaveCount(1)
+  })
+
   test('Quiz: switching language mid-quiz, language remembered', async ({ page }) => {
     const errors = collectErrors(page)
     await open(page, '/quiz')

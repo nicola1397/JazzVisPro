@@ -39,6 +39,11 @@
           </div>
         </div>
 
+        <!-- Custom mode: zone, listen, what the notes are, saved scales -->
+        <div v-if="appStore.explorerMode === 'custom'" class="explorer-section">
+          <CustomScaleTools />
+        </div>
+
         <!-- Master Dashboard: Selectors & Secondary -->
         <div class="explorer-section">
           <div class="explorer-dashboard">
@@ -158,23 +163,6 @@
         </div>
       </div>
 
-      <div v-if="appStore.explorerMode === 'custom'" class="jd-rule" aria-hidden="true"></div>
-
-      <div v-if="appStore.explorerMode === 'custom'" class="jd-toolbar" style="margin-top: 10px;">
-        <button class="jd-iconbtn" @click="exportCustomScale" :title="t('btn.export-json')" aria-label="Export JSON">
-          <svg viewBox="0 0 24 24">
-            <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
-          </svg>
-        </button>
-        <button class="jd-iconbtn" @click="$refs.importFile.click()" :title="t('btn.import-json')"
-          aria-label="Import JSON">
-          <svg viewBox="0 0 24 24">
-            <path d="M19 13h-4V7H9v6H5l7 7 7-7zM5 4v2h14V4H5z" transform="rotate(180 12 12)" />
-          </svg>
-        </button>
-        <input ref="importFile" type="file" style="display:none" accept=".json" @change="importCustomScale">
-        <!-- Select all / none live in the legend above the neck, next to the note picker -->
-      </div>
     </section>
 
     <div class="jd-improv-banner" style="margin-top: 20px;">
@@ -186,7 +174,7 @@
 </template>
 
 <script setup>
-import { toast } from '../composables/useToast.js'
+import CustomScaleTools from '../components/explorer/CustomScaleTools.vue'
 import { computed, ref } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
@@ -224,33 +212,7 @@ const modeDesc = computed(() => {
   return map[appStore.explorerMode] || ''
 })
 
-function exportCustomScale() {
-  const data = { customScale: Array.from(appStore.customScaleNotes) }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = 'custom-scale.json'; a.click()
-  URL.revokeObjectURL(url)
-}
 
-function importCustomScale(event) {
-  const file = event.target.files[0]; if (!file) return
-  const reader = new FileReader()
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result)
-      if (Array.isArray(data.customScale)) {
-        appStore.customScaleNotes = new Set(data.customScale.filter(k => /^[0-5]-\d{1,2}$/.test(k)))
-        appStore.scheduleSave()
-        toast(t('toast.imported'), { type: 'success' })
-      } else {
-        toast(t('err.invalid-json'), { type: 'error' })
-      }
-    } catch { toast(t('err.invalid-json'), { type: 'error' }) }
-  }
-  reader.readAsText(file)
-  event.target.value = ''
-}
 </script>
 
 <style scoped>
