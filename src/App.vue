@@ -25,6 +25,8 @@
           />
         </div>
 
+        <KeyScaleChip v-if="route.meta?.keyChip && showFretboard" />
+
         <RouterView />
       </div>
     </main>
@@ -48,6 +50,7 @@ import Fretboard        from './components/fretboard/Fretboard.vue'
 import FretboardLegend  from './components/fretboard/FretboardLegend.vue'
 import ToastHost        from './components/shared/ToastHost.vue'
 import QuickSearch      from './components/shared/QuickSearch.vue'
+import KeyScaleChip     from './components/fretboard/KeyScaleChip.vue'
 import { recordVisit }  from './composables/useRecentPages.js'
 
 const appStore      = useAppStore()

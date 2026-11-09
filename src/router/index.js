@@ -2,7 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 
 const routes = [
   { path: '/',                    component: () => import('../views/HomeView.vue'),                 meta: { title:'title.home',        fretboard:false, legend:false } },
-  { path: '/explorer',            component: () => import('../views/ExplorerView.vue'),            meta: { title:'title.explorer',    fretboard:true,  legend:true  } },
+  { path: '/explorer',            component: () => import('../views/ExplorerView.vue'),            meta: { title:'title.explorer',    fretboard:true,  legend:true, keyChip:true } },
   { path: '/player',              component: () => import('../views/PlayerView.vue'),               meta: { title:'title.player',      fretboard:true,  legend:false, stage:true } },
   { path: '/calculator',          component: () => import('../views/CalculatorView.vue'),           meta: { title:'title.calculator',  fretboard:false, legend:false } },
   { path: '/lessons',             component: () => import('../views/LessonsView.vue'),              meta: { title:'title.lessons',          fretboard:false,legend:false } },
@@ -28,7 +28,7 @@ const routes = [
   { path: '/reharmonizer',        component: () => import('../views/ReharmonizerView.vue'),         meta: { title:'title.reharmonizer',     fretboard:false,legend:false } },
   { path: '/tuner',               component: () => import('../views/TunerView.vue'),                meta: { title:'title.tuner',            fretboard:false,legend:false } },
   { path: '/groove-trainer',      component: () => import('../views/GrooveTrainerView.vue'),        meta: { title:'title.groove-trainer',   fretboard:false,legend:false } },
-  { path: '/lick-builder',        component: () => import('../views/LickBuilderView.vue'),          meta: { title:'title.lick-builder',     fretboard:true, legend:false, game:'lick' } },
+  { path: '/lick-builder',        component: () => import('../views/LickBuilderView.vue'),          meta: { title:'title.lick-builder',     fretboard:true, legend:false, game:'lick', keyChip:true } },
   { path: '/chord-finder',        component: () => import('../views/ChordFinderView.vue'),          meta: { title:'title.chord-finder',     fretboard:false,legend:false } },
   { path: '/real-book',           component: () => import('../views/RealBookView.vue'),             meta: { title:'title.real-book',        fretboard:false,legend:false } },
   { path: '/transposer',          component: () => import('../views/TransposerView.vue'),           meta: { title:'title.transposer',       fretboard:false,legend:false } },
