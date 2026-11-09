@@ -3,62 +3,23 @@
     <button class="nav-toggle d-lg-none" @click="appStore.closeSidebar()">✕</button>
     <div class="logo">JAZZ<span>VIZ</span> PRO</div>
 
-    <SidebarGroup name="lessons" :label="t('sg.lessons')" :collapsed="false">
-      <RouterLink class="nav-item" to="/lessons" :class="{ 'router-link-active': $route.path.startsWith('/lessons') }" @click="appStore.closeSidebar()">{{ t('nav.lessons') }}</RouterLink>
-    </SidebarGroup>
-
-    <SidebarGroup name="course" :label="t('sg.course')" :collapsed="false">
-      <RouterLink class="nav-item" to="/percorso" exact-active-class="router-link-exact-active" active-class="" @click="appStore.closeSidebar()">{{ t('nav.course') }}</RouterLink>
-      <RouterLink
-        v-for="(m, i) in COURSE" :key="m.id" class="nav-item nav-item--course"
-        :to="`/percorso/${m.id}`" @click="appStore.closeSidebar()"
-      ><span class="nav-course-num">{{ i + 1 }}</span>{{ m.title[appStore.lang] ?? m.title.it }}</RouterLink>
-    </SidebarGroup>
-
-    <SidebarGroup name="explore" :label="t('sg.explore')" :collapsed="false">
-      <RouterLink class="nav-item" to="/explorer"        @click="appStore.closeSidebar()">{{ t('nav.explorer') }}</RouterLink>
-      <RouterLink class="nav-item" to="/snapshots"       @click="appStore.closeSidebar()">{{ t('nav.snapshots') }}</RouterLink>
-      <RouterLink class="nav-item" to="/chord-voicing"   @click="appStore.closeSidebar()">{{ t('nav.chord-voicing') }}</RouterLink>
-      <RouterLink class="nav-item" to="/scale-navigator" @click="appStore.closeSidebar()">{{ t('nav.scale-navigator') }}</RouterLink>
-      <RouterLink class="nav-item" to="/reharmonizer"    @click="appStore.closeSidebar()">{{ t('nav.reharmonizer') }}</RouterLink>
-    </SidebarGroup>
-
-    <SidebarGroup name="tools" :label="t('sg.tools')" :collapsed="true">
-      <RouterLink class="nav-item" to="/tuner"        @click="appStore.closeSidebar()">{{ t('nav.tuner') }}</RouterLink>
-      <RouterLink class="nav-item" to="/transcribe"   @click="appStore.closeSidebar()">{{ t('nav.transcribe') }}</RouterLink>
-      <RouterLink class="nav-item" to="/lick-builder" @click="appStore.closeSidebar()">{{ t('nav.lick-builder') }}</RouterLink>
-      <RouterLink class="nav-item" to="/chord-finder" @click="appStore.closeSidebar()">{{ t('nav.chord-finder') }}</RouterLink>
-      <RouterLink class="nav-item" to="/transposer"   @click="appStore.closeSidebar()">{{ t('nav.transposer') }}</RouterLink>
-    </SidebarGroup>
-
-    <SidebarGroup name="play" :label="t('sg.play')" :collapsed="true">
-      <RouterLink class="nav-item" to="/player"     @click="appStore.closeSidebar()">{{ t('nav.player') }}</RouterLink>
-      <RouterLink class="nav-item" to="/changes-trainer" @click="appStore.closeSidebar()">{{ t('nav.changes-trainer') }}</RouterLink>
-      <RouterLink class="nav-item" to="/calculator" @click="appStore.closeSidebar()">{{ t('nav.calculator') }}</RouterLink>
-      <RouterLink class="nav-item" to="/real-book"  @click="appStore.closeSidebar()">{{ t('nav.real-book') }}</RouterLink>
-    </SidebarGroup>
-
-    <SidebarGroup name="training" :label="t('sg.training')" :collapsed="true">
-      <RouterLink class="nav-item" to="/progress"              @click="appStore.closeSidebar()">{{ t('nav.progress') }}</RouterLink>
-      <RouterLink class="nav-item" to="/interval-learner"      @click="appStore.closeSidebar()">{{ t('nav.interval-learner') }}</RouterLink>
-      <RouterLink class="nav-item" to="/grade-learner"         @click="appStore.closeSidebar()">{{ t('nav.grade-learner') }}</RouterLink>
-      <RouterLink class="nav-item" to="/note-finder"           @click="appStore.closeSidebar()">{{ t('nav.note-finder') }}</RouterLink>
-      <RouterLink class="nav-item" to="/triad-trainer"         @click="appStore.closeSidebar()">{{ t('nav.triad-trainer') }}</RouterLink>
-      <RouterLink class="nav-item" to="/seventh-trainer"       @click="appStore.closeSidebar()">{{ t('nav.seventh-trainer') }}</RouterLink>
-      <RouterLink class="nav-item" to="/scale-tempo"           @click="appStore.closeSidebar()">{{ t('nav.scale-tempo') }}</RouterLink>
-      <RouterLink class="nav-item" to="/quiz"                  @click="appStore.closeSidebar()">{{ t('nav.quiz') }}</RouterLink>
-      <RouterLink class="nav-item" to="/functional-harmony"    @click="appStore.closeSidebar()">{{ t('nav.functional-harmony') }}</RouterLink>
-      <RouterLink class="nav-item" to="/ear-training"          @click="appStore.closeSidebar()">{{ t('nav.ear-training') }}</RouterLink>
-
-      <RouterLink class="nav-item" to="/interval-ear-training" @click="appStore.closeSidebar()">{{ t('nav.interval-ear-training') }}</RouterLink>
-      <RouterLink class="nav-item" to="/ear-playback"          @click="appStore.closeSidebar()">{{ t('nav.ear-playback') }}</RouterLink>
-      <RouterLink class="nav-item" to="/groove-trainer"        @click="appStore.closeSidebar()">{{ t('nav.groove-trainer') }}</RouterLink>
-    </SidebarGroup>
-
-    <SidebarGroup name="theory" :label="t('sg.theory')" :collapsed="true">
-      <RouterLink class="nav-item" to="/teoria-generale"  @click="appStore.closeSidebar()">{{ t('nav.teoria-generale') }}</RouterLink>
-      <RouterLink class="nav-item" to="/teoria"           @click="appStore.closeSidebar()">{{ t('nav.teoria') }}</RouterLink>
-      <RouterLink class="nav-item" to="/teoria-chitarra"  @click="appStore.closeSidebar()">{{ t('nav.teoria-chitarra') }}</RouterLink>
+    <SidebarGroup v-for="g in GROUPS" :key="g.name" :name="g.name" :label="t(g.label)" :collapsed="!g.open">
+      <template v-for="(e, k) in g.items" :key="k">
+        <div v-if="e.sub" class="nav-sub">{{ t(e.sub) }}</div>
+        <template v-else-if="e.course">
+          <RouterLink
+            v-for="(m, i) in COURSE" :key="m.id" class="nav-item nav-item--course"
+            :to="`/percorso/${m.id}`" @click="appStore.closeSidebar()"
+            :class="{ 'router-link-active': $route.path.startsWith('/percorso/') && $route.params.module === m.id }"
+          ><span class="nav-course-num">{{ i + 1 }}</span>{{ m.title[appStore.lang] ?? m.title.it }}</RouterLink>
+        </template>
+        <RouterLink
+          v-else class="nav-item" :to="e.to"
+          v-bind="e.exact ? { 'exact-active-class': 'router-link-exact-active', 'active-class': '' } : {}"
+          :class="{ 'router-link-active': e.prefix && $route.path.startsWith(e.prefix) }"
+          @click="appStore.closeSidebar()"
+        >{{ t(e.label) }}</RouterLink>
+      </template>
     </SidebarGroup>
 
     <div class="sidebar-controls">
@@ -76,6 +37,62 @@ import { COURSE } from '../../course/index.js'
 
 const appStore   = useAppStore()
 const { t }      = useI18n()
+
+// From everyday use down to study: tools you grab while playing, playing along, looking
+// things up, then lessons, exercises and reading. `open` is only the first-visit state:
+// the groups remember how they were left, and the one holding the open page always opens.
+const GROUPS = [
+  { name: 'tools', label: 'sg.tools', open: true, items: [
+    { to: '/tuner',          label: 'nav.tuner' },
+    { to: '/groove-trainer', label: 'nav.groove-trainer' },
+    { to: '/chord-finder',   label: 'nav.chord-finder' },
+    { to: '/transposer',     label: 'nav.transposer' },
+    { to: '/transcribe',     label: 'nav.transcribe' },
+  ] },
+  { name: 'play', label: 'sg.play', open: true, items: [
+    { to: '/player',       label: 'nav.player' },
+    { to: '/real-book',    label: 'nav.real-book' },
+    { to: '/calculator',   label: 'nav.calculator' },
+    { to: '/lick-builder', label: 'nav.lick-builder' },
+  ] },
+  { name: 'explore', label: 'sg.explore', open: true, items: [
+    { to: '/explorer',        label: 'nav.explorer' },
+    { to: '/scale-navigator', label: 'nav.scale-navigator' },
+    { to: '/chord-voicing',   label: 'nav.chord-voicing' },
+    { to: '/reharmonizer',    label: 'nav.reharmonizer' },
+    { to: '/snapshots',       label: 'nav.snapshots' },
+  ] },
+  { name: 'learn', label: 'sg.learn', open: false, items: [
+    { sub: 'sg.lessons' },
+    { to: '/lessons', label: 'nav.lessons', prefix: '/lessons' },
+    { sub: 'sg.course' },
+    { to: '/percorso', label: 'nav.course', exact: true },
+    { course: true },
+  ] },
+  { name: 'training', label: 'sg.training', open: false, items: [
+    { to: '/progress', label: 'nav.progress' },
+    { sub: 'nsub.fretboard' },
+    { to: '/note-finder',      label: 'nav.note-finder' },
+    { to: '/interval-learner', label: 'nav.interval-learner' },
+    { to: '/grade-learner',    label: 'nav.grade-learner' },
+    { to: '/triad-trainer',    label: 'nav.triad-trainer' },
+    { to: '/seventh-trainer',  label: 'nav.seventh-trainer' },
+    { to: '/scale-tempo',      label: 'nav.scale-tempo' },
+    { to: '/changes-trainer',  label: 'nav.changes-trainer' },
+    { sub: 'nsub.ear' },
+    { to: '/interval-ear-training', label: 'nav.interval-ear-training' },
+    { to: '/ear-training',          label: 'nav.ear-training' },
+    { to: '/ear-playback',          label: 'nav.ear-playback' },
+    { sub: 'nsub.harmony' },
+    { to: '/functional-harmony', label: 'nav.functional-harmony' },
+    { to: '/quiz',               label: 'nav.quiz' },
+  ] },
+  { name: 'theory', label: 'sg.theory', open: false, items: [
+    { to: '/teoria-generale', label: 'nav.teoria-generale' },
+    { to: '/teoria-chitarra', label: 'nav.teoria-chitarra' },
+    { to: '/teoria',          label: 'nav.teoria' },
+  ] },
+]
 </script>
 
 <style scoped>
@@ -84,4 +101,14 @@ const { t }      = useI18n()
   font-family: var(--jd-mono); font-size: 0.85em; color: var(--jd-muted);
 }
 .router-link-active .nav-course-num { color: var(--accent); }
+
+/* Small caption that splits a long group (Allenamento: fretboard / ear / harmony) */
+.nav-sub {
+  padding: 10px 22px 3px 25px;
+  font-family: var(--jd-display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--jd-muted);
+  user-select: none;
+}
 </style>
