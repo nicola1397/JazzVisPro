@@ -2700,6 +2700,12 @@ button.tap-feedback,
   user-select: none; height: 34px; box-sizing: border-box;
 }
 .jd-mode input { position: absolute; opacity: 0; pointer-events: none; }
+/* Capitals sit above the middle of the line box (the font keeps room for descenders):
+   trim the box to the capitals so the text lines up with the dot and the pill. */
+.jd-mode-text { text-box: trim-both cap alphabetic; }
+@supports not (text-box: trim-both cap alphabetic) {
+  .jd-mode-text { position: relative; top: 0.12em; }
+}
 .jd-mode-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a2620; transition: all 0.2s; }
 .jd-mode.on { background: rgba(255, 214, 10, 0.08); border-color: var(--jd-amber); color: var(--jd-amber); }
 .jd-mode.on .jd-mode-dot { background: var(--jd-amber); box-shadow: 0 0 8px var(--jd-amber); }

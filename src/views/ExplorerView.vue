@@ -173,9 +173,7 @@
           </svg>
         </button>
         <input ref="importFile" type="file" style="display:none" accept=".json" @change="importCustomScale">
-        <span class="jd-toolbar-sep"></span>
-        <button class="jd-toolbtn jd-toolbtn--reset" @click="appStore.clearCustomScale()">{{ t('btn.clear-all-notes')
-          }}</button>
+        <!-- Select all / none live in the legend above the neck, next to the note picker -->
       </div>
     </section>
 

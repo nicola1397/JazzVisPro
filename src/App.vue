@@ -11,23 +11,8 @@
       />
 
       <div class="viewport">
-        <!-- Interval legend -->
-        <div class="controls" id="legend" v-show="showLegend">
-          <div
-            v-for="(col, idx) in INTERVAL_COLORS"
-            :key="idx"
-            class="color-option"
-            :class="{ selected: appStore.highlightedIntervals.has(+idx) }"
-            @click="appStore.toggleHighlightInterval(+idx)"
-          >
-            <span class="label">{{ col.short }}</span>
-            <div class="swatch" :style="{ background: col.color }"></div>
-          </div>
-        </div>
-
-        <div id="explorer-help" v-show="showLegend" style="text-align:center;font-size:0.8em;color:#666;margin-bottom:15px;">
-          {{ t('explorer.help') }}
-        </div>
+        <!-- Interval legend (in custom mode a quick picker for whole notes) -->
+        <FretboardLegend v-show="showLegend" />
 
         <!-- On the fretboard exercises the question bar (StageHud) and the fretboard form one
              block that stays under the navbar while the settings scroll below it. -->
@@ -53,11 +38,11 @@ import { useRoute }          from 'vue-router'
 import { useAppStore }       from './stores/app.js'
 import { usePlaybackStore }  from './stores/playback.js'
 import { useI18n }           from './composables/useI18n.js'
-import { INTERVAL_COLORS }   from './utils/theory.js'
 import AppSidebar       from './components/layout/Sidebar.vue'
 import AppNavbar        from './components/layout/AppNavbar.vue'
 import CountdownOverlay from './components/shared/CountdownOverlay.vue'
 import Fretboard        from './components/fretboard/Fretboard.vue'
+import FretboardLegend  from './components/fretboard/FretboardLegend.vue'
 
 const appStore      = useAppStore()
 const playbackStore = usePlaybackStore()

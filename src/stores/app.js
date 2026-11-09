@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
-import { NOTES, NOTES_FLAT, SCALES, TUNINGS, INTERVAL_COLORS, CAGED_SHAPES_MAJOR, CAGED_SHAPES_MINOR, getNoteIdx } from '../utils/theory.js'
+import { NOTES, NOTES_FLAT, SCALES, TUNINGS, INTERVAL_COLORS, CAGED_SHAPES_MAJOR, CAGED_SHAPES_MINOR, getNoteIdx, getPitchClass } from '../utils/theory.js'
+import { STRINGS, FRETS } from '../utils/constants.js'
 
 export const useAppStore = defineStore('app', () => {
   // ── Fretboard state ──────────────────────────────────────────────
@@ -166,6 +167,37 @@ export const useAppStore = defineStore('app', () => {
     scheduleSave()
   }
 
+  // ── Custom mode: whole-note selection ────────────────────────────
+  // Every position ("string-fret") of a pitch class in the current tuning.
+  function positionsOf(pc) {
+    const out = []
+    for (let s = 0; s < STRINGS; s++)
+      for (let f = 0; f <= FRETS; f++)
+        if (getPitchClass(currentTuning.value, s, f) === pc) out.push(`${s}-${f}`)
+    return out
+  }
+  // Per pitch class (0 = C): 'all', 'some' or 'none' of its positions selected.
+  const customPitchState = computed(() => Array.from({ length: 12 }, (_, pc) => {
+    const all = positionsOf(pc)
+    const on = all.filter(k => customScaleNotes.value.has(k)).length
+    return on === 0 ? 'none' : on === all.length ? 'all' : 'some'
+  }))
+  // Takes the note in every position; if it was already everywhere, removes it everywhere.
+  function toggleCustomPitch(pc) {
+    const all = positionsOf(pc)
+    const s = new Set(customScaleNotes.value)
+    const full = all.every(k => s.has(k))
+    for (const k of all) full ? s.delete(k) : s.add(k)
+    customScaleNotes.value = s
+    scheduleSave()
+  }
+  function selectAllCustom() {
+    const s = new Set()
+    for (let st = 0; st < STRINGS; st++) for (let f = 0; f <= FRETS; f++) s.add(`${st}-${f}`)
+    customScaleNotes.value = s
+    scheduleSave()
+  }
+
   function resetFretboard() {
     highlightedIntervals.value = new Set()
     manualNotes.value = new Set()
@@ -203,6 +235,7 @@ export const useAppStore = defineStore('app', () => {
     loadFromStorage, scheduleSave,
     toggleHighlightInterval, toggleManualNote, toggleCustomNote,
     clearCustomScale, resetFretboard,
+    customPitchState, toggleCustomPitch, selectAllCustom,
     setRoot, setScaleName, setTuningName, setTunerMode, setNotation, setAccidental,
     setCagedShape, setExplorerMode, toggleLang, toggleSidebar, closeSidebar,
     scaleQuality, isCagedCompatible,
