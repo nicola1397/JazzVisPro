@@ -350,6 +350,7 @@
 </template>
 
 <script setup>
+import { useWakeLock } from '../composables/useWakeLock.js'
 import { toast } from '../composables/useToast.js'
 import { computed, ref, watch } from 'vue'
 import { usePlaybackStore } from '../stores/playback.js'
@@ -358,6 +359,7 @@ import { useI18n } from '../composables/useI18n.js'
 import ProgressionStep from '../components/player/ProgressionStep.vue'
 
 const pb = usePlaybackStore()
+useWakeLock(() => pb.isPlaying)   // screen stays on while the backing track plays
 const audio = useAudioStore()
 const { t } = useI18n()
 

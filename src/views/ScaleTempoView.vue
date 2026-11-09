@@ -143,6 +143,7 @@
 </template>
 
 <script setup>
+import { useWakeLock } from '../composables/useWakeLock.js'
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
@@ -178,6 +179,8 @@ if (!SCALES[settings.scale]) settings.scale = defaults.scale
 
 const latency    = ref(getInputLatency())
 const running    = ref(false)
+
+useWakeLock(() => running.value)
 const countLeft  = ref(0)
 const seq        = ref([])        // { pc, iv, label, name, state, delta, ideal }
 const step       = ref(0)

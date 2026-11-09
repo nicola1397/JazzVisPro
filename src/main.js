@@ -17,3 +17,8 @@ loadLanguage(savedLang()).catch(() => {}).finally(() => {
   app.mount('#app')
   preloadTone()
 })
+
+// Offline support for the built app (not during development, where files change all the time)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {}))
+}

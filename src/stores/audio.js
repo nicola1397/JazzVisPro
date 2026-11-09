@@ -32,8 +32,9 @@ export const useAudioStore = defineStore('audio', () => {
   async function init() {
     if (typeof Tone === 'undefined') {
       try { await loadTone() } catch { return }
-      toneReady.value = true
     }
+    // also when Tone.js arrived through the background preload, after this store was created
+    toneReady.value = true
     if (_isInitialized) {
       if (Tone.context.state !== 'running') await Tone.context.resume()
       return

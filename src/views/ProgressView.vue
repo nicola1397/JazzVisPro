@@ -152,10 +152,23 @@
         <button class="jd-toolbtn jd-toolbtn--reset" @click="clearHistory">{{ t('pg.clear') }}</button>
       </div>
     </template>
+
+    <!-- Everything the app keeps in this browser, to save or move to another device -->
+    <section class="pg-backup" aria-labelledby="pg-backup-title">
+      <h2 id="pg-backup-title" class="pg-backup-title">{{ t('bk.title') }}</h2>
+      <p class="pg-backup-text">{{ t('bk.text') }}</p>
+      <div class="pg-backup-actions">
+        <button type="button" class="jd-toolbtn" @click="exportBackup">⤓ {{ t('bk.export') }}</button>
+        <button type="button" class="jd-toolbtn" @click="backupFile.click()">⤒ {{ t('bk.import') }}</button>
+        <input ref="backupFile" type="file" accept=".json,application/json" hidden @change="importBackup">
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
+import { downloadBackup, readBackup, restoreBackup } from '../utils/backup.js'
+import { toast } from '../composables/useToast.js'
 import { EXERCISES as EXERCISE_CATALOG } from '../utils/exerciseCatalog.js'
 import { confirmDialog } from '../composables/useToast.js'
 import { ref, reactive, computed } from 'vue'
@@ -372,12 +385,41 @@ function hideTip() {
   tip.show = false
 }
 
+// ── Backup ────────────────────────────────────────────────────────────────────
+const backupFile = ref(null)
+function exportBackup() {
+  const n = downloadBackup()
+  toast(t('bk.exported').replace('{n}', n), { type: 'success' })
+}
+function importBackup(e) {
+  const file = e.target.files[0]
+  e.target.value = ''
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = async () => {
+    const r = readBackup(reader.result)
+    if (!r.ok) { toast(t('bk.invalid'), { type: 'error' }); return }
+    const when = r.date && !isNaN(new Date(r.date)) ? new Date(r.date).toLocaleString(appStore.lang === 'en' ? 'en-GB' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : '—'
+    const ok = await confirmDialog({ message: t('bk.confirm').replace('{d}', when).replace('{n}', r.count), confirmLabel: t('bk.replace'), danger: true })
+    if (!ok) return
+    restoreBackup(r.backup)
+    toast(t('bk.restored'), { type: 'success' })
+    // every store reads its data again
+    setTimeout(() => location.reload(), 900)
+  }
+  reader.readAsText(file)
+}
+
 async function clearHistory() {
   if (await confirmDialog({ message: t('pg.clear-confirm'), confirmLabel: t('pg.clear'), danger: true })) practice.clear()
 }
 </script>
 
 <style scoped>
+.pg-backup { margin-top: 28px; padding: 18px 20px; border-radius: 14px; border: 1px solid var(--jd-line); background: var(--jd-surface); }
+.pg-backup-title { margin: 0 0 6px; font-family: var(--jd-mono); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--jd-amber); }
+.pg-backup-text { margin: 0 0 12px; font-family: var(--jd-mono); font-size: 12px; line-height: 1.6; color: var(--jd-text-soft); }
+.pg-backup-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .pg-empty p { position: relative; z-index: 1; color: var(--jd-text-soft); text-align: center; margin: 0; }
 
 .pg-kpis {

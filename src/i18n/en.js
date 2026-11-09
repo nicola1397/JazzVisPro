@@ -25,6 +25,7 @@ export default {
   'qs.title':'Search','qs.placeholder':'Search pages, lessons, steps, chapters…','qs.results':'Results','qs.none':'No results.','qs.hint':'Type to search pages, the guided path, lessons and theory.','qs.move':'choose','qs.open':'open','qs.kind-page':'Page','qs.kind-course':'Module','qs.kind-step':'Step','qs.kind-lesson':'Lesson','qs.kind-theory':'Theory',
   'ksc.change':'Change','ksc.title':'Neck: key, scale and view','ksc.done':'Done',
   'fb.aria':'Fretboard: arrows to move across strings and frets, Enter to pick the note',
+  'bk.title':'Data backup','bk.text':'Progress, guided path, snapshots, custom scales and settings stay in this browser only. Export them to a file to keep them safe or to move them to another device, and import them back when needed.','bk.export':'Export data','bk.import':'Import a backup','bk.exported':'Backup downloaded ({n} items).','bk.invalid':'This file is not a JazzViz Pro backup.','bk.confirm':'Replace all the data in this browser with the backup of {d} ({n} items)? The current data will be lost.','bk.replace':'Replace','bk.restored':'Backup restored: reloading the app.',
   'explorer.help':'Click a swatch to highlight all intervals. Click a fret to toggle a note.',
   'label.display-mode':'Display Mode','opt.normal':'Normal','opt.highlight':'Highlight','opt.custom':'Custom',
   'btn.export-json':'Export JSON','btn.import-json':'Import JSON',

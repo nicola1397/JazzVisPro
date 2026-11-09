@@ -196,6 +196,7 @@
 </template>
 
 <script setup>
+import { useWakeLock } from '../composables/useWakeLock.js'
 import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
 import { useI18n }       from '../composables/useI18n.js'
 import { useAudioStore } from '../stores/audio.js'
@@ -208,6 +209,8 @@ const bpm           = ref(100)
 const volume        = ref(0.7)
 const soundName     = ref('Beep')
 const isPlaying     = ref(false)
+
+useWakeLock(() => isPlaying.value)   // screen stays on while the metronome runs
 const isPolyrhythm  = ref(false)
 
 // ── Pattern A State ───────────────────────────────────────────────────────────

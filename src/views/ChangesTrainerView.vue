@@ -151,6 +151,7 @@
 </template>
 
 <script setup>
+import { useWakeLock } from '../composables/useWakeLock.js'
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
@@ -176,6 +177,7 @@ const { t } = useI18n()
 const fmt = (key, ...args) => args.reduce((s, v, i) => s.replace(`{${i}}`, v), t(key))
 const guitar = useGuitarInput({ onNote: ({ midi, time }) => onNote({ midi, time: time - getInputLatency() }) })
 const backing = useBackingTrack()
+useWakeLock(() => backing.playing.value)
 
 const MODES = ['guide', 'arpeggio', 'approach', 'free']
 const KINDS = ['chord', 'tension', 'outside']

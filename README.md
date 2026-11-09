@@ -81,6 +81,18 @@ I passi completati e le medaglie restano salvati; le risposte compaiono in Progr
 - **Accordatore (Tuner)**: Accordatore cromatico preciso basato sull'analisi della frequenza tramite microfono.
 - **Analisi Armonica**: Rilevamento automatico della tonalità e suggerimenti contestuali basati sullo stile (Jazz, Blues, Pop).
 
+### 📲 Installabile, offline e al sicuro
+- **App installabile** (manifest e icone): dal browser si aggiunge alla schermata Home o al desktop
+  e si apre a tutto schermo, con scorciatoie ad Accordatore, Metronomo e Percorso guidato.
+- **Funziona offline** dopo la prima visita: un service worker (`public/sw.js`) tiene una copia di
+  pagina, codice, libreria audio, diteggiature e font; le pagine prendono la versione nuova quando
+  c'è rete.
+- **Schermo sempre acceso** mentre suonano la base, il metronomo, Sui cambi o Scale a tempo (dove il
+  browser lo permette), così il telefono sul leggio non si spegne a metà brano.
+- **Backup dei dati** (pagina Progressi): progressi, percorso, snapshot, scale personalizzate e
+  impostazioni stanno solo nel browser; si esportano in un file JSON e si reimportano, anche su un
+  altro dispositivo.
+
 ## Caratteristiche Tecniche
 - Realizzato con **Vue.js 3** e **Vite** per una reattività estrema.
 - Motore audio avanzato basato su **Tone.js** con sintesi sonora e campionamento.

@@ -139,3 +139,54 @@ test.describe('fretboard from the keyboard', () => {
     await expect(page.locator('.note-circle.active-note')).toHaveCount(1)
   })
 })
+
+test.describe('installable, offline, backup, screen on', () => {
+  test('the manifest and its icons are served', async ({ page, request }) => {
+    const res = await request.get('/manifest.webmanifest')
+    expect(res.ok()).toBe(true)
+    const m = await res.json()
+    expect(m.display).toBe('standalone')
+    for (const icon of m.icons) expect((await request.get('/' + icon.src)).ok(), icon.src).toBe(true)
+    await open(page, '/')
+    await expect(page.locator('link[rel="manifest"]')).toHaveCount(1)
+  })
+
+  test('works offline once visited', async ({ page, context }) => {
+    await open(page, '/')
+    await page.evaluate(() => navigator.serviceWorker.ready)
+    await page.reload({ waitUntil: 'networkidle' })          // now the worker serves the page
+    await open(page, '/tuner')                                // fetched once while online
+    await open(page, '/')
+    await context.setOffline(true)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.locator('#view-title')).not.toBeEmpty()
+    await page.evaluate(() => { location.hash = '#/tuner' })
+    await expect(page.locator('#view-tuner, .tuner-strings-grid').first()).toBeVisible()
+    await context.setOffline(false)
+  })
+
+  test('backup: export, change, import back', async ({ page }) => {
+    await open(page, '/progress')
+    await page.evaluate(() => { localStorage.setItem('jv_snapshots', JSON.stringify([{ id: 'a', label: 'Saved', date: '', state: { root: 'C', scaleName: 'Dorico (m7)' } }])) })
+    const [download] = await Promise.all([page.waitForEvent('download'), page.locator('.pg-backup button').first().click()])
+    const file = await download.path()
+    await page.evaluate(() => localStorage.setItem('jv_snapshots', '[]'))
+    await page.locator('.pg-backup input[type=file]').setInputFiles(file)
+    await page.locator('.th-ok').click()
+    await page.waitForEvent('load')
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('jv_snapshots'))[0].label)).toBe('Saved')
+  })
+
+  test('the screen stays on while the metronome plays', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__lock = { asked: 0, released: 0 }
+      Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request: async () => { window.__lock.asked++; return { release: async () => { window.__lock.released++ }, addEventListener() {} } } } })
+    })
+    await open(page, '/groove-trainer')
+    const play = page.locator('.jd-tbtn--play').first()
+    await play.click()
+    await expect.poll(() => page.evaluate(() => window.__lock.asked)).toBe(1)
+    await page.locator('.jd-tbtn--stop, .jd-tbtn--play').first().click()
+    await expect.poll(() => page.evaluate(() => window.__lock.released)).toBe(1)
+  })
+})
