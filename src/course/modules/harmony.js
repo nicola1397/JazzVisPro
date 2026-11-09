@@ -263,7 +263,7 @@ export default {
             diagram: { from: 5, to: 13, focus: [4, 5], toggle: false, play: 'seq', dots: [rootDot(5, 10, 'ii'), rootDot(4, 10, 'V'), { ...rootDot(5, 8, 'I'), color: AMBER }] } },
         ] },
         { type: 'find', title: T('Le fondamentali in ordine', 'The roots in order'), rounds: 5, make: iiVIRootsTask() },
-        { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'guide' } }, it: 'Poi: Sui Cambi → Note guida', en: 'Then: Over the Changes → Guide tones' },
+        { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'guide' } }, it: 'Poi: Sui cambi → Note guida', en: 'Then: Over the Changes → Guide tones' },
       ],
     },
 
@@ -300,7 +300,7 @@ export default {
             ['Minor:', 'ii (soft, sets up the V), iii (close to the tonic, suspended), vi (wistful, the relative minor).'],
           ] },
         { type: 'quiz', title: T('Che grado è l\'accordo?', 'Which degree is the chord?'), need: 6, make: earChordDrill() },
-        { type: 'practice', to: '/functional-harmony', it: 'Continua con: Armonia Funzionale', en: 'Go on with: Functional Harmony' },
+        { type: 'practice', to: '/functional-harmony', it: 'Continua con: Armonia funzionale', en: 'Go on with: Functional Harmony' },
       ],
     },
 

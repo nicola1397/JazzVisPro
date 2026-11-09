@@ -361,7 +361,7 @@ export default {
           'Melodies are degrees in a row. After the cadence listen to three notes and recognise the degrees; then play them on the neck from the tonic marked. It is the bridge between ear and hands: what you hear, you find.'),
         { type: 'quiz', title: T('Che melodia è?', 'Which melody is it?'), need: 5, make: motifQuiz() },
         { type: 'find', title: T('Suonala sul manico', 'Play it on the neck'), rounds: 4, make: motifOnNeck() },
-        { type: 'practice', to: '/ear-playback', it: 'Continua con: Ripeti a Orecchio', en: 'Go on with: Play It Back' },
+        { type: 'practice', to: '/ear-playback', it: 'Continua con: Ripeti a orecchio', en: 'Go on with: Play It Back' },
       ],
     },
 
@@ -373,7 +373,7 @@ export default {
           'Theory, neck and ear mixed: the proof that degrees have become a way of thinking.'),
         { type: 'speed', title: T('Gradi, tutto mescolato', 'Degrees, all mixed'), count: 18, levels: [6, 4, 2.5],
           make: (() => { const a = degreeInKeyDrill(), b = flashDegreeDrill(), c = earDegreeDrill(); const n = bag([0, 1, 2]); return i => [a, b, c][n()](i) })() },
-        { type: 'practice', to: '/grade-learner', it: 'Continua con: Grade Learner', en: 'Go on with: Grade Learner' },
+        { type: 'practice', to: '/grade-learner', it: 'Continua con: Trova il grado', en: 'Go on with: Scale Degrees' },
         { type: 'practice', to: '/interval-ear-training', it: 'Allena l\'orecchio: Intervalli a orecchio', en: 'Train your ear: Interval ear training' },
       ],
     },

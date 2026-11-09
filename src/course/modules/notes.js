@@ -281,7 +281,7 @@ export default {
               targets: positionsOf(pc, 0, 11).map(({ s, f }) => plainDot(s, f, { color: RED, label: pretty(name) })),
             }
           } },
-        { type: 'practice', to: '/note-finder', it: 'Continua con: Note Finder (tutto il manico, a tempo libero)', en: 'Go on with: Note Finder (the whole neck, at your own pace)' },
+        { type: 'practice', to: '/note-finder', it: 'Continua con: Trova la nota (tutto il manico, a tempo libero)', en: 'Go on with: Note Finder (the whole neck, at your own pace)' },
       ],
     },
   ],

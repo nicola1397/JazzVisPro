@@ -34,7 +34,7 @@ export const JAZZ_LESSONS = [
         it: 'le note fuori dall\'accordo vanno sui tempi deboli (gli "e"), le note dell\'accordo sui tempi forti. Così il cromatismo suona voluto.',
         en: 'put the notes outside the chord on the off-beats (the "ands") and the chord tones on the strong beats. That way chromaticism sounds intended.' },
       { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'approach' } },
-        it: 'Allenati: Sui Cambi → Note di approccio', en: 'Practise: Over the Changes → Approach notes' },
+        it: 'Allenati: Sui cambi → Note di approccio', en: 'Practise: Over the Changes → Approach notes' },
     ],
   },
   {
@@ -62,7 +62,7 @@ export const JAZZ_LESSONS = [
         it: 'scendendo da G sul tempo, sui tempi forti cadono G, F, D e B: le note di G7. Se parti da una nota fuori accordo, aggiungi un altro cromatismo per rimettere la linea a posto.',
         en: 'coming down from G on the beat, G, F, D and B land on the beats: the notes of G7. If you start on a note outside the chord, add another chromatic note to put the line back in place.' },
       { type: 'practice', to: '/scale-tempo',
-        it: 'Allenati: Scale a Tempo (scegli una scala Bebop, a crome)', en: 'Practise: Scales in Time (pick a Bebop scale, eighth notes)' },
+        it: 'Allenati: Scale a tempo (scegli una scala Bebop, a crome)', en: 'Practise: Scales in Time (pick a Bebop scale, eighth notes)' },
     ],
   },
   {
@@ -123,7 +123,7 @@ export const JAZZ_LESSONS = [
         it: 'muovi i voicing per la nota più vicina. Da Dm7 a G7 spesso basta abbassare di un semitono la settima di Dm7 (C) per avere la terza di G7 (B).',
         en: 'move voicings to the nearest note. From Dm7 to G7 it is often enough to lower the seventh of Dm7 (C) by a semitone to get the third of G7 (B).' },
       { type: 'practice', to: '/seventh-trainer',
-        it: 'Allenati: Settime e Drop', en: 'Practise: Sevenths & Drop' },
+        it: 'Allenati: Settime e drop', en: 'Practise: Sevenths & Drop' },
     ],
   },
   {
@@ -152,7 +152,7 @@ export const JAZZ_LESSONS = [
         it: 'conta a gruppi di quattro battute e impara bene l\'accordo che porta al bridge: è il punto dove ci si perde più spesso.',
         en: 'count in groups of four bars and learn the chord leading into the bridge well: that is where people get lost most often.' },
       { type: 'practice', to: { path: '/changes-trainer', query: { song: 'Jazz Blues in F', mode: 'guide' } },
-        it: 'Allenati: Sui Cambi → Jazz Blues in F', en: 'Practise: Over the Changes → Jazz Blues in F' },
+        it: 'Allenati: Sui cambi → Jazz Blues in F', en: 'Practise: Over the Changes → Jazz Blues in F' },
     ],
   },
   {
@@ -180,7 +180,7 @@ export const JAZZ_LESSONS = [
         it: 'una formula alla volta, per una settimana, su tutti i brani che suoni. Poi passa alla successiva.',
         en: 'one figure at a time, for a week, on every tune you play. Then move on to the next.' },
       { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'free' } },
-        it: 'Allenati: Sui Cambi → Assolo libero (l\'analisi mostra quante tensioni usi)', en: 'Practise: Over the Changes → Free solo (the analysis shows how many tensions you use)' },
+        it: 'Allenati: Sui cambi → Assolo libero (l\'analisi mostra quante tensioni usi)', en: 'Practise: Over the Changes → Free solo (the analysis shows how many tensions you use)' },
     ],
   },
   {
@@ -210,7 +210,7 @@ export const JAZZ_LESSONS = [
         it: 'imposta il metronomo a metà velocità e senti i click come 2 e 4: a 60 bpm sono il 2 e il 4 di un brano a 120.',
         en: 'set the metronome to half speed and hear the clicks as 2 and 4: at 60 bpm they are beats 2 and 4 of a tune at 120.' },
       { type: 'practice', to: '/groove-trainer',
-        it: 'Allenati: Groove Trainer', en: 'Practise: Groove Trainer' },
+        it: 'Allenati: Metronomo e groove', en: 'Practise: Metronome & Groove' },
     ],
   },
   {
@@ -239,7 +239,7 @@ export const JAZZ_LESSONS = [
       { type: 'example', chart: '| Cmaj7 A7 | Dm7 G7 | Em7 A7 | Dm7 G7 |', play: true },
       { type: 'example', chart: '| Cmaj7 | C#dim7 | Dm7 | G7 |', play: true },
       { type: 'practice', to: '/reharmonizer',
-        it: 'Prova: Reharmonizer', en: 'Try it: Reharmonizer' },
+        it: 'Prova: Riarmonizzazione', en: 'Try it: Reharmonizer' },
     ],
   },
 ]

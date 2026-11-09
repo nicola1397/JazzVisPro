@@ -255,7 +255,7 @@ export default {
         P('Ora a tempo, con tutti gli intervalli dalla seconda minore all\'ottava, sulla stessa corda, sulla corda vicina e due corde sopra. L\'obiettivo è riconoscere la forma prima di contare i tasti.',
           'Now against the clock, with every interval from the minor second to the octave, on the same string, the next string and two strings up. The goal is to recognise the shape before counting frets.'),
         { type: 'speed', title: T('Che intervallo è?', 'Which interval is it?'), count: 15, levels: [5, 3, 2], make: intervalSpeedDrill() },
-        { type: 'practice', to: '/interval-learner', it: 'Continua con: Interval Learner', en: 'Go on with: Interval Learner' },
+        { type: 'practice', to: '/interval-learner', it: 'Continua con: Trova l\'intervallo', en: 'Go on with: Interval Finder' },
         { type: 'practice', to: '/interval-ear-training', it: 'Allena l\'orecchio: Intervalli a orecchio', en: 'Train your ear: Interval ear training' },
       ],
     },

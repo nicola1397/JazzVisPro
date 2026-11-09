@@ -221,7 +221,7 @@ export default {
           en: 'three minutes a day of this drill, until gold feels easy. Then once a week to keep it.' },
         { type: 'speed', title: T('Il manico, tutto mescolato', 'The neck, all mixed'), count: 20, levels: [5, 3, 2], guitar: true,
           make: mix([markerDrill, columnDrill(), findNoteDrill(), anyFretDrill]) },
-        { type: 'practice', to: '/note-finder', it: 'Continua con: Note Finder (prova la modalità Riferimento)', en: 'Go on with: Note Finder (try the Reference mode)' },
+        { type: 'practice', to: '/note-finder', it: 'Continua con: Trova la nota (prova la modalità Riferimento)', en: 'Go on with: Note Finder (try the Reference mode)' },
       ],
     },
   ],

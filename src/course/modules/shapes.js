@@ -278,7 +278,7 @@ export default {
               targets: coloured(a.dots.filter(d => guide.has(d.semi))),
             }
           } },
-        { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'guide' } }, it: 'Allenati: Sui Cambi → Note guida', en: 'Practise: Over the Changes → Guide tones' },
+        { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'guide' } }, it: 'Allenati: Sui cambi → Note guida', en: 'Practise: Over the Changes → Guide tones' },
       ],
     },
 
@@ -303,7 +303,7 @@ export default {
               explain: T(`Box ${n + 1}: forma di ${PENTA_SHAPE[n]} minore.`, `Box ${n + 1}: minor ${PENTA_SHAPE[n]} shape.`),
             }
           } },
-        { type: 'practice', to: '/scale-tempo', it: 'Allenati: Scale a Tempo (Minore Pentatonica)', en: 'Practise: Scales in Time (Minor Pentatonic)' },
+        { type: 'practice', to: '/scale-tempo', it: 'Allenati: Scale a tempo (Minore Pentatonica)', en: 'Practise: Scales in Time (Minor Pentatonic)' },
       ],
     },
 
@@ -342,8 +342,8 @@ export default {
               mode: 'one',
             }
           } },
-        { type: 'practice', to: '/explorer', it: 'Esplora: Explorer (scala, forma CAGED, solo arpeggio)', en: 'Explore: Explorer (scale, CAGED shape, arpeggio only)' },
-        { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'arpeggio' } }, it: 'Allenati: Sui Cambi → Arpeggi', en: 'Practise: Over the Changes → Arpeggios' },
+        { type: 'practice', to: '/explorer', it: 'Prova in Esplora scale (scala, forma CAGED, solo arpeggio)', en: 'Explore: Scale Explorer (scale, CAGED shape, arpeggio only)' },
+        { type: 'practice', to: { path: '/changes-trainer', query: { mode: 'arpeggio' } }, it: 'Allenati: Sui cambi → Arpeggi', en: 'Practise: Over the Changes → Arpeggios' },
       ],
     },
   ],
