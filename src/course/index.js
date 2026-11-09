@@ -1,11 +1,17 @@
 // The guided path: modules in the order they are meant to be studied.
 import notes from './modules/notes.js'
+import landmarks from './modules/landmarks.js'
 import intervals from './modules/intervals.js'
+import degrees from './modules/degrees.js'
 import caged from './modules/caged.js'
 import shapes from './modules/shapes.js'
 import triads from './modules/triads.js'
+import harmony from './modules/harmony.js'
+import routine from './modules/routine.js'
 
-export const COURSE = [notes, intervals, caged, shapes, triads]
+// Notes and landmarks, then distances (intervals, degrees), then shapes (CAGED, their
+// arpeggios and scales, triads), harmony, and the daily practice that fixes it all.
+export const COURSE = [notes, landmarks, intervals, degrees, caged, shapes, triads, harmony, routine]
 
 export const moduleById = id => COURSE.find(m => m.id === id)
 

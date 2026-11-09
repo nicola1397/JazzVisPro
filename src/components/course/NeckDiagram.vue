@@ -20,7 +20,7 @@
       <svg
         class="nd-svg"
         :viewBox="`0 0 ${W} ${H}`"
-        :style="{ minWidth: minWidth + 'px', maxWidth: maxWidth + 'px' }"
+        :style="{ minWidth: fit ? 0 : minWidth + 'px', maxWidth: maxWidth + 'px' }"
         role="img"
         :aria-label="ariaLabel"
       >
@@ -169,6 +169,7 @@ const props = defineProps({
   play:      { type: String, default: '' },         // arp | updown | chord | seq
   caption:   { type: String, default: '' },
   openMidi:  { type: Array, default: () => OPEN_MIDI },  // pitch of each open string, s = 0 … 5
+  fit:       { type: Boolean, default: false },          // always fit the width (no sideways scroll)
 })
 const emit = defineEmits(['pick'])
 

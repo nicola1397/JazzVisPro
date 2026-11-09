@@ -9,10 +9,36 @@ const saved = readStorage(STORAGE_KEY, {}) || {}
 const state = reactive({
   done: saved.done && typeof saved.done === 'object' ? saved.done : {},
   last: saved.last && typeof saved.last === 'object' ? saved.last : {},
+  // Best result of each timed drill: { level (1 bronze … 3 gold), avg (ms), acc (0-1) }
+  medals: saved.medals && typeof saved.medals === 'object' ? saved.medals : {},
 })
 
 function save() {
-  writeStorage(STORAGE_KEY, { done: state.done, last: state.last })
+  writeStorage(STORAGE_KEY, { done: state.done, last: state.last, medals: state.medals })
+}
+
+export function getMedal(key) {
+  return state.medals[key] || null
+}
+
+// Keeps the best: a higher level, or the same level with a lower average time.
+export function setMedal(key, level, avg, acc) {
+  const old = state.medals[key]
+  if (old && (old.level > level || (old.level === level && old.avg <= avg))) return
+  state.medals[key] = { level, avg: Math.round(avg), acc: Math.round(acc * 100) / 100 }
+  save()
+}
+
+// Medals won in a module: { gold, silver, bronze } counts and the drills available.
+export function moduleMedals(module) {
+  const out = { 1: 0, 2: 0, 3: 0, total: 0 }
+  module.steps.forEach(step => step.blocks.forEach((b, bi) => {
+    if (b.type !== 'speed') return
+    out.total++
+    const m = state.medals[`${module.id}:${step.id}:${bi}`]
+    if (m) out[m.level]++
+  }))
+  return out
 }
 
 export function isStepDone(moduleId, stepId) {

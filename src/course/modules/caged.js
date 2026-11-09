@@ -83,7 +83,7 @@ function buildShapeTask(shapes, quality = 'major') {
 }
 
 // "Which shape is it?" with the grip or the arpeggio box of a random key.
-function whichShapeQuiz(qualities = ['major']) {
+export function whichShapeQuiz(qualities = ['major']) {
   const nextShape = bag(CAGED_ORDER)
   return (i, prev) => {
     const shape = nextShape()
@@ -99,6 +99,7 @@ function whichShapeQuiz(qualities = ['major']) {
       diagram: { from: Math.max(0, g.p - 2), to: g.p + 5, dots: coloured(g.dots), muted: g.muted, barre: g.barre, labels: 'degree', labelsAfter: 'degree', play: 'chord' },
       options: CAGED_ORDER.map(x => ({ label: x, ok: x === shape })),
       explain: T(`Forma di ${shape} di ${name}: ${where.it}, ${way.it}.`, `${shape} shape of ${name}: ${where.en}, ${way.en}.`),
+      review: T(`forma di <strong>${shape}</strong> di ${name}`, `<strong>${shape}</strong> shape of ${name}`),
     }
   }
 }
@@ -380,6 +381,16 @@ export default {
         P('Ripasso finale: ti viene mostrato un accordo in una tonalità a caso, maggiore o minore. Riconosci la forma guardando dove stanno le fondamentali e da che parte si sviluppa la forma.',
           'Final review: you are shown a chord in a random key, major or minor. Recognise the shape by looking at where the roots are and which way the shape develops.'),
         { type: 'quiz', title: T('Che forma è?', 'Which shape is it?'), need: 8, make: whichShapeQuiz(['major', 'major', 'minor']) },
+      ],
+    },
+
+    {
+      id: 'speed',
+      title: T('Forme lampo', 'Flash shapes'),
+      blocks: [
+        P('Le forme a tempo: guarda dove sta la fondamentale più grave e da che parte va la forma, e rispondi. Quando arrivi all\'oro, vedi la forma intera invece delle singole note.',
+          'The shapes against the clock: look at where the lowest root is and which way the shape goes, and answer. When you reach gold, you see the whole shape instead of single notes.'),
+        { type: 'speed', title: T('Che forma è?', 'Which shape is it?'), count: 15, levels: [5, 3, 2], make: whichShapeQuiz(['major', 'major', 'minor']) },
         { type: 'practice', to: '/explorer', it: 'Esplora: Explorer con il menu "Forma CAGED" nella barra laterale', en: 'Explore: the Explorer with the "CAGED shape" menu in the sidebar' },
         { type: 'practice', to: '/triad-trainer', it: 'Continua con: Triadi e Rivolti', en: 'Go on with: Triads and Inversions' },
       ],

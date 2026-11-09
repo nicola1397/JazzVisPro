@@ -3,6 +3,7 @@
 import {
   pcAt, midiAt, mod12, isNatural, neutralName, sharpName, flatName, keyPc, keyDot, colorOf,
   positionsOf, CAGED, CAGED_ORDER, shapePosition, cagedGrip, cagedArpeggio, TRIAD, KEY_NAMES,
+  nameInKey, pretty, shuffle, bag,
 } from './theory.js'
 
 export const T = (it, en) => ({ it, en })
@@ -109,3 +110,74 @@ export function shapesUpTheNeck(key, intervals = TRIAD.major, maxFret = 15) {
 }
 
 export { cagedGrip, CAGED, CAGED_ORDER, shapePosition, TRIAD, KEY_NAMES, positionsOf, midiAt }
+
+// ── Answer pads for the timed drills ───────────────────────────────────────────
+
+// The twelve notes as a small piano keyboard: naturals answer with their letter key too.
+export function noteKeyboard(correctPc) {
+  return {
+    layout: 'piano',
+    options: Array.from({ length: 12 }, (_, pc) => ({
+      pc,
+      ok: pc === mod12(correctPc),
+      label: isNatural(pc) ? neutralName(pc) : `${pretty(sharpName(pc))}\n${pretty(flatName(pc))}`,
+      hotkey: isNatural(pc) ? neutralName(pc).toLowerCase() : undefined,
+    })),
+  }
+}
+
+// Buttons 1-7 in order, so the number keys answer with the degree itself.
+export const degreeOptions = correct => [1, 2, 3, 4, 5, 6, 7].map(n => ({ label: String(n), ok: n === correct }))
+
+// The twelve degrees in chromatic order.
+export const DEG_CHROMATIC = ['1', 'b2', '2', 'b3', '3', '4', '#4/b5', '5', 'b6', '6', 'b7', '7']
+export const chromaticOptions = semi => DEG_CHROMATIC.map((label, i) => ({ label, ok: i === mod12(semi) }))
+
+// ── The major scale and its chords ─────────────────────────────────────────────
+
+export const MAJOR = [0, 2, 4, 5, 7, 9, 11]
+export const DEGREE_NAMES = {
+  it: ['tonica', 'sopratonica', 'mediante', 'sottodominante', 'dominante', 'sopradominante', 'sensibile'],
+  en: ['tonic', 'supertonic', 'mediant', 'subdominant', 'dominant', 'submediant', 'leading tone'],
+}
+// Name of degree d (0-6) of a major key, spelled with one letter per degree.
+export const degreeNote = (key, d) => nameInKey(key, MAJOR[d], d)
+export const scaleNotes = key => MAJOR.map((_, d) => degreeNote(key, d))
+
+// Keys used in the theory drills: every major key but F♯/G♭, whose spellings (E♯, C♭) come later.
+export const DRILL_KEYS = ['C', 'G', 'D', 'A', 'E', 'B', 'F', 'Bb', 'Eb', 'Ab', 'Db']
+
+export const DIATONIC = {
+  triad:   ['', 'm', 'm', '', '', 'm', 'dim'],
+  seventh: ['maj7', 'm7', 'm7', 'maj7', '7', 'm7', 'm7b5'],
+  roman:   ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'],
+  roman7:  ['Imaj7', 'ii7', 'iii7', 'IVmaj7', 'V7', 'vi7', 'viiø7'],
+  quality: ['major', 'minor', 'minor', 'major', 'major', 'minor', 'dim'],
+  // T tonic, S subdominant, D dominant
+  fn:      ['T', 'S', 'T', 'S', 'D', 'T', 'D'],
+}
+export const diatonicChord = (key, d, seventh = true) => degreeNote(key, d) + (seventh ? DIATONIC.seventh[d] : DIATONIC.triad[d])
+
+// The cycle of fourths, the order of keys in most jazz progressions.
+export const FOURTHS = ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'B', 'E', 'A', 'D', 'G']
+
+// ── Mixing drills ──────────────────────────────────────────────────────────────
+
+// A round maker that takes turns among other makers (interleaved practice).
+export function mix(makers) {
+  const next = bag(makers.map((_, i) => i))
+  const prevs = new Map()
+  return i => {
+    const k = next()
+    const r = makers[k](i, prevs.get(k))
+    prevs.set(k, r)
+    return r
+  }
+}
+
+// Options made of the right answer and distinct wrong ones, shuffled.
+export function choices(right, wrongs, n = 4) {
+  const seen = new Set([right])
+  const pool = shuffle(wrongs).filter(w => !seen.has(w) && seen.add(w)).slice(0, n - 1)
+  return shuffle([right, ...pool]).map(x => ({ label: x, ok: x === right }))
+}

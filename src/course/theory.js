@@ -124,7 +124,7 @@ export const CAGED = {
 // Fingers: `open` for the chord at the nut (0 = open string), `moved` for the
 // movable form (1 = index on the fret the nut becomes, often as a barre).
 
-export const TRIAD = { major: [0, 4, 7], minor: [0, 3, 7] }
+export const TRIAD = { major: [0, 4, 7], minor: [0, 3, 7], dim: [0, 3, 6] }
 
 // Fret the open form moves to for a key. `minFret` lets a caller ask for the copy
 // higher up the neck (e.g. the C shape of C at 12 instead of 0).

@@ -45,6 +45,31 @@ function intervalTask(fromStrings, offset, semis) {
   }
 }
 
+// Two notes on the neck, name the interval: the twelve intervals in a fixed order.
+const SPEED_LABELS = ['b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7', '8']
+export function intervalSpeedDrill() {
+  const nextSemi = bag([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 3, 4, 7, 10, 11])
+  return () => {
+    const semi = nextSemi()
+    for (let tries = 0; tries < 80; tries++) {
+      const s = pick([5, 4, 3, 2, 1])
+      const s2 = s - pick([0, 1, 2].filter(o => s - o >= 0))
+      const f = 1 + Math.floor(Math.random() * 10)
+      const f2 = fretFor(s, f, s2, semi)
+      if (f2 < 0 || f2 > 15) continue
+      return {
+        key: `iv-speed:${semi}`,
+        prompt: T('Che intervallo c\'è sopra la fondamentale (R)?', 'What interval is there above the root (R)?'),
+        review: T(`<strong>${SPEED_LABELS[semi - 1]}</strong> (${INTERVAL_NAMES.it[semi]})`, `<strong>${SPEED_LABELS[semi - 1]}</strong> (${INTERVAL_NAMES.en[semi]})`),
+        diagram: { from: Math.max(0, Math.min(f, f2) - 2), to: Math.min(17, Math.max(f, f2) + 2), focus: [s, s2], labels: 'none',
+          dots: [rootDot(s, f), { ...ivDot(s2, f2, semi), color: '#FFD60A', label: '' }] },
+        options: SPEED_LABELS.map((label, i) => ({ label, ok: i + 1 === semi })),
+        noHotkeys: true,
+      }
+    }
+  }
+}
+
 export default {
   id: 'intervals',
   title: T('Gli intervalli sul manico', 'Intervals on the neck'),
@@ -220,6 +245,16 @@ export default {
               }
             }
           } },
+      ],
+    },
+
+    {
+      id: 'speed',
+      title: T('Intervalli lampo', 'Flash intervals'),
+      blocks: [
+        P('Ora a tempo, con tutti gli intervalli dalla seconda minore all\'ottava, sulla stessa corda, sulla corda vicina e due corde sopra. L\'obiettivo è riconoscere la forma prima di contare i tasti.',
+          'Now against the clock, with every interval from the minor second to the octave, on the same string, the next string and two strings up. The goal is to recognise the shape before counting frets.'),
+        { type: 'speed', title: T('Che intervallo è?', 'Which interval is it?'), count: 15, levels: [5, 3, 2], make: intervalSpeedDrill() },
         { type: 'practice', to: '/interval-learner', it: 'Continua con: Interval Learner', en: 'Go on with: Interval Learner' },
         { type: 'practice', to: '/interval-ear-training', it: 'Allena l\'orecchio: Intervalli a orecchio', en: 'Train your ear: Interval ear training' },
       ],

@@ -494,7 +494,7 @@ export default {
   'cr.task-done':'Exercise complete','cr.right':'Right!','cr.solved':'Perfect!','cr.solved-errors':'Done (mistakes: {n}).',
   'cr.shown':'Here is the answer: this round does not count.','cr.wrong':'No, it was:',
   'cr.wrong-at':'No: string {s}, fret {f} is {n}','cr.octave-off':'Right note, but in another octave.','cr.wrong-played':'You played {n}: it is not one of the notes asked for.',
-  'cr.before':'If you are starting from scratch, begin with the introductory lessons:','cr.after-lessons-kicker':'After the lessons','cr.after-lessons':'Five long modules that go step by step through the notes over the whole neck, intervals, every CAGED shape and how to use it (arpeggios, scales, sevenths, guide tones, pentatonic) and triads on every string set.',
+  'cr.before':'If you are starting from scratch, begin with the introductory lessons:','cr.after-lessons-kicker':'After the lessons','cr.after-lessons':'Nine long modules, step by step: notes and landmarks over the whole neck, intervals, scale degrees (by ear too), every CAGED shape and how to use it, triads, the chords of the scale and a daily routine with timed drills.',
   'cr.theory-link':'Study CAGED step by step in the Guided path',
   // Chord Finder on the neck
   'cf.mode':'Mode','cf.mode-notes':'Notes','cf.mode-neck':'On the neck',
@@ -508,4 +508,14 @@ export default {
   'cf.in-bass':'in the bass','cf.rootless':'rootless','cf.without':'no',
   'cf.voicings':'Other fingerings of {0}','cf.load-voicing':'Click to put it on the neck','cf.yours':'Yours',
   'cf.loading':'Loading fingerings...','cf.no-voicings':'No voicings available.','cf.no-chord':'No chord found.',
+  // Guided path: flash drills, memory and ear
+  'cr.speed':'Flash','cr.memory':'Memory','cr.memorize':'Memorise…','cr.peek':'Look again','cr.listen-again':'Listen again',
+  'cr.medal-1':'Bronze','cr.medal-2':'Silver','cr.medal-3':'Gold','cr.level':'Level','cr.levels':'Levels','cr.locked':'pass the level before',
+  'cr.speed-how':'{n} timed questions. You pass the level with at least {p}% right and an average time under the target. Wrong or slow answers come back soon after.',
+  'cr.speed-start':'Go','cr.best':'Best','cr.next-level':'Next level',
+  'cr.level-passed':'{m} won!','cr.level-failed':'Not yet',
+  'cr.accuracy':'right','cr.avg-time':'average time','cr.target':'target',
+  'cr.need-accuracy':'You need at least {p}% right: slow down a little and try again.','cr.need-speed':'Accuracy is fine: now a little more speed.',
+  'cr.to-review':'To review','cr.right-slow':'Right, but slow','cr.wrong-short':'No',
+  'cr.medals':'Flash',
 }

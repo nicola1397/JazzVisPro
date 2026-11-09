@@ -18,14 +18,24 @@ Il progetto mira a colmare il divario tra la teoria musicale e la pratica sullo 
 - **Orientarsi sul manico**: Otto lezioni in ordine (corde e tasti, note naturali sulle corde basse, diesis e bemolle, forme d'ottava, note su tutte le corde, intervalli come forme, triadi sulle corde acute con i tre rivolti, sistema CAGED). Ogni lezione alterna spiegazioni con le note segnate sul manico, dimostrazioni da rifare (il manico suona e mostra una sequenza, poi la ripeti cliccando o suonando la chitarra, con la nota giusta che lampeggia dopo due errori) ed esercizi con suggerimenti, superati con il 70% di risposte giuste. I progressi restano nel browser e le risposte compaiono anche in Progressi.
 
 ### 🪜 Percorso guidato
-Il passo intermedio tra le Lezioni guidate (introduttive) e gli esercizi avanzati: cinque moduli lunghi, da seguire in ordine (39 passi), che costruiscono la conoscenza del manico un pezzo alla volta. Ogni passo spiega un concetto, lo mostra su un manico interattivo (con il suono, e con etichette commutabili tra note, gradi e dita) e lo fa provare subito con un esercizio: trovare le note sul manico (anche suonando la chitarra collegata) o un quiz. I passi completati restano salvati e le risposte compaiono in Progressi.
-- **Le note sul manico**: alfabeto e semitoni, 6ª e 5ª corda, diesis e bemolle, ottave, la corda di B, le corde centrali, una nota in tutte le posizioni.
-- **Gli intervalli sul manico**: il righello sulla stessa corda, corda vicina, due corde sopra, la mappa attorno alla fondamentale, riconoscere gli intervalli.
-- **Il sistema CAGED**: i cinque accordi aperti, le forme di E, A, C, G e D una per una (costruiscile in ogni tonalità), come si incastrano lungo il manico, come trovarle, le forme minori.
-- **Usare le forme**: arpeggi nelle cinque forme, la scala maggiore attorno a ogni forma, le settime (maj7, 7, m7), le note guida del II-V-I in una posizione, i box della pentatonica e le forme minori.
-- **Triadi sui gruppi di corde**: rivolti lungo il manico sulle corde 1-2-3, 2-3-4, 3-4-5 e 4-5-6, triadi minori, triadi dentro le forme CAGED.
+Il passo intermedio tra le Lezioni guidate (introduttive) e gli esercizi avanzati: nove moduli lunghi, da seguire in ordine (69 passi), che costruiscono la conoscenza del manico un pezzo alla volta e la rendono automatica. Ogni passo spiega un concetto, lo mostra su un manico interattivo (con il suono, e con etichette commutabili tra note, gradi e dita) e lo fa provare subito. Gli esercizi sono di quattro tipi:
+- **Trova sul manico** (cliccando o suonando la chitarra collegata) e **quiz**.
+- **Lampo**: domande a tempo in tre livelli (bronzo, argento, oro), con una tastiera delle dodici note o i tasti 1-7 per rispondere; le risposte sbagliate o lente tornano poche domande dopo. Il bronzo spunta il passo, l'oro dice che è diventato automatico.
+- **Memoria**: le posizioni restano accese per pochi secondi, poi vanno ricostruite a memoria.
+- **Orecchio**: una cadenza I-IV-V-I fissa la tonalità, poi si riconosce il grado di una nota, una piccola melodia o un accordo, e la melodia si suona sul manico.
 
-Ogni modulo finisce con i collegamenti agli esercizi avanzati (Note Finder, Interval Learner, Explorer, Triadi e Rivolti, Sui Cambi, Scale a Tempo).
+I moduli:
+- **Le note sul manico**: alfabeto e semitoni, 6ª e 5ª corda, diesis e bemolle, ottave, la corda di B, le corde centrali, una nota in tutte le posizioni.
+- **Punti di riferimento**: ogni tasto è vicino a un pallino; i tasti 5 e 7 come corde a vuoto spostate, le colonne che salgono per quarte, le note dei pallini, la navigazione dal pallino alla nota, la fotografia del manico.
+- **Gli intervalli sul manico**: stessa corda, corda vicina, due corde sopra, la mappa attorno alla fondamentale, intervalli lampo.
+- **I gradi della scala**: il ruolo di ogni grado, i gradi in tutte le tonalità con i trucchi per ricordarli, la mappa dei gradi attorno alla fondamentale, gradi lampo, i gradi alterati e i modi, i gradi a orecchio e le piccole melodie.
+- **Il sistema CAGED**: le cinque forme una per una (costruiscile in ogni tonalità), come si incastrano lungo il manico, come trovarle, le forme minori, forme lampo.
+- **Usare le forme**: arpeggi e scala maggiore nelle cinque forme, le settime, le note guida del II-V-I in una posizione, i box della pentatonica.
+- **Triadi sui gruppi di corde**: i rivolti sulle corde 1-2-3, 2-3-4, 3-4-5 e 4-5-6, triadi minori, triadi dentro le forme CAGED, rivolti lampo.
+- **Gli accordi della scala**: triadi e settime su ogni grado, numeri romani, funzioni, il II-V-I sul manico e in tutte le tonalità, gli accordi a orecchio.
+- **Allenamento quotidiano**: come si fissa la memoria (poco e spesso, argomenti mescolati, mettersi alla prova), una routine settimanale, i ripassi misti di tutto il percorso, l'esame finale e cosa ripetere dopo con gli esercizi dell'app.
+
+I passi completati e le medaglie restano salvati; le risposte compaiono in Progressi.
 
 ### 🎹 Allenamento e Ear Training
 - **Ear Training (Accordi & Intervalli)**: Moduli per sviluppare l'orecchio riconoscendo qualità di accordi e distanze intervallari, con statistiche persistenti.

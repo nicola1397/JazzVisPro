@@ -13,6 +13,10 @@
       <p class="ct-prompt" v-html="L(round.prompt)"></p>
       <p v-if="round.hint" class="ct-hint" v-html="L(round.hint)"></p>
 
+      <div v-if="round.sound" class="ct-sound">
+        <button class="jd-toolbtn ct-listen" type="button" :disabled="playing" @click="playRound">▶ {{ t(heard ? 'cr.listen-again' : 'cr.listen') }}</button>
+      </div>
+
       <NeckDiagram v-if="round.diagram" v-bind="round.diagram" :toggle="answered ? round.diagram.toggle !== false : false" :labels="answered ? (round.diagram.labelsAfter || round.diagram.labels || 'note') : (round.diagram.labels || 'none')" />
 
       <div class="cq-options">
@@ -42,6 +46,8 @@ import { ref, computed, onUnmounted } from 'vue'
 import NeckDiagram from './NeckDiagram.vue'
 import { useI18n } from '../../composables/useI18n.js'
 import { usePracticeStore } from '../../stores/practice.js'
+import { useAudioStore } from '../../stores/audio.js'
+import { playSound } from '../../course/sound.js'
 
 const props = defineProps({
   spec:   { type: Object, required: true },   // { title?, need, make(i, prev) }
@@ -65,8 +71,25 @@ const status = ref('')
 const statusClass = ref('')
 let timer = null
 
+const audio = useAudioStore()
+const playing = ref(false)
+const heard = ref(false)
+let soundTimer = null
+
+// Rounds with a sound play it at once when the audio is already running (after the first click).
+async function playRound() {
+  if (!round.value?.sound) return
+  playing.value = true
+  const ms = await playSound(round.value.sound)
+  heard.value = true
+  clearTimeout(soundTimer)
+  soundTimer = setTimeout(() => { playing.value = false }, ms + 400)
+}
+
 function newRound() {
   round.value = props.spec.make(idx.value, round.value)
+  heard.value = false
+  if (round.value.sound && audio.isInitialized) playRound()
   answered.value = false
   chosen.value = -1
   status.value = ''
@@ -108,7 +131,7 @@ function restart() {
 }
 
 newRound()
-onUnmounted(() => clearTimeout(timer))
+onUnmounted(() => { clearTimeout(timer); clearTimeout(soundTimer) })
 </script>
 
 <style scoped>
@@ -134,6 +157,8 @@ onUnmounted(() => clearTimeout(timer))
 .ct-prompt { font-size: 1.02em; color: var(--jd-text); margin: 14px 0 2px; line-height: 1.5; }
 .ct-prompt :deep(strong) { color: var(--jd-amber); }
 .ct-hint { font-family: var(--jd-mono); font-size: 0.75em; color: var(--jd-muted); margin: 4px 0 0; line-height: 1.5; }
+.ct-sound { margin-top: 10px; }
+.ct-listen { color: var(--jd-amber); border-color: var(--jd-line-strong); }
 .cq-explain { text-align: center; color: var(--jd-text-soft); }
 .cq-options { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0 8px; }
 .cq-opt {

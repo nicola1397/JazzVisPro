@@ -30,6 +30,7 @@
 
       <TaskFind v-else-if="b.type === 'find'" :spec="b" item-id="course" :item-key="`${moduleId}:${step.id}`" @done="taskDone(bi)" />
       <TaskQuiz v-else-if="b.type === 'quiz'" :spec="b" item-id="course" :item-key="`${moduleId}:${step.id}`" @done="taskDone(bi)" />
+      <TaskSpeed v-else-if="b.type === 'speed'" :spec="b" item-id="course" :item-key="`${moduleId}:${step.id}`" :store-key="`${moduleId}:${step.id}:${bi}`" @done="taskDone(bi)" />
 
       <div v-else-if="b.type === 'chart'" class="prog-example cs-chart">
         <span>{{ b.chart }}</span>
@@ -48,6 +49,7 @@ import NeckDiagram from './NeckDiagram.vue'
 import CourseFrames from './CourseFrames.vue'
 import TaskFind from './TaskFind.vue'
 import TaskQuiz from './TaskQuiz.vue'
+import TaskSpeed from './TaskSpeed.vue'
 import { useI18n } from '../../composables/useI18n.js'
 import { usePlaybackStore } from '../../stores/playback.js'
 import { pretty } from '../../course/theory.js'
@@ -80,7 +82,9 @@ function framesOf(bi, b) {
 }
 
 // ── Tasks ──────────────────────────────────────────────────────────────────────
-const taskIdx = computed(() => props.step.blocks.map((b, i) => (['find', 'quiz'].includes(b.type) ? i : -1)).filter(i => i >= 0))
+// A step is done when all its exercises are; a timed drill counts once its first level is passed.
+const TASK_TYPES = ['find', 'quiz', 'speed']
+const taskIdx = computed(() => props.step.blocks.map((b, i) => (TASK_TYPES.includes(b.type) ? i : -1)).filter(i => i >= 0))
 const doneTasks = reactive(new Set())
 function taskDone(bi) {
   doneTasks.add(bi)

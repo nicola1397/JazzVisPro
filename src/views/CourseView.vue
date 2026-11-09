@@ -22,6 +22,10 @@
               <span class="cv-module-meta">
                 <span class="cv-bar" aria-hidden="true"><span class="cv-bar-fill" :style="{ width: pct(m) + '%' }"></span></span>
                 <span>{{ stepsDoneCount(m) }} / {{ m.steps.length }} {{ t('cr.steps') }}</span>
+                <span v-if="moduleMedals(m).total" class="cv-medals" :title="t('cr.medals')">
+                  ⚡ <span v-for="lv in [3, 2, 1]" :key="lv" v-show="moduleMedals(m)[lv]" class="cv-medal" :class="`cv-medal--${lv}`">{{ moduleMedals(m)[lv] }}</span>
+                  <span class="cv-medal-total">/ {{ moduleMedals(m).total }}</span>
+                </span>
               </span>
             </span>
             <span class="cv-module-cta">{{ ctaLabel(m) }} ▸</span>
@@ -94,7 +98,7 @@ import { useRoute, useRouter } from 'vue-router'
 import CourseStep from '../components/course/CourseStep.vue'
 import { useI18n } from '../composables/useI18n.js'
 import { COURSE, moduleById } from '../course/index.js'
-import { isStepDone, markStepDone, stepsDoneCount, setLastStep, lastStep, nextStepIndex, resetModule } from '../course/progress.js'
+import { isStepDone, markStepDone, stepsDoneCount, setLastStep, lastStep, nextStepIndex, resetModule, moduleMedals } from '../course/progress.js'
 
 const { t, lang } = useI18n()
 const route = useRoute()
@@ -111,7 +115,7 @@ const stepIndex = computed(() => {
   return Math.min(Math.max(n - 1, 0), mod.value.steps.length - 1)
 })
 const step = computed(() => mod.value?.steps[stepIndex.value])
-const hasTasks = computed(() => step.value?.blocks.some(b => b.type === 'find' || b.type === 'quiz'))
+const hasTasks = computed(() => step.value?.blocks.some(b => ['find', 'quiz', 'speed'].includes(b.type)))
 
 const pct = m => Math.round((stepsDoneCount(m) / m.steps.length) * 100)
 function ctaLabel(m) {
@@ -194,6 +198,13 @@ function restart() {
 .cv-module-meta { display: flex; align-items: center; gap: 10px; font-family: var(--jd-mono); font-size: 0.7em; letter-spacing: 1px; color: var(--jd-muted); text-transform: uppercase; margin-top: 4px; }
 .cv-bar { width: 140px; height: 5px; border-radius: 3px; background: #2a2620; overflow: hidden; }
 .cv-bar-fill { display: block; height: 100%; background: var(--jd-green); border-radius: 3px; transition: width 0.3s; }
+.cv-medals { display: inline-flex; align-items: center; gap: 6px; }
+.cv-medal { display: inline-flex; align-items: center; gap: 3px; }
+.cv-medal::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
+.cv-medal--1::before { background: #cd7f32; }
+.cv-medal--2::before { background: #c9ced6; }
+.cv-medal--3::before { background: var(--jd-amber); }
+.cv-medal-total { color: var(--jd-mute-deep); }
 .cv-module-cta { font-family: var(--jd-mono); font-size: 0.75em; letter-spacing: 1px; text-transform: uppercase; color: var(--jd-amber); white-space: nowrap; }
 .cv-how { max-width: 860px; }
 
@@ -234,7 +245,14 @@ function restart() {
 
 @media (max-width: 640px) {
   .cv-module-link { grid-template-columns: auto 1fr; padding: 14px 16px; gap: 12px; }
-  .cv-module-cta { grid-column: 2; }
+  .cv-medals { display: inline-flex; align-items: center; gap: 6px; }
+.cv-medal { display: inline-flex; align-items: center; gap: 3px; }
+.cv-medal::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
+.cv-medal--1::before { background: #cd7f32; }
+.cv-medal--2::before { background: #c9ced6; }
+.cv-medal--3::before { background: var(--jd-amber); }
+.cv-medal-total { color: var(--jd-mute-deep); }
+.cv-module-cta { grid-column: 2; }
   .cv-step { padding: 16px 14px 14px; }
   .cv-step-title { font-size: 1.55em; }
 }

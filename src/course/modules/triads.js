@@ -64,6 +64,27 @@ function findTriadTask(sets, qualities) {
   }
 }
 
+// "Which inversion is it?": a triad with its note names on three strings.
+export function inversionQuiz() {
+  return (i, prev) => {
+    const set = pick(['top', 'mid', 'low'])
+    const quality = pick(['major', 'major', 'minor'])
+    const key = pick(quality === 'minor' ? MINOR_KEYS : KEY_NAMES)
+    const vs = voicings(key, quality, set)
+    const v = pickNew(vs, prev?.v, (x, y) => y && x.inversion === y.inversion)
+    const lo = Math.min(...v.frets), hi = Math.max(...v.frets)
+    return {
+      v, key: `inv:${v.inversion}`,
+      prompt: T(`Ecco <strong>${chordName(key, quality)}</strong> sulle corde ${SET_LABEL[set]}. Che rivolto è?`, `Here is <strong>${chordName(key, quality)}</strong> on strings ${SET_LABEL[set]}. Which inversion is it?`),
+      hint: T('Trova la fondamentale: se è la nota più grave è lo stato fondamentale.', 'Find the root: if it is the lowest note, it is root position.'),
+      diagram: { from: Math.max(0, lo - 2), to: Math.min(15, hi + 2), labels: 'note', labelsAfter: 'degree', play: 'chord', focus: SETS[set], dots: coloured(v.dots).map(d => ({ ...d, color: '#ede8df' })) },
+      options: [0, 1, 2].map(k => ({ label: T(INV.it[k], INV.en[k]), ok: k === v.inversion })),
+      review: T(`${chordName(key, quality)}: <strong>${INV.it[v.inversion]}</strong>`, `${chordName(key, quality)}: <strong>${INV.en[v.inversion]}</strong>`),
+      explain: T(`Dal basso: ${v.dots.map(d => d.deg).join(' – ')}.`, `From the bottom: ${v.dots.map(d => d.deg).join(' – ')}.`),
+    }
+  }
+}
+
 export default {
   id: 'triads',
   title: T('Triadi sui gruppi di corde', 'Triads on string sets'),
@@ -181,23 +202,17 @@ export default {
               }
             })
           } },
-        { type: 'quiz', title: T('Che rivolto è?', 'Which inversion is it?'), need: 6,
-          make: (i, prev) => {
-            const set = pick(['top', 'mid', 'low'])
-            const quality = pick(['major', 'major', 'minor'])
-            const key = pick(quality === 'minor' ? MINOR_KEYS : KEY_NAMES)
-            const vs = voicings(key, quality, set)
-            const v = pickNew(vs, prev?.v, (x, y) => y && x.inversion === y.inversion)
-            const lo = Math.min(...v.frets), hi = Math.max(...v.frets)
-            return {
-              v, key: `inv:${v.inversion}`,
-              prompt: T(`Ecco <strong>${chordName(key, quality)}</strong> sulle corde ${SET_LABEL[set]}. Che rivolto è?`, `Here is <strong>${chordName(key, quality)}</strong> on strings ${SET_LABEL[set]}. Which inversion is it?`),
-              hint: T('Trova la fondamentale: se è la nota più grave è lo stato fondamentale.', 'Find the root: if it is the lowest note, it is root position.'),
-              diagram: { from: Math.max(0, lo - 2), to: Math.min(15, hi + 2), labels: 'note', labelsAfter: 'degree', play: 'chord', focus: SETS[set], dots: coloured(v.dots).map(d => ({ ...d, color: '#ede8df' })) },
-              options: [0, 1, 2].map(k => ({ label: T(INV.it[k], INV.en[k]), ok: k === v.inversion })),
-              explain: T(`Dal basso: ${v.dots.map(d => d.deg).join(' – ')}.`, `From the bottom: ${v.dots.map(d => d.deg).join(' – ')}.`),
-            }
-          } },
+        { type: 'quiz', title: T('Che rivolto è?', 'Which inversion is it?'), need: 6, make: inversionQuiz() },
+      ],
+    },
+
+    {
+      id: 'speed',
+      title: T('Rivolti lampo', 'Flash inversions'),
+      blocks: [
+        P('I rivolti a tempo, su tutti i gruppi di corde, maggiori e minori. Trova la fondamentale con gli occhi, non contando: è la nota che, sotto le dita, sai già chiamare.',
+          'Inversions against the clock, on every string set, major and minor. Find the root with your eyes, not by counting: it is the note you can already name under your fingers.'),
+        { type: 'speed', title: T('Che rivolto è?', 'Which inversion is it?'), count: 12, levels: [7, 4.5, 3], make: inversionQuiz() },
         { type: 'practice', to: '/triad-trainer', it: 'Continua con: Triadi e Rivolti', en: 'Go on with: Triads and Inversions' },
         { type: 'practice', to: '/seventh-trainer', it: 'Poi: Settime e Drop', en: 'Then: Sevenths and Drops' },
       ],

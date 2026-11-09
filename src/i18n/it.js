@@ -492,7 +492,7 @@ export default {
   'cr.task-done':'Esercizio completato','cr.right':'Giusto!','cr.solved':'Perfetto!','cr.solved-errors':'Fatto (errori: {n}).',
   'cr.shown':'Ecco la soluzione: questo round non conta.','cr.wrong':'No, era:',
   'cr.wrong-at':'No: {s}ª corda, {f}° tasto = {n}','cr.octave-off':'Nota giusta, ma in un\'altra ottava.','cr.wrong-played':'Hai suonato {n}: non è tra le note cercate.',
-  'cr.before':'Se parti da zero, comincia dalle lezioni introduttive:','cr.after-lessons-kicker':'Dopo le lezioni','cr.after-lessons':'Cinque moduli lunghi che approfondiscono passo passo note su tutto il manico, intervalli, tutte le forme CAGED e come usarle (arpeggi, scale, settime, note guida, pentatonica) e le triadi su ogni gruppo di corde.',
+  'cr.before':'Se parti da zero, comincia dalle lezioni introduttive:','cr.after-lessons-kicker':'Dopo le lezioni','cr.after-lessons':'Nove moduli lunghi, passo passo: note e punti di riferimento su tutto il manico, intervalli, gradi della scala (anche a orecchio), tutte le forme CAGED e come usarle, triadi, gli accordi della scala e una routine quotidiana con esercizi a tempo.',
   'cr.theory-link':'Studia il CAGED passo passo nel Percorso guidato',
   // Chord Finder on the neck
   'cf.mode':'Modalità','cf.mode-notes':'Note','cf.mode-neck':'Sul manico',
@@ -506,4 +506,14 @@ export default {
   'cf.in-bass':'al basso','cf.rootless':'senza fondamentale','cf.without':'senza',
   'cf.voicings':'Altre diteggiature di {0}','cf.load-voicing':'Clicca per metterla sul manico','cf.yours':'La tua',
   'cf.loading':'Caricamento diteggiature...','cf.no-voicings':'Nessuna diteggiatura disponibile.','cf.no-chord':'Nessun accordo trovato.',
+  // Guided path: flash drills, memory and ear
+  'cr.speed':'Lampo','cr.memory':'Memoria','cr.memorize':'Memorizza…','cr.peek':'Rivedi','cr.listen-again':'Riascolta',
+  'cr.medal-1':'Bronzo','cr.medal-2':'Argento','cr.medal-3':'Oro','cr.level':'Livello','cr.levels':'Livelli','cr.locked':'supera il livello prima',
+  'cr.speed-how':'{n} domande a tempo. Passi il livello con almeno il {p}% di risposte giuste e un tempo medio sotto la soglia. Le risposte sbagliate o lente tornano poco dopo.',
+  'cr.speed-start':'Via','cr.best':'Migliore','cr.next-level':'Livello successivo',
+  'cr.level-passed':'{m} conquistato!','cr.level-failed':'Non ancora',
+  'cr.accuracy':'giuste','cr.avg-time':'tempo medio','cr.target':'soglia',
+  'cr.need-accuracy':'Servono almeno il {p}% di risposte giuste: rallenta un po\' e riprova.','cr.need-speed':'Precisione ok: ora serve un po\' più di velocità.',
+  'cr.to-review':'Da ripassare','cr.right-slow':'Giusto, ma lento','cr.wrong-short':'No',
+  'cr.medals':'Lampo',
 }
