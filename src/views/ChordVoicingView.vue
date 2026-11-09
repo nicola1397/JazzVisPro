@@ -129,7 +129,7 @@ import { NOTES, ROOT_NAMES, INTERVAL_COLORS, getNoteIdx, spellChord, chordToneLa
 const appStore = useAppStore()
 const { t } = useI18n()
 const router = useRouter()
-const { load, loaded } = useChordLibrary()
+const { load, loaded, getVoicings } = useChordLibrary()
 
 const CHORD_DATA = {
   'maj7': { intervals: [0, 4, 7, 11], scale: 'Ionio (Maj7)', desc_it: 'Stabile e luminoso. Su: Imaj7, IVmaj7.', desc_en: 'Stable, bright. Over: Imaj7, IVmaj7.' },
@@ -177,7 +177,7 @@ function getChordDiagrams(rIdx, type) {
   const typeMap = { 'maj': '', 'm': 'm', '7': '7', 'maj7': 'maj7', 'm7': 'm7', 'm7b5': 'm7b5', 'dim7': 'dim7', 'dim': 'dim', 'aug': 'aug', 'sus2': 'sus2', 'sus4': 'sus4', '9': '9', 'maj9': 'maj9', 'm9': 'm9', '13': '13', 'mMaj7': 'mmaj7', '7alt': '7#9', 'maj7#11': 'maj#11', '6': '6', 'm6': 'm6', 'add9': 'add9' }
   const suffix = typeMap[type] !== undefined ? typeMap[type] : type
   const key = NOTES[rIdx] + suffix
-  const voicings = window.CHORD_COLLECTION?.[key]
+  const voicings = getVoicings(key)
   if (!voicings?.length) return []
   const result = []
   for (const v of voicings) {

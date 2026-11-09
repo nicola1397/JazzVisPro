@@ -37,7 +37,7 @@ import { computed, watch, onMounted } from 'vue'
 import { useRoute }          from 'vue-router'
 import { useAppStore }       from './stores/app.js'
 import { usePlaybackStore }  from './stores/playback.js'
-import { useI18n }           from './composables/useI18n.js'
+import { useI18n, loadLanguage } from './composables/useI18n.js'
 import AppSidebar       from './components/layout/Sidebar.vue'
 import AppNavbar        from './components/layout/AppNavbar.vue'
 import CountdownOverlay from './components/shared/CountdownOverlay.vue'
@@ -64,6 +64,7 @@ watch(() => route.matched[0]?.path, (now, before) => {
 }, { flush: 'post' })
 
 watch(() => appStore.lang, lang => {
+  loadLanguage(lang).catch(() => {})
   document.documentElement.setAttribute('lang', lang)
 }, { immediate: true })
 

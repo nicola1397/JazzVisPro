@@ -4,6 +4,10 @@ import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { NOTES, NOTES_FLAT, SCALES, TUNINGS, INTERVAL_COLORS, CAGED_SHAPES_MAJOR, CAGED_SHAPES_MINOR, getNoteIdx, getPitchClass } from '../utils/theory.js'
 import { STRINGS, FRETS } from '../utils/constants.js'
 
+export function savedLang() {
+  try { return localStorage.getItem('jv-lang') === 'en' ? 'en' : 'it' } catch { return 'it' }
+}
+
 export const useAppStore = defineStore('app', () => {
   // ── Fretboard state ──────────────────────────────────────────────
   const root        = ref('C')
@@ -27,7 +31,8 @@ export const useAppStore = defineStore('app', () => {
   const isLoaded = ref(false)
 
   // ── UI state ─────────────────────────────────────────────────────
-  const lang          = ref('it')
+  // Remembered between visits (it used to go back to Italian on every reload)
+  const lang          = ref(savedLang())
   const sidebarOpen   = ref(false)
 
   // ── Save/Load ────────────────────────────────────────────────────
@@ -228,7 +233,10 @@ export const useAppStore = defineStore('app', () => {
     explorerMode.value = v
     scheduleSave()
   }
-  function toggleLang()      { lang.value = lang.value === 'it' ? 'en' : 'it' }
+  function toggleLang() {
+    lang.value = lang.value === 'it' ? 'en' : 'it'
+    try { localStorage.setItem('jv-lang', lang.value) } catch {}
+  }
   function toggleSidebar()   { sidebarOpen.value = !sidebarOpen.value }
   function closeSidebar()    { sidebarOpen.value = false }
 

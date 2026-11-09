@@ -2,20 +2,18 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router/index.js'
 import App from './App.vue'
+import './assets/vendor-bootstrap-subset.css'
 import './assets/style.css'
-import it from './i18n/it.js'
-import en from './i18n/en.js'
-
-const TRANSLATIONS = { it, en }
+import { preloadTone } from './audio/tone.js'
+import { loadLanguage } from './composables/useI18n.js'
+import { savedLang } from './stores/app.js'
 
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
-app.config.globalProperties.$t = function(key) {
-  const lang = document.documentElement.getAttribute('lang') || 'it'
-  const d = TRANSLATIONS[lang] || TRANSLATIONS.it
-  return d[key] !== undefined ? d[key] : (TRANSLATIONS.it[key] || key)
-}
-
-app.mount('#app')
+// With English saved, wait for its texts so the first screen is not shown in Italian
+loadLanguage(savedLang()).catch(() => {}).finally(() => {
+  app.mount('#app')
+  preloadTone()
+})

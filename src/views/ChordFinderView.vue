@@ -181,7 +181,7 @@ import NeckDiagram from '../components/course/NeckDiagram.vue'
 const appStore = useAppStore()
 const route = useRoute()
 const { t } = useI18n()
-const { load, loaded } = useChordLibrary()
+const { load, loaded, getVoicings } = useChordLibrary()
 
 const STORAGE_KEY = 'jazzVizChordFinder'
 const saved = readStorage(STORAGE_KEY, {}) || {}
@@ -339,8 +339,8 @@ function sameAsPlayed(libFrets) {
 const TYPE_MAP = {'maj':'','min':'m','m':'m','7':'7','maj7':'maj7','m7':'m7','m7b5':'m7b5','dim7':'dim7','dim':'dim','aug':'aug','sus2':'sus2','sus4':'sus4','9':'9','maj9':'maj9','m9':'m9','13':'13','mMaj7':'mmaj7','7alt':'7#9','maj7#11':'maj#11','6':'6','m6':'m6','add9':'add9'}
 
 function diagramsFor(root, suffix) {
-  if (!loaded.value || !window.CHORD_COLLECTION) return []
-  const voicings = window.CHORD_COLLECTION?.[NOTES[root] + suffix]
+  if (!loaded.value) return []
+  const voicings = getVoicings(NOTES[root] + suffix)
   if (!voicings?.length) return []
   const result = []
   for (const v of voicings) {

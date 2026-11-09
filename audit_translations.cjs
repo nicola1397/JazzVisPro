@@ -90,8 +90,8 @@ console.log('\n--- DYNAMIC KEYS CHECK ---');
 
 // Quiz categories
 // Need to find which categories are used in code or data
-// Usually in src/utils/quiz_db.js
-const quizDbPath = path.join(srcDir, 'utils/quiz_db.js');
+// The questions live in src/data/quiz/<lang>.json
+const quizDbPath = path.join(srcDir, 'data/quiz/it.json');
 if (fs.existsSync(quizDbPath)) {
     const quizDb = fs.readFileSync(quizDbPath, 'utf8');
     const catRegex = /['"]?category['"]?\s*:\s*['"]([^'"]+)['"]/g;
@@ -100,7 +100,7 @@ if (fs.existsSync(quizDbPath)) {
     while ((m = catRegex.exec(quizDb)) !== null) {
         cats.add('quiz.cat.' + m[1]);
     }
-    console.log('Quiz categories found in quiz_db.js:');
+    console.log('Quiz categories found in data/quiz/it.json:');
     cats.forEach(c => {
         if (!enKeys[c] || !itKeys[c]) {
             console.log(`MISSING: ${c} (EN: ${!!enKeys[c]}, IT: ${!!itKeys[c]})`);

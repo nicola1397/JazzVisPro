@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { pitchToFrequency } from '../utils/theory.js' // UPDATED IMPORT
+import { loadTone } from '../audio/tone.js'
 
 export const useAudioStore = defineStore('audio', () => {
   // Use plain variables for Tone objects to avoid Proxy issues
@@ -25,8 +26,14 @@ export const useAudioStore = defineStore('audio', () => {
 
   const isInitialized = ref(false)
 
+  // Set once Tone.js has arrived (it loads in the background, see audio/tone.js)
+  const toneReady = ref(typeof Tone !== 'undefined')
+
   async function init() {
-    if (typeof Tone === 'undefined') return
+    if (typeof Tone === 'undefined') {
+      try { await loadTone() } catch { return }
+      toneReady.value = true
+    }
     if (_isInitialized) {
       if (Tone.context.state !== 'running') await Tone.context.resume()
       return
@@ -223,7 +230,8 @@ export const useAudioStore = defineStore('audio', () => {
     } catch {}
   }
 
-  const context = computed(() => typeof Tone !== 'undefined' ? Tone.context : null)
+  // Depends on toneReady, so it updates once Tone.js is there (a plain check would stay null)
+  const context = computed(() => toneReady.value && typeof Tone !== 'undefined' ? Tone.context : null)
 
   return {
     isInitialized, METRONOME_SAMPLES, CHORD_SOUNDS, context,

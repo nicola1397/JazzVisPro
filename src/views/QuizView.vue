@@ -57,7 +57,7 @@
         </div>
 
         <button class="btn-add-step" style="height:52px; font-size:1.1em; width:100%; max-width:400px; margin-top:10px;"
-          :disabled="selectedCategories.length === 0" @click="startQuiz">{{ t('quiz.start') }}</button>
+          :disabled="selectedCategories.length === 0 || !quizReady" @click="startQuiz">{{ t('quiz.start') }}</button>
         <p v-if="setupMsg" role="status" style="margin-top:12px; color:var(--jd-red); font-family:var(--jd-mono); font-size:0.8em;">{{ setupMsg }}</p>
 
         <!-- Box distribution chart -->
@@ -167,12 +167,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
 import { usePracticeStore } from '../stores/practice.js'
-import { QUIZ_DATABASE } from '../utils/quiz_db.js'
+import { quizList, quizVersion, loadQuiz } from '../utils/quizData.js'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -246,12 +246,17 @@ const srsState = ref({})
 
 onMounted(() => { srsState.value = srsLoad() })
 
+// Questions arrive per language (see utils/quizData.js)
+const quizReady = computed(() => quizList.value.length > 0)
+watch(() => appStore.lang, lang => { loadQuiz(lang).catch(() => { setupMsg.value = t('quiz.load-error') }) }, { immediate: true })
+
 const currentQuestionRaw = computed(() => quizQuestions.value[currentQuestionIdx.value] || {})
 const langContent = computed(() => {
   const q = currentQuestionRaw.value
   if (!q.id) return {}
+  quizVersion.value                      // re-read when the other language arrives
   const lang = appStore.lang || 'it'
-  return q[lang] || q['it']
+  return q[lang] || q.it || q.en
 })
 const isLastQuestion = computed(() => currentQuestionIdx.value === quizQuestions.value.length - 1)
 const currentIsReview = computed(() => {
@@ -263,7 +268,7 @@ const currentIsReview = computed(() => {
 const dueCountForSelection = computed(() => {
   const now = Date.now()
   let due = 0
-  QUIZ_DATABASE.forEach(q => {
+  quizList.value.forEach(q => {
     if (!selectedCategories.value.includes(q.category)) return
     if (q.level !== selectedDifficulty.value) return
     const r = srsState.value[q.id]
@@ -272,7 +277,7 @@ const dueCountForSelection = computed(() => {
   return due
 })
 
-const newCountForSelection = computed(() => QUIZ_DATABASE.filter(q =>
+const newCountForSelection = computed(() => quizList.value.filter(q =>
   selectedCategories.value.includes(q.category) && q.level === selectedDifficulty.value && !srsState.value[q.id]
 ).length)
 
@@ -332,7 +337,7 @@ function pickQuestions(pool, limit = 15) {
 }
 
 function startQuiz() {
-  const filtered = QUIZ_DATABASE.filter(q =>
+  const filtered = quizList.value.filter(q =>
     selectedCategories.value.includes(q.category) &&
     q.level === selectedDifficulty.value
   )
@@ -356,7 +361,7 @@ function prepareQuestion() {
   answered.value = false
   selectedIdx.value = null
   const q = currentQuestionRaw.value
-  currentOptions.value = shuffle(q.it.options.map((_, idx) => ({ idx, isCorrect: idx === q.correct_idx })))
+  currentOptions.value = shuffle((q.it || q.en).options.map((_, idx) => ({ idx, isCorrect: idx === q.correct_idx })))
 }
 
 function checkAnswer(opt) {
