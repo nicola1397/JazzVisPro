@@ -8,4 +8,10 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   worker: { format: 'es' },
+  // Unit tests (npm test); browser tests live in tests/e2e and run with Playwright
+  test: {
+    include: ['tests/unit/**/*.test.js'],
+    environment: 'node',
+    setupFiles: ['tests/unit/setup.js'],
+  },
 })

@@ -80,7 +80,27 @@ I passi completati e le medaglie restano salvati; le risposte compaiono in Progr
 
 ```bash
 npm install
-npm run dev       # server di sviluppo
-npm run build     # build di produzione in dist/
-node audit_translations.cjs   # controlla che ogni chiave di traduzione esista in IT e EN
+npm run dev          # server di sviluppo
+npm run build        # build di produzione in dist/
+npm test             # test unitari (Vitest)
+npm run test:e2e     # test nel browser (Playwright, sulla build di produzione)
+npm run check:i18n   # ogni chiave di traduzione esiste in IT e EN
 ```
+
+### Test
+
+- **Unitari** (`tests/unit`, Vitest, ~1 s): teoria (nomi delle note, intervalli, accordi e scale scritti
+  per nome di nota, forme CAGED in ogni tonalità), il percorso guidato (ogni modulo, passo, diagramma e
+  migliaia di round generati degli esercizi: testi in due lingue, punti sul manico e nella finestra,
+  una sola risposta giusta, note raggiungibili), i dati (traduzioni complete, domande dei quiz uguali
+  nelle due lingue, libreria accordi) e lo stato dell'Explorer.
+- **Nel browser** (`tests/e2e`, Playwright, ~3 min): ogni pagina si apre senza errori; su desktop,
+  telefono e telefono orizzontale nessun controllo si tocca o si sovrappone, nessun testo è tagliato
+  e nessun tasto è troppo piccolo; in ogni esercizio domanda e zona di risposta stanno insieme sullo
+  schermo; più alcune funzioni (scala personalizzata, cambio lingua nel quiz, audio, conferme).
+- **CI**: `.github/workflows/ci.yml` esegue tutto a ogni push e pull request; se un test nel browser
+  fallisce, il report di Playwright resta tra gli artifact della run.
+
+Script di supporto in `scripts/`: `build-chord-voicings.mjs` (rigenera `public/chords/voicings.json`
+dalla collezione completa in `scripts/data`) e `extract-bootstrap-subset.py` (le poche regole di
+Bootstrap ancora usate).
