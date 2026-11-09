@@ -149,6 +149,17 @@
                     class="hidden-radio">
                   <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('opt.arp') }}</span>
                 </label>
+                <label class="jd-mode" :class="{ on: appStore.leftHanded }">
+                  <input type="checkbox" :checked="appStore.leftHanded" @change="appStore.setLeftHanded($event.target.checked)" class="hidden-radio">
+                  <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('opt.lefty') }}</span>
+                </label>
+                <label class="jd-mode" :class="{ on: appStore.clickSound }">
+                  <input type="checkbox" :checked="appStore.clickSound" @change="appStore.setClickSound($event.target.checked)" class="hidden-radio">
+                  <span class="jd-mode-dot"></span><span class="jd-mode-text">{{ t('opt.click-sound') }}</span>
+                </label>
+                <select class="jd-select explorer-window-select" :value="appStore.fretWindow" :aria-label="t('label.fret-window')" :title="t('label.fret-window')" @change="appStore.setFretWindow($event.target.value)">
+                  <option v-for="w in FRET_WINDOWS" :key="w" :value="w">{{ w === 'all' ? t('opt.window-all') : t('opt.window-frets').replace('{w}', w.replace('-', '–')) }}</option>
+                </select>
               </div>
             </div>
 
@@ -180,6 +191,7 @@
 <script setup>
 import CustomScaleTools from '../components/explorer/CustomScaleTools.vue'
 import { useSnapshotsStore } from '../stores/snapshots.js'
+import { FRET_WINDOWS } from '../stores/app.js'
 import { toast } from '../composables/useToast.js'
 import { computed, ref } from 'vue'
 import { useAppStore } from '../stores/app.js'
@@ -219,6 +231,7 @@ const modeDesc = computed(() => {
 
 <style scoped>
 .explorer-snap-select { width: auto; max-width: 220px; height: 34px; }
+.explorer-window-select { width: auto; height: 34px; }
 .explorer-controls {
   display: flex;
   flex-direction: column;

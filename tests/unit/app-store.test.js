@@ -128,3 +128,17 @@ describe('snapshots', async () => {
     expect(snaps.list[0].label).toBe('Bee')
   })
 })
+
+describe('fretboard view settings', () => {
+  it('are saved and only accept known values', () => {
+    vi.useFakeTimers()
+    const s = useAppStore()
+    s.setLeftHanded(true); s.setFretWindow('5-17'); s.setFretWindow('3-4'); s.setClickSound(false)
+    vi.advanceTimersByTime(400)
+    vi.useRealTimers()
+    setActivePinia(createPinia())
+    const t = useAppStore()
+    t.loadFromStorage()
+    expect([t.leftHanded, t.fretWindow, t.clickSound]).toEqual([true, '5-17', false])
+  })
+})

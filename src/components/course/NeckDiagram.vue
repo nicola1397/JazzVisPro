@@ -24,6 +24,8 @@
         role="img"
         :aria-label="ariaLabel"
       >
+        <!-- Left-handed: the whole drawing mirrored, the texts flipped back to read normally -->
+        <g :transform="lefty ? `translate(${W},0) scale(-1,1)` : null">
         <!-- shape regions: one shaded area, or labelled bars above the neck when there are several -->
         <template v-if="!barMode">
           <g v-for="(b, i) in boxes" :key="'box' + i">
@@ -32,7 +34,7 @@
               rx="6" :fill="boxColor(b)" :fill-opacity="0.09"
               :stroke="boxColor(b)" stroke-opacity="0.5" stroke-width="1"
             />
-            <text
+            <text :transform="flipText((wireX(b.from - 1) + wireX(b.to)) / 2)"
               :x="(wireX(b.from - 1) + wireX(b.to)) / 2" :y="15" text-anchor="middle"
               class="nd-box-label" :fill="boxColor(b)"
             >{{ b.label }}</text>
@@ -44,7 +46,7 @@
               :x="wireX(b.from - 1) + 2" :y="4 + (i % 2) * 15" :width="wireX(b.to) - wireX(b.from - 1) - 4" height="12"
               rx="6" :fill="boxColor(b)" fill-opacity="0.85"
             />
-            <text
+            <text :transform="flipText((wireX(b.from - 1) + wireX(b.to)) / 2)"
               :x="(wireX(b.from - 1) + wireX(b.to)) / 2" :y="13.5 + (i % 2) * 15" text-anchor="middle"
               class="nd-bar-label"
             >{{ b.label }}</text>
@@ -81,13 +83,13 @@
             class="nd-string" :class="{ 'nd-string--focus': focusSet.has(s - 1), 'nd-string--dim': focusSet.size && !focusSet.has(s - 1) }"
             :stroke-width="0.7 + (s - 1) * 0.32"
           />
-          <text :x="10" :y="stringY(s - 1) + 3.5" class="nd-string-label" :class="{ on: focusSet.has(s - 1) }">
+          <text :transform="flipText(10)" :x="10" :y="stringY(s - 1) + 3.5" :text-anchor="lefty ? 'end' : 'start'" class="nd-string-label" :class="{ on: focusSet.has(s - 1) }">
             <tspan class="nd-string-num">{{ s }}</tspan><tspan dx="2">{{ stringLetters[s - 1] }}</tspan>
           </text>
         </g>
 
         <!-- muted strings -->
-        <text
+        <text :transform="flipText(from === 0 ? LEFT + OPEN_W / 2 : boardLeft - 7)"
           v-for="s in muted" :key="'m' + s"
           :x="from === 0 ? LEFT + OPEN_W / 2 : boardLeft - 7" :y="stringY(s) + 4"
           text-anchor="middle" class="nd-muted"
@@ -101,7 +103,7 @@
         />
 
         <!-- fret numbers -->
-        <text
+        <text :transform="flipText(dotX(f))"
           v-for="f in fretList" :key="'n' + f"
           :x="dotX(f)" :y="H - 6" text-anchor="middle"
           class="nd-fretnum" :class="{ on: SINGLE.includes(f) || DOUBLE.includes(f) }"
@@ -130,7 +132,7 @@
             :stroke-width="d.ring ? 2.5 : (d.hollow ? 2 : 1)"
             :stroke-dasharray="d.stretch ? '3 2' : null"
           />
-          <text
+          <text :transform="flipText(dotX(d.f))"
             v-if="!d.ghost && labelOf(d)"
             :x="dotX(d.f)" :y="stringY(d.s)" text-anchor="middle" dominant-baseline="central"
             class="nd-dot-label" :fill="d.hollow ? fillOf(d) : textOn(fillOf(d))"
@@ -143,6 +145,7 @@
             <template v-else>{{ labelOf(d) }}</template>
           </text>
         </g>
+        </g>
       </svg>
     </div>
     <figcaption v-if="caption" class="nd-caption" v-html="caption"></figcaption>
@@ -153,6 +156,7 @@
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from '../../composables/useI18n.js'
 import { useAudioStore } from '../../stores/audio.js'
+import { useAppStore } from '../../stores/app.js'
 import { STRING_LETTERS, OPEN_MIDI, SHAPE_COLORS, sharpName, pretty } from '../../course/theory.js'
 
 const props = defineProps({
@@ -175,6 +179,7 @@ const emit = defineEmits(['pick'])
 
 const { t } = useI18n()
 const audio = useAudioStore()
+const appStore = useAppStore()
 
 const SINGLE = [3, 5, 7, 9, 15, 17, 19, 21]
 const DOUBLE = [12, 24]
@@ -202,6 +207,9 @@ function dotX(f) {
 }
 const cellW = f => (props.from === 0 && f === 0 ? OPEN_W : COL)
 const stringY = s => TOP.value + s * ROW
+const lefty = computed(() => appStore.leftHanded)
+// Inside the mirrored drawing a text is mirrored back around its own x, so it reads normally
+const flipText = x => (lefty.value ? `translate(${2 * x},0) scale(-1,1)` : null)
 
 const W = computed(() => wireX(props.to) + 12)
 const H = computed(() => boardBottom.value + 24)

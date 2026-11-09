@@ -1,10 +1,10 @@
 <template>
-  <div class="scroll-wrapper" v-show="showFretboard">
+  <div class="scroll-wrapper" v-show="showFretboard" :class="{ lefty: appStore.leftHanded, windowed: !!win }" :style="winStyle">
     <div class="scroll-content">
       <div class="fretboard-container">
         <div class="fretboard-layer" :class="{ 'game-mode': isGameMode }" @click.stop="handleClick">
           <div v-for="sIdx in STRINGS" :key="sIdx" class="string" :class="`s${sIdx}`">
-            <div v-for="fIdx in (FRETS + 1)" :key="fIdx" class="fret" :class="`fret-${fIdx-1}`">
+            <div v-for="fIdx in (FRETS + 1)" :key="fIdx" class="fret" :class="[`fret-${fIdx-1}`, { 'fret-out': outOfWindow(fIdx-1), 'fret-first': win && fIdx-1 === win.from && win.from > 0 }]">
               <div
                 class="note-circle"
                 :class="getCircleClass(sIdx-1, fIdx-1)"
@@ -19,7 +19,7 @@
         </div>
       </div>
       <div class="fret-numbers" id="numbers-layer">
-        <div v-for="f in (FRETS + 1)" :key="f" class="num" :class="{ 'num-0': f === 1 }">
+        <div v-for="f in (FRETS + 1)" :key="f" class="num" :class="{ 'num-0': f === 1, 'fret-out': outOfWindow(f - 1) }">
           {{ f - 1 }}
         </div>
       </div>
@@ -43,6 +43,22 @@ const appStore = useAppStore()
 const route    = useRoute()
 
 const ARP_INTERVALS = [0, 3, 4, 7, 10, 11]
+
+// Part of the neck on screen (setting "frets"): only outside the exercises, whose targets
+// can be anywhere. The fret width is recomputed for the frets shown.
+const win = computed(() => {
+  if (isGameMode.value || appStore.fretWindow === 'all') return null
+  const [from, to] = appStore.fretWindow.split('-').map(Number)
+  return { from, to }
+})
+const outOfWindow = f => !!win.value && (f < win.value.from || f > win.value.to) && !(f === 0 && win.value.from === 0)
+const winStyle = computed(() => {
+  if (!win.value) return null
+  const n = win.value.to - win.value.from + (win.value.from === 0 ? 0 : 1)
+  const nut = win.value.from === 0 ? 'var(--nut-width)' : '0px'
+  const fw = `clamp(26px, calc((var(--fb-avail) - ${nut}) / ${n}), 76px)`
+  return { '--fret-width': fw, '--note-size': `clamp(19px, calc(${fw} - 10px), 30px)` }
+})
 
 const isGameMode = computed(() => ['interval', 'note', 'lick', 'chord', 'playback', 'changes', 'scale', 'transcribe', 'lesson'].includes(props.gameMode))
 

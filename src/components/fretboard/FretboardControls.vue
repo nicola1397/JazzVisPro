@@ -53,6 +53,18 @@
         </select>
       </div>
     </div>
+    <div class="checkbox-group">
+      <div class="nav-group">
+        <label :for="'fret-window-'+id">{{ t('label.fret-window') }}</label>
+        <select :id="'fret-window-'+id" :value="appStore.fretWindow" @change="appStore.setFretWindow($event.target.value)">
+          <option v-for="w in FRET_WINDOWS" :key="w" :value="w">{{ w === 'all' ? t('opt.window-all') : t('opt.window-frets').replace('{w}', w.replace('-', '–')) }}</option>
+        </select>
+      </div>
+      <div class="checkbox-container">
+        <input type="checkbox" :id="'lefty-'+id" :checked="appStore.leftHanded" @change="appStore.setLeftHanded($event.target.checked)">
+        <label :for="'lefty-'+id">{{ t('opt.lefty') }}</label>
+      </div>
+    </div>
     <button class="btn-reset" style="margin-top:10px;width:100%;" @click="appStore.resetFretboard()">
       {{ t('btn.reset-display') }}
     </button>
@@ -61,7 +73,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useAppStore }   from '../../stores/app.js'
+import { useAppStore, FRET_WINDOWS }   from '../../stores/app.js'
 import { useI18n }       from '../../composables/useI18n.js'
 import { NOTES, SCALES, TUNINGS } from '../../utils/theory.js'
 

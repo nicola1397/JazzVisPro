@@ -38,6 +38,7 @@ import { computed, watch, onMounted } from 'vue'
 import { useRoute }          from 'vue-router'
 import { useAppStore }       from './stores/app.js'
 import { usePlaybackStore }  from './stores/playback.js'
+import { useAudioStore }     from './stores/audio.js'
 import { useI18n, loadLanguage } from './composables/useI18n.js'
 import AppSidebar       from './components/layout/Sidebar.vue'
 import AppNavbar        from './components/layout/AppNavbar.vue'
@@ -48,6 +49,7 @@ import ToastHost        from './components/shared/ToastHost.vue'
 
 const appStore      = useAppStore()
 const playbackStore = usePlaybackStore()
+const audioStore    = useAudioStore()
 const route         = useRoute()
 const { t }         = useI18n()
 
@@ -77,14 +79,17 @@ function handleNoteClick({ noteIndex, midiNote, stringIndex, fretIndex, element 
       detail: { noteIndex, midiNote, stringIndex, fretIndex, element }
     }))
   } else {
+    const posKey = `${stringIndex}-${fretIndex}`
+    let sounding = true
     if (appStore.explorerMode === 'custom') {
-      const posKey = `${stringIndex}-${fretIndex}`
       appStore.toggleCustomNote(posKey)
+      sounding = appStore.customScaleNotes.has(posKey)
     } else if (appStore.explorerMode === 'highlight') {
-      const posKey = `${stringIndex}-${fretIndex}`
       appStore.toggleManualNote(posKey)
+      sounding = appStore.manualNotes.has(posKey)
     }
-    // In 'normal' mode, direct fretboard clicks are disabled
+    // The touched note is heard (when it is turned on), unless the sound is switched off
+    if (sounding && appStore.clickSound) audioStore.playNoteImmediate(midiNote, 0.9, 0.5, 'Electric Piano')
   }
 }
 

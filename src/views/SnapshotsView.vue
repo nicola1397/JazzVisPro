@@ -47,7 +47,7 @@
 
           <!-- Mini Fretboard (Analog monitor style): high E on top, frets 0–15 -->
           <div class="mini-fretboard-wrap" aria-hidden="true">
-            <div class="mini-fretboard">
+            <div class="mini-fretboard" :class="{ lefty: appStore.leftHanded }">
               <div v-for="s in 6" :key="s" class="mini-string">
                 <div v-for="f in 16" :key="f" class="mini-fret" :class="{ 'mini-fret-0': f === 1 }">
                   <div v-if="dotsOf(snap).has(`${s - 1}-${f - 1}`)" class="mini-note" :style="{ background: dotsOf(snap).get(`${s - 1}-${f - 1}`) }"></div>

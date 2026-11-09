@@ -3078,3 +3078,17 @@ button.tap-feedback,
 
 /* Sidebar group headers are buttons for the keyboard too */
 .sidebar-group-header:focus-visible { outline: 1px solid var(--jd-amber); outline-offset: -3px; color: var(--jd-text-soft); }
+
+/* Left-handed fretboard: the neck mirrored, nut and open strings on the right */
+.scroll-wrapper.lefty { direction: rtl; }
+.scroll-wrapper.lefty .note-circle, .scroll-wrapper.lefty .num { direction: ltr; }
+.scroll-wrapper.lefty .fret { border-right: 0; border-left: 2px solid #666; }
+.scroll-wrapper.lefty .fret-0 { border-left: 10px solid #bbb; left: auto; right: 0; }
+.scroll-wrapper.lefty .num-0 { left: auto; right: 0; }
+/* Only part of the neck on screen (Explorer, Player): the first fret shown gets an edge */
+.scroll-wrapper .fret-out { display: none; }
+.scroll-wrapper .fret-first { border-left: 2px solid #666; }
+.scroll-wrapper.lefty .fret-first { border-right: 2px solid #666; }
+.mini-fretboard.lefty .mini-string { flex-direction: row-reverse; }
+.mini-fretboard.lefty .mini-fret { border-right: 0; border-left: 1px solid #555; }
+.mini-fretboard.lefty .mini-fret-0 { border-left: 3px solid #ccc !important; border-right: 0 !important; }

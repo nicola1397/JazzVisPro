@@ -8,6 +8,8 @@ export function savedLang() {
   try { return localStorage.getItem('jv-lang') === 'en' ? 'en' : 'it' } catch { return 'it' }
 }
 
+export const FRET_WINDOWS = ['all', '0-12', '5-17', '12-24']
+
 function readSavedScales() {
   try {
     const list = JSON.parse(localStorage.getItem('jv-custom-scales') || '[]')
@@ -35,6 +37,11 @@ export const useAppStore = defineStore('app', () => {
   const customScaleNotes   = ref(new Set())
   // Custom mode: the frets the whole-note picker, all / none and invert act on
   const customZone         = ref({ from: 0, to: FRETS })
+  // Fretboard view: mirrored for left-handed players, part of the neck on screen (outside the
+  // exercises, which need the whole neck), sound when a note is touched in the Explorer
+  const leftHanded         = ref(false)
+  const fretWindow         = ref('all')          // 'all' | '0-12' | '5-17' | '12-24'
+  const clickSound         = ref(true)
   // Custom scales saved with a name (Explorer, custom mode)
   const savedCustomScales  = ref(readSavedScales())
 
@@ -72,6 +79,9 @@ export const useAppStore = defineStore('app', () => {
     data.manualNotes  = Array.from(manualNotes.value)
     data.highlightedIntervals = Array.from(highlightedIntervals.value)
     data.customZone   = customZone.value
+    data.leftHanded   = leftHanded.value
+    data.fretWindow   = fretWindow.value
+    data.clickSound   = clickSound.value
     writeStorage('jazzVizData', data)
   }
 
@@ -93,6 +103,9 @@ export const useAppStore = defineStore('app', () => {
     if (typeof data.cagedShape === 'string') cagedShape.value = data.cagedShape
     if (Array.isArray(data.manualNotes)) manualNotes.value = new Set(data.manualNotes)
     if (Array.isArray(data.highlightedIntervals)) highlightedIntervals.value = new Set(data.highlightedIntervals.map(Number))
+    if (typeof data.leftHanded === 'boolean') leftHanded.value = data.leftHanded
+    if (FRET_WINDOWS.includes(data.fretWindow)) fretWindow.value = data.fretWindow
+    if (typeof data.clickSound === 'boolean') clickSound.value = data.clickSound
     if (data.customZone && Number.isInteger(data.customZone.from) && Number.isInteger(data.customZone.to)) setCustomZone(data.customZone.from, data.customZone.to, false)
     isLoaded.value = true // Set to true after loading
     return data
@@ -329,6 +342,10 @@ export const useAppStore = defineStore('app', () => {
     scheduleSave()
   }
 
+  function setLeftHanded(v) { leftHanded.value = !!v; scheduleSave() }
+  function setFretWindow(v) { if (FRET_WINDOWS.includes(v)) { fretWindow.value = v; scheduleSave() } }
+  function setClickSound(v) { clickSound.value = !!v; scheduleSave() }
+
   function toggleLang() {
     lang.value = lang.value === 'it' ? 'en' : 'it'
     try { localStorage.setItem('jv-lang', lang.value) } catch {}
@@ -349,6 +366,7 @@ export const useAppStore = defineStore('app', () => {
     customZone, setCustomZone, customPitchClasses,
     savedCustomScales, saveCustomScale, loadCustomScale, deleteCustomScale, restoreCustomScale,
     captureState, applyState,
+    leftHanded, fretWindow, clickSound, setLeftHanded, setFretWindow, setClickSound,
     setRoot, setScaleName, setTuningName, setTunerMode, setNotation, setAccidental,
     setCagedShape, setExplorerMode, toggleLang, toggleSidebar, closeSidebar,
     scaleQuality, isCagedCompatible,

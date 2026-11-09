@@ -46,8 +46,21 @@ test.describe('features', () => {
     await page.locator('button', { hasText: /salva snapshot|save snapshot/i }).click()
     await page.locator('.jd-mode', { hasText: /normale|normal/i }).click()
     await page.locator('.explorer-snap-select').selectOption({ index: 1 })
-    await expect(page.locator('.jd-mode.on')).toContainText(/personalizzato|custom/i)
+    await expect(page.locator('.explorer-row--center .jd-mode.on')).toContainText(/personalizzato|custom/i)
     expect(await page.locator('.note-circle.active-note').count()).toBe(12)
+  })
+
+  test('left-handed neck and part of the neck, exercises keep the whole neck', async ({ page }) => {
+    await open(page, '/explorer')
+    const nutLeft = () => page.evaluate(() => document.querySelector('.string.s1 .fret-0').getBoundingClientRect().left)
+    const fretsShown = () => page.evaluate(() => [...document.querySelectorAll('.string.s1 .fret')].filter(x => getComputedStyle(x).display !== 'none').length)
+    const right = await nutLeft()
+    await page.locator('.jd-mode', { hasText: /mancino|left-handed/i }).click()
+    expect(await nutLeft()).toBeGreaterThan(right + 500)
+    await page.locator('.explorer-window-select').selectOption('5-17')
+    expect(await fretsShown()).toBe(13)
+    await open(page, '/note-finder')
+    expect(await fretsShown()).toBe(25)
   })
 
   test('Quiz: switching language mid-quiz, language remembered', async ({ page }) => {
