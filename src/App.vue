@@ -30,6 +30,7 @@
     </main>
     <div v-else>{{ t('label.loading-app') }}</div>
     <ToastHost />
+    <QuickSearch />
   </div>
 </template>
 
@@ -46,6 +47,7 @@ import CountdownOverlay from './components/shared/CountdownOverlay.vue'
 import Fretboard        from './components/fretboard/Fretboard.vue'
 import FretboardLegend  from './components/fretboard/FretboardLegend.vue'
 import ToastHost        from './components/shared/ToastHost.vue'
+import QuickSearch      from './components/shared/QuickSearch.vue'
 import { recordVisit }  from './composables/useRecentPages.js'
 
 const appStore      = useAppStore()

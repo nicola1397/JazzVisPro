@@ -244,6 +244,7 @@
 <script setup>
 import { reactive, computed } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
+import { useOpenChapter } from '../composables/useOpenChapter.js'
 import { GENERAL_TEXT } from '../utils/theoryGeneralText.js'
 
 const { t, lang } = useI18n()
@@ -251,6 +252,7 @@ const C = computed(() => GENERAL_TEXT[lang.value] || GENERAL_TEXT.it)
 const num = i => String(i + 1).padStart(2, '0')
 
 const open = reactive(Array(7).fill(false))
+useOpenChapter(open)
 function toggle(i) { open[i] = !open[i] }
 
 const MUSIC_GLYPHS = {

@@ -12,6 +12,11 @@ guidato da riprendere (dal passo giusto); gli esercizi da ripassare (quelli con 
 bassa nelle ultime due settimane) o, all'inizio, quelli da cui cominciare; gli strumenti d'uso
 quotidiano a un tocco e le pagine usate di recente.
 
+### 🔎 Ricerca rapida
+Con **Ctrl K** (⌘ K sul Mac), il tasto **/** o la lente nella barra in alto: cerca tra tutte le
+pagine, i moduli e i passi del percorso guidato, le lezioni e i capitoli di teoria (che si aprono
+già espansi), senza badare ad accenti e maiuscole; si sceglie con le frecce e si apre con Invio.
+
 ### 🎸 Visualizzazione e Strumenti
 - **Fretboard Interattiva**: Visualizzazione dinamica di scale, arpeggi e intervalli con supporto per diverse accordature. Opzioni di vista: **mancino** (manico speculare, capotasto a destra, anche nei diagrammi del percorso e nelle anteprime degli snapshot), **tasti mostrati** (tutto il manico oppure 0–12, 5–17, 12–24, a tutta larghezza senza scorrere; negli esercizi resta sempre tutto il manico) e **suono al tocco** (nell'Explorer la nota toccata si sente).
 - **Chord Finder**: Trova rapidamente tutte le diteggiature di un accordo sulla tastiera con sistema a griglia professionale. In modalità **Sul manico** fa la ricerca inversa: metti le dita sul manico (o scrivi la tablatura, es. x-3-2-0-1-0) e ti dice che accordo è, con i gradi di ogni nota, i rivolti e gli accordi con il basso (C/G), le letture alternative (Am7 o C6/A, voicing senza fondamentale come Dm9/F) e le altre diteggiature dello stesso accordo, che puoi caricare sul manico con un clic. Usa l'accordatura scelta.

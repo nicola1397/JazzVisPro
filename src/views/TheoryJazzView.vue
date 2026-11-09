@@ -187,6 +187,7 @@ import { useRouter } from 'vue-router'
 import { usePlaybackStore } from '../stores/playback.js'
 import { useAppStore } from '../stores/app.js'
 import { useI18n } from '../composables/useI18n.js'
+import { useOpenChapter } from '../composables/useOpenChapter.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
 import { PRESET_PROGRESSIONS } from '../utils/chordParser.js'
 import { JAZZ_LESSONS } from '../utils/jazzLessons.js'
@@ -200,6 +201,7 @@ const lang    = computed(() => appStore.lang)
 const J       = computed(() => JAZZ_TEXT[lang.value] || JAZZ_TEXT.it)
 
 const open = reactive(Array(8 + JAZZ_LESSONS.length).fill(false))
+useOpenChapter(open)
 function toggle(i) { open[i] = !open[i] }
 
 // Text of a lesson block in the current language (Italian if missing)

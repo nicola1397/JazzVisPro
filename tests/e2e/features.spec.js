@@ -102,3 +102,21 @@ test.describe('features', () => {
     await expect(page.locator('.th-dialog')).toHaveCount(0)
   })
 })
+
+test.describe('quick search', () => {
+  test('finds pages, steps and theory chapters and opens them', async ({ page }) => {
+    await open(page, '/note-finder')
+    await page.keyboard.press('Control+k')
+    const input = page.locator('.qs-input')
+    await expect(input).toBeFocused()
+    await input.fill('metronomo')
+    await expect(page.locator('.qs-item').first()).toContainText(/metronomo/i)
+    await input.fill('circolo quinte')
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/teoria-generale\?open=3/)
+    await expect(page.locator('.teoria-card.open')).toHaveCount(1)
+    await page.locator('.search-toggle').click()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.qs-dialog')).toHaveCount(0)
+  })
+})

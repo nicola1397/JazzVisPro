@@ -3092,3 +3092,17 @@ button.tap-feedback,
 .mini-fretboard.lefty .mini-string { flex-direction: row-reverse; }
 .mini-fretboard.lefty .mini-fret { border-right: 0; border-left: 1px solid #555; }
 .mini-fretboard.lefty .mini-fret-0 { border-left: 3px solid #ccc !important; border-right: 0 !important; }
+
+/* Theory chapters opened from a link land below the navbar */
+.teoria-card { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+/* Quick search button in the navbar, before the language button */
+.navbar .search-toggle {
+  flex-shrink: 0; width: 36px; height: 34px; min-height: 0; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--jd-amber); background: transparent; border: 1px solid var(--jd-line);
+}
+.navbar .search-toggle:hover { border-color: var(--jd-amber); }
+@media (min-width: 1025px) { .navbar .search-toggle { margin-left: auto; } }
+/* With the menu button (tablets, phones) the title stays centred between it and search + language */
+@media (max-width: 1024px) { .navbar #view-title { margin: 0 auto !important; } }

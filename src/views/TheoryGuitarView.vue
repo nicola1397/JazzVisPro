@@ -538,12 +538,14 @@
 <script setup>
 import { reactive, computed } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
+import { useOpenChapter } from '../composables/useOpenChapter.js'
 import { GUITAR_TEXT } from '../utils/theoryGuitarText.js'
 
 const { t, lang } = useI18n()
 const C = computed(() => GUITAR_TEXT[lang.value] || GUITAR_TEXT.it)
 
 const open = reactive(Array(15).fill(false))
+useOpenChapter(open)
 function toggle(i) { open[i] = !open[i] }
 
 const tabStrings = ['e', 'B', 'G', 'D', 'A', 'E']
