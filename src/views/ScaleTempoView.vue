@@ -153,7 +153,8 @@ import { audioTimeToPerf } from '../composables/useBackingTrack.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { getInputLatency, setInputLatency } from '../utils/latency.js'
 import { SCALES, INTERVAL_COLORS, getAbsoluteNote } from '../utils/theory.js'
-import { stringName, zoneName, inZone, positionsOfMidi, pickOne } from '../utils/fretRefs.js'
+import { stringName, zoneName, inZone, positionsOfMidi, pickOne, allPositions } from '../utils/fretRefs.js'
+import { useFretboardPick, setMark, clearMarks } from '../composables/useFretboardMarks.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
 import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes     from '../components/shared/PracticeModes.vue'
@@ -261,31 +262,22 @@ function paintBoard() {
   // in reference mode: only the notes of the run, inside the zone
   const runMidis = pos ? new Set(seq.value.map(x => pos.rootMidi + x.iv)) : null
   const nextMidi = pos && running.value && seq.value[step.value] ? pos.rootMidi + seq.value[step.value].iv : null
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    const pc = parseInt(c.dataset.noteIndex)
-    const sIdx = +c.dataset.stringIndex, fIdx = +c.dataset.fretIndex
-    const midi = getAbsoluteNote(tuning, sIdx, fIdx)
-    const s = pos ? (runMidis.has(midi) && inZone(fIdx, pos.zone) ? pcs.get(pc) : null) : pcs.get(pc)
-    c.className = 'note-circle'
-    c.style.cssText = ''
-    if (!s) { c.innerText = ''; c.style.opacity = '0.04'; return }
+  clearMarks()
+  for (const p of allPositions()) {
+    const midi = getAbsoluteNote(tuning, p.s, p.f)
+    const pc = midi % 12
+    const s = pos ? (runMidis.has(midi) && inZone(p.f, pos.zone) ? pcs.get(pc) : null) : pcs.get(pc)
+    if (!s) continue
+    const color = INTERVAL_COLORS[s.iv % 12].color
     if (pos) {
       const isNext = midi === nextMidi
-      const isRoot = sIdx === pos.root.s && fIdx === pos.root.f
-      c.style.backgroundColor = INTERVAL_COLORS[s.iv % 12].color
-      c.style.color = 'rgba(0,0,0,0.8)'
-      c.innerText = s.label
-      c.style.opacity = isNext || (!running.value && isRoot) ? '1' : '0.45'
-      if (isNext || isRoot) { c.style.border = '2px solid white' }
-      if (isNext) c.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)'
-      return
+      const isRoot = p.s === pos.root.s && p.f === pos.root.f
+      // the root keeps its outline without the halo; the next note has both
+      setMark(p, { color, label: s.label, opacity: isNext || (!running.value && isRoot) ? 1 : 0.45, ring: isNext || isRoot, glow: isNext ? 'rgba(255,255,255,0.6)' : 'transparent' })
+    } else {
+      setMark(p, { color, label: s.label, opacity: pc === next ? 1 : 0.3, ring: pc === next, glow: pc === next ? 'rgba(255,255,255,0.6)' : null })
     }
-    c.style.backgroundColor = INTERVAL_COLORS[s.iv % 12].color
-    c.style.color = 'rgba(0,0,0,0.8)'
-    c.innerText = s.label
-    c.style.opacity = pc === next ? '1' : '0.3'
-    if (pc === next) { c.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)'; c.style.border = '2px solid white' }
-  })
+  }
 }
 
 // ── Metronome ─────────────────────────────────────────────────────────────────
@@ -443,9 +435,9 @@ async function calibrate() {
   }
 }
 
-async function onNoteClick(e) {
+async function onNoteClick({ f, midi }) {
   if (calibrating) return
-  onNote({ midi: e.detail.midiNote, time: performance.now(), fret: e.detail.fretIndex })
+  onNote({ midi, time: performance.now(), fret: f })
 }
 
 watch(settings, () => writeStorage(STORAGE_KEY, { ...settings }), { deep: true })
@@ -458,15 +450,12 @@ watch(() => [settings.scale, settings.root, settings.octaves, settings.direction
   paintBoard()
 })
 
+useFretboardPick(onNoteClick)
 onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
   seq.value = buildSequence()
   paintBoard()
 })
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  stopClock()
-})
+onUnmounted(() => stopClock())
 </script>
 
 <style scoped>

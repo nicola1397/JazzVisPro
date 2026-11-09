@@ -64,12 +64,13 @@ import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
-import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { useGuitarInput, fretboardPositionsForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { useFretboardPick, setMark, setMarks, clearMarks, answerMark } from '../composables/useFretboardMarks.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { usePracticeStore } from '../stores/practice.js'
 import { INTERVAL_COLORS, INTERVAL_DEGREES, TUNINGS, NOTES, NOTES_FLAT, ROOT_NAMES, getAbsoluteNote } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
-import { positionName, positionsOfMidi, allPositions, flashWrong, circleAt, pickOne } from '../utils/fretRefs.js'
+import { positionName, positionsOfMidi, allPositions, flashWrong, pickOne } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
 import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes     from '../components/shared/PracticeModes.vue'
@@ -165,29 +166,13 @@ function playRoot() {
 
 // Every root on the neck, or only the one given in reference mode.
 function drawBoard() {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    const nIdx = parseInt(c.dataset.noteIndex)
-    c.className = 'note-circle'
-    c.innerText  = ''
-    c.style.cssText = ''
-    const isRoot = rootPos
-      ? +c.dataset.stringIndex === rootPos.s && +c.dataset.fretIndex === rootPos.f
-      : nIdx === root
-    if (isRoot) {
-      c.style.backgroundColor = INTERVAL_COLORS[0].color
-      c.innerText = 'R'; c.style.opacity = '1'; c.style.color = 'rgba(0,0,0,0.8)'
-      if (rootPos) { c.style.border = '2px solid white'; c.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.45)' }
-    } else {
-      c.style.opacity = '0.04'
-    }
-  })
+  clearMarks()
+  const roots = rootPos ? [rootPos] : allPositions((s, f) => (tuning()[s] + f) % 12 === root)
+  setMarks(roots, { color: INTERVAL_COLORS[0].color, label: 'R', ring: !!rootPos })
 }
 
 function clearBoard() {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''; c.style.cssText = ''
-    c.style.opacity = '0.04'
-  })
+  clearMarks()
 }
 
 function intervalKey(iv) {
@@ -207,11 +192,11 @@ function targetPc() {
   return descending.value ? (root - targetInterval + 12) % 12 : (root + targetInterval) % 12
 }
 
-// `elements`: the circles to mark (the clicked one, or every position of the played pitch).
+// `positions`: where to mark the answer (the clicked one, or every position of the played pitch).
 // `midi`: exact note clicked or played. `oct`: octave of the answer, to play the right note back.
 // `played`: name of the note played on the guitar, if the answer came from it.
 // `pos`: string and fret of a clicked answer.
-function checkAnswer({ noteIndex, midi, elements, oct, played = '', pos = {} }) {
+function checkAnswer({ noteIndex, midi, positions, oct, played = '', pos = {} }) {
   if (!active.value) return
   const clicked = descending.value
     ? (root - noteIndex + 12) % 12
@@ -224,21 +209,14 @@ function checkAnswer({ noteIndex, midi, elements, oct, played = '', pos = {} }) 
 
   if (!correct && settings.retry) {
     misses.value++
-    elements.forEach(el => flashWrong(el, label))
+    positions.forEach(p => flashWrong(p, label))
     statusText.value = (rightDegree ? fmt('pm.wrong-place', t('pm.ref-octave')) : fmt('pm.retry-wrong', label)) + playedSuffix
     return
   }
 
   active.value = false
   total.value++
-  elements.forEach(el => {
-    el.style.transition = 'all 0.2s ease'
-    el.style.backgroundColor = correct ? '#2ecc71' : '#e74c3c'
-    el.style.opacity = '1'
-    el.style.color   = 'rgba(0,0,0,0.8)'
-    el.innerText     = label
-    if (played) { el.style.border = '2px solid white'; el.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)' }
-  })
+  setMarks(positions, answerMark(correct, label, !!played))
   if (correct) {
     if (misses.value === 0) score.value++
     statusText.value = (misses.value ? fmt('pm.right-after', misses.value + 1) : t('il.correct')) + playedSuffix
@@ -260,17 +238,9 @@ function playTargetNote(oct) {
 // The right answer: every position of the interval, or the exact note in reference mode.
 function revealCorrect() {
   const cells = targetMidi !== null
-    ? positionsOfMidi(tuning(), targetMidi).map(circleAt)
-    : [...document.querySelectorAll('.fretboard-layer .note-circle')].filter(c => parseInt(c.dataset.noteIndex) === targetPc())
-  cells.forEach(c => {
-    if (!c) return
-    c.style.transition = 'all 0.2s ease'
-    c.classList.add('note-highlighted')
-    c.style.backgroundColor = INTERVAL_COLORS[targetInterval].color
-    c.innerText = INTERVAL_COLORS[targetInterval].short
-    c.style.color   = 'rgba(0,0,0,0.8)'
-    c.style.opacity = '1'
-  })
+    ? positionsOfMidi(tuning(), targetMidi)
+    : allPositions((s, f) => (tuning()[s] + f) % 12 === targetPc())
+  setMarks(cells, { color: INTERVAL_COLORS[targetInterval].color, label: INTERVAL_COLORS[targetInterval].short, cls: 'note-highlighted' })
 }
 
 // Retry mode: stop trying and see the answer.
@@ -283,15 +253,14 @@ function giveUp() {
   scheduleNext(2800, false)
 }
 
-async function onNoteClick(e) {
-  const { noteIndex, midiNote, stringIndex, fretIndex, element } = e.detail
+async function onNoteClick({ s: stringIndex, f: fretIndex, noteIndex, midi: midiNote }) {
   // Play the note
   const tun = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
   const oct = BASE_OCTAVES[stringIndex] + Math.floor((tun[stringIndex] + fretIndex) / 12)
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, noteIndex)
   audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
-  checkAnswer({ noteIndex, midi: midiNote, elements: [element], oct, pos: { s: stringIndex, f: fretIndex } })
+  checkAnswer({ noteIndex, midi: midiNote, positions: [{ s: stringIndex, f: fretIndex }], oct, pos: { s: stringIndex, f: fretIndex } })
 }
 
 function onGuitarNote({ midi, noteIndex }) {
@@ -300,7 +269,7 @@ function onGuitarNote({ midi, noteIndex }) {
   checkAnswer({
     noteIndex,
     midi,
-    elements: fretboardCirclesForMidi(appStore.currentTuning, midi),
+    positions: fretboardPositionsForMidi(appStore.currentTuning, midi),
     oct: Math.floor(midi / 12),
     played: midiToName(midi, notes),
   })
@@ -314,14 +283,8 @@ watch(settings, () => {
 }, { deep: true })
 watch(descending, () => { if (hasQuestion.value) endQuestion() })
 
-onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
-  clearBoard()
-})
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  clearTimeout(nextTimer)
-})
+useFretboardPick(onNoteClick)
+onUnmounted(() => clearTimeout(nextTimer))
 </script>
 
 <style scoped>

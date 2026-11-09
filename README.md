@@ -98,6 +98,15 @@ npm run test:e2e     # test nel browser (Playwright, sulla build di produzione)
 npm run check:i18n   # ogni chiave di traduzione esiste in IT e EN
 ```
 
+### Il manico negli esercizi
+
+Gli esercizi non toccano più il disegno del manico: descrivono dei **segni** per posizione
+(colore, etichetta, anello, opacità…) in `src/composables/useFretboardMarks.js` e il componente
+`Fretboard` li disegna; i tocchi sul manico arrivano all'esercizio aperto (`useFretboardPick`),
+che quando si chiude toglie i suoi segni. Il manico si usa anche da tastiera: frecce per
+spostarsi tra corde e tasti, Invio o Spazio per scegliere la nota (negli esercizi il lettore di
+schermo annuncia la posizione, non la nota).
+
 ### Test
 
 - **Unitari** (`tests/unit`, Vitest, ~1 s): teoria (nomi delle note, intervalli, accordi e scale scritti

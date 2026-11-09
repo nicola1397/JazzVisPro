@@ -101,7 +101,8 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
-import { midiToName, fretboardCirclesForMidi } from '../composables/useGuitarInput.js'
+import { midiToName, fretboardPositionsForMidi } from '../composables/useGuitarInput.js'
+import { useFretboardPick, setMarks, clearMarks } from '../composables/useFretboardMarks.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import PitchWorker from '../workers/pitch.worker.js?worker'
 
@@ -351,24 +352,17 @@ function analyseAt(sec) {
 }
 
 function paintNote(midi) {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''
-    c.style.cssText = ''; c.style.opacity = '0.04'
-  })
+  clearMarks()
   if (midi === null) return
-  fretboardCirclesForMidi(appStore.currentTuning, midi).forEach(c => {
-    c.style.backgroundColor = '#FFD60A'
-    c.style.opacity = '1'
-    c.style.color = 'rgba(0,0,0,0.8)'
-    c.innerText = appStore.currentNotes[((midi % 12) + 12) % 12]
-  })
+  setMarks(fretboardPositionsForMidi(appStore.currentTuning, midi), { color: '#FFD60A', label: appStore.currentNotes[((midi % 12) + 12) % 12] })
 }
 
 // Clicking the fretboard plays that note, to compare it with the recording by ear.
-async function onNoteClick(e) {
+async function onNoteClick({ midi }) {
   await audio.init()
-  audio.playChord([0], e.detail.midiNote, 0, 1, 0.25, 'Electric Piano')
+  audio.playChord([0], midi, 0, 1, 0.25, 'Electric Piano')
 }
+useFretboardPick(onNoteClick)
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 function onKey(e) {
@@ -394,13 +388,10 @@ const onResize = () => draw()
 onMounted(() => {
   window.addEventListener('keydown', onKey)
   window.addEventListener('resize', onResize)
-  window.addEventListener('fretboard:noteClick', onNoteClick)
-  paintNote(null)
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('resize', onResize)
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
   player.pause()
   cancelAnimationFrame(raf)
   if (objectUrl) URL.revokeObjectURL(objectUrl)

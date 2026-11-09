@@ -120,3 +120,22 @@ test.describe('quick search', () => {
     await expect(page.locator('.qs-dialog')).toHaveCount(0)
   })
 })
+
+test.describe('fretboard from the keyboard', () => {
+  test('arrows move, Enter answers an exercise and toggles a custom note', async ({ page }) => {
+    await open(page, '/note-finder')
+    await page.locator('.stage-hud .jd-tbtn--play').first().click()
+    const layer = page.locator('.fretboard-layer')
+    await layer.focus()
+    await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowRight')
+    await expect(page.locator('.fret.kbd-cursor')).toHaveCount(1)
+    await expect(page.locator('.string.s4 .fret-6')).toHaveClass(/kbd-cursor/)
+    await page.keyboard.press('Enter')
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.string.s4 .fret-6 .note-circle')).opacity)).toBe('1')
+    await open(page, '/explorer')
+    await page.locator('.jd-mode', { hasText: /personalizzato|custom/i }).click()
+    await page.locator('.fretboard-layer').focus()
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.note-circle.active-note')).toHaveCount(1)
+  })
+})

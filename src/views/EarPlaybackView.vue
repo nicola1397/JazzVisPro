@@ -136,6 +136,7 @@ import { useAudioStore } from '../stores/audio.js'
 import { usePracticeStore } from '../stores/practice.js'
 import { useI18n }       from '../composables/useI18n.js'
 import { useGuitarInput, midiToName } from '../composables/useGuitarInput.js'
+import { useFretboardPick, setMark, getMark, clearMarks } from '../composables/useFretboardMarks.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { getAbsoluteNote } from '../utils/theory.js'
 import { FRETS } from '../utils/constants.js'
@@ -266,25 +267,13 @@ function makeArpeggio() {
 }
 
 // ── Fretboard ─────────────────────────────────────────────────────────────────
-function circles() {
-  return document.querySelectorAll('.fretboard-layer .note-circle')
-}
-
 function clearBoard() {
-  circles().forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''
-    c.style.cssText = ''; c.style.opacity = '0.04'
-  })
+  clearMarks()
 }
 
-function paint(el, color, label, ring = false) {
-  if (!el) return
-  el.style.transition = 'all 0.2s ease'
-  el.style.backgroundColor = color
-  el.style.opacity = '1'
-  el.style.color = 'rgba(0,0,0,0.8)'
-  el.innerText = label
-  if (ring) { el.style.border = '2px solid white'; el.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)' }
+// `played`: a note clicked in this answer (the solution does not cover it)
+function paint(p, color, label, ring = false, played = false) {
+  setMark(p, { color, label, ring, glow: ring ? 'rgba(255,255,255,0.6)' : null, played })
 }
 
 // One way to play the phrase: the positions that move the least along the neck.
@@ -317,8 +306,7 @@ function fingering(midis, first = null) {
 
 function showSolution(midis) {
   fingering(midis, info.value.startPos || null).forEach(({ s, f }, i) => {
-    const el = document.querySelector(`.fretboard-layer .note-circle[data-string-index="${s}"][data-fret-index="${f}"]`)
-    if (el && !el.dataset.epPlayed) paint(el, i === 0 ? '#e74c3c' : '#FFD60A', String(i + 1), true)
+    if (!getMark({ s, f })?.played) paint({ s, f }, i === 0 ? '#e74c3c' : '#FFD60A', String(i + 1), true)
   })
 }
 
@@ -351,7 +339,6 @@ function start() {
   active.value = true
   statusText.value = t('ep.hint')
   clearBoard()
-  circles().forEach(c => { delete c.dataset.epPlayed })
   if (startPos) paintRing(startPos, '1')
   playTarget()
 }
@@ -382,8 +369,7 @@ function finish(ok, message, wrongNote) {
   active.value = false
   total.value++
   if (ok && misses.value === 0) score.value++
-  const el = wrongNote?.element
-  practice.record('ear-playback', info.value.key, ok, el ? { s: +el.dataset.stringIndex, f: +el.dataset.fretIndex } : {})
+  practice.record('ear-playback', info.value.key, ok, wrongNote?.pos ? { ...wrongNote.pos } : {})
   // Expected notes in the key the answer started from (or the closest octave).
   const shift = offset ?? (info.value.startMidi !== null && info.value.startMidi !== undefined
     ? info.value.startMidi - target.value[0]
@@ -420,9 +406,8 @@ function giveUp() {
 // A wrong note in retry mode: it flashes, the question stays on the same note.
 function retryWrong(note, message) {
   misses.value++
-  const el = note.element
-  practice.record('ear-playback', info.value.key, false, el ? { s: +el.dataset.stringIndex, f: +el.dataset.fretIndex } : {})
-  if (el) flashWrong(el, appStore.currentNotes[pcOf(note.midi)])
+  practice.record('ear-playback', info.value.key, false, note.pos ? { ...note.pos } : {})
+  if (note.pos) flashWrong(note.pos, appStore.currentNotes[pcOf(note.midi)])
   statusText.value = message
 }
 
@@ -430,12 +415,12 @@ function handleNote(note) {
   if (!active.value) return
   const i = step.value
   const slot = slots.value[i]
-  const heard = note.element ? '' : ` · 🎸 ${noteName(note.midi)}`
+  const heard = note.pos ? '' : ` · 🎸 ${noteName(note.midi)}`
   if (i === 0) {
     const sp = info.value.startPos
     if (sp) {
-      const there = note.element
-        ? +note.element.dataset.stringIndex === sp.s && +note.element.dataset.fretIndex === sp.f
+      const there = note.pos
+        ? note.pos.s === sp.s && note.pos.f === sp.f
         : note.midi === info.value.startMidi
       if (!there) {
         const where = positionName(sp, appStore.lang)
@@ -455,7 +440,7 @@ function handleNote(note) {
     const want = target.value[i] + offset
     if (note.midi !== want) {
       // With the guitar, a note of the phrase still ringing is not a new one.
-      if (!note.element && accepted.includes(note.midi)) { guitar.allowRepeat(pcOf(want)); return }
+      if (!note.pos && accepted.includes(note.midi)) { guitar.allowRepeat(pcOf(want)); return }
       if (settings.retry) return retryWrong(note, fmt('pm.retry-wrong', noteName(note.midi)) + heard)
       slot.state = 'wrong'; slot.played = noteName(note.midi)
       markClick(note, false)
@@ -472,17 +457,15 @@ function handleNote(note) {
 }
 
 function markClick(note, ok) {
-  if (!note.element) return
-  note.element.dataset.epPlayed = '1'
-  paint(note.element, ok ? '#2ecc71' : '#e74c3c', ok ? String(step.value + 1) : appStore.currentNotes[pcOf(note.midi)])
+  if (!note.pos) return
+  paint(note.pos, ok ? '#2ecc71' : '#e74c3c', ok ? String(step.value + 1) : appStore.currentNotes[pcOf(note.midi)], false, true)
 }
 
-async function onNoteClick(e) {
-  const { midiNote, element } = e.detail
+async function onNoteClick({ s, f, midi: midiNote }) {
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, midiNote)
   audio.playChord([0], midiNote, 0, 0.6, 0.2, 'Electric Piano')
-  handleNote({ midi: midiNote, element })
+  handleNote({ midi: midiNote, pos: { s, f } })
 }
 
 watch(settings, () => {
@@ -490,14 +473,8 @@ watch(settings, () => {
   if (target.value.length) reset()
 }, { deep: true })
 
-onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
-  clearBoard()
-})
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  clearTimeout(nextTimer); clearTimers()
-})
+useFretboardPick(onNoteClick)
+onUnmounted(() => { clearTimeout(nextTimer); clearTimers() })
 </script>
 
 <style scoped>

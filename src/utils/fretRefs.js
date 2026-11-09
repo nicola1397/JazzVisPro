@@ -9,6 +9,7 @@
 
 import { getAbsoluteNote, CAGED_SHAPES_MAJOR, CAGED_SHAPES_MINOR } from './theory.js'
 import { FRETS, STRINGS } from './constants.js'
+import { fretboard, setMark, setMarks, flashMark, WRONG } from '../composables/useFretboardMarks.js'
 
 export const ZONE_SPAN = 5                       // frets in a zone, as in one hand position
 export const ZONE_STARTS = [0, 3, 5, 7, 9, 12]
@@ -82,59 +83,25 @@ export function cagedOptions(tuning, rootPc, quality, maxFret = 15) {
   return out
 }
 
-// ── Fretboard painting ───────────────────────────────────────────────────────
-export function circleAt(p) {
-  return document.querySelector(`.fretboard-layer .note-circle[data-string-index="${p.s}"][data-fret-index="${p.f}"]`)
-}
+// ── Fretboard painting (marks, see composables/useFretboardMarks.js) ─────────
+const AREA = { color: 'rgba(255, 214, 10, 0.55)', opacity: 0.22, area: true }
 
-const AREA_OPACITY = '0.22'
-
-// Faint marks on the area where the answer goes (a string, a zone…). Call on a cleared board.
+// Faint marks on the area where the answer goes (a string, a zone…).
 export function paintArea(test) {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    if (!test(+c.dataset.stringIndex, +c.dataset.fretIndex)) return
-    c.style.backgroundColor = 'rgba(255, 214, 10, 0.55)'
-    c.style.opacity = AREA_OPACITY
-  })
+  setMarks(allPositions(test), AREA)
 }
 
-// Removes the area marks (when the answer is shown), leaving every other circle as it is.
+// Removes the area marks (when the answer is shown), leaving every other mark as it is.
 export function clearArea() {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    if (c.style.opacity !== AREA_OPACITY || c.innerText) return
-    c.style.cssText = ''
-    c.style.opacity = '0.04'
-  })
+  for (const [k, m] of Object.entries(fretboard.marks)) if (m.area) delete fretboard.marks[k]
 }
 
 // A circle drawn with a white ring, e.g. the given root of a question.
 export function paintRing(p, label, color = '#FFD60A') {
-  const c = circleAt(p)
-  if (!c) return
-  c.style.transition = 'all 0.2s ease'
-  c.style.backgroundColor = color
-  c.style.opacity = '1'
-  c.style.color = 'rgba(0,0,0,0.85)'
-  c.style.border = '2px solid white'
-  c.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.45)'
-  c.innerText = label
+  setMark(p, { color, label, ring: true })
 }
 
-// Retry mode: a wrong note turns red for a moment, then the circle goes back to how it was
-// (unless the exercise painted it again meanwhile).
-export function flashWrong(el, label, ms = 800) {
-  if (!el) return
-  const saved = { css: el.style.cssText, text: el.innerText, cls: el.className }
-  el.style.transition = 'all 0.2s ease'
-  el.style.backgroundColor = '#e74c3c'
-  el.style.opacity = '1'
-  el.style.color = 'rgba(0,0,0,0.85)'
-  el.innerText = label
-  const mine = el.style.backgroundColor
-  setTimeout(() => {
-    if (el.style.backgroundColor !== mine || el.innerText !== label) return
-    el.style.cssText = saved.css
-    el.innerText = saved.text
-    el.className = saved.cls
-  }, ms)
+// Retry mode: a wrong note turns red for a moment, then goes back to how it was.
+export function flashWrong(p, label, ms = 800) {
+  if (p) flashMark(p, { color: WRONG, label }, ms)
 }

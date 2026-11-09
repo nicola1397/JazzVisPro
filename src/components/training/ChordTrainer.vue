@@ -129,14 +129,15 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore }   from '../../stores/app.js'
 import { useAudioStore } from '../../stores/audio.js'
 import { useI18n }       from '../../composables/useI18n.js'
-import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../../composables/useGuitarInput.js'
+import { useGuitarInput, fretboardPositionsForMidi, midiToName } from '../../composables/useGuitarInput.js'
+import { useFretboardPick, setMark, clearMarks } from '../../composables/useFretboardMarks.js'
 import { readStorage, writeStorage } from '../../composables/useLocalStorage.js'
 import { usePracticeStore } from '../../stores/practice.js'
 import { INTERVAL_COLORS, getAbsoluteNote } from '../../utils/theory.js'
 import { FRETS } from '../../utils/constants.js'
 import {
   stringSetName, zoneName, randomZone, inZone, playableInZone, cagedOptions, midiAt,
-  paintArea, paintRing, flashWrong, clearArea, pickOne,
+  paintArea, paintRing, flashWrong, clearArea, pickOne, allPositions,
 } from '../../utils/fretRefs.js'
 import GuitarInputPanel from '../shared/GuitarInputPanel.vue'
 import StageHud from '../shared/StageHud.vue'
@@ -241,7 +242,7 @@ const active     = ref(false)
 const step       = ref(0)      // ordered modes: index of the next slot
 let expected  = null           // ordered modes: exact MIDI notes, known once the bass is played
 let accepted  = []             // MIDI notes accepted in this attempt
-let marked    = new Set()      // fretboard circles painted during this attempt
+let marked    = new Set()      // positions ('s-f') painted during this attempt
 let nextTimer = null
 
 const groupCount = computed(() => settings.mode === 'cycle' ? SIZE : 1)
@@ -424,30 +425,18 @@ function noteName(midi) {
 }
 
 // ── Fretboard painting ────────────────────────────────────────────────────────
-function circles() {
-  return document.querySelectorAll('.fretboard-layer .note-circle')
-}
-
-function circleAt(s, f) {
-  return document.querySelector(`.fretboard-layer .note-circle[data-string-index="${s}"][data-fret-index="${f}"]`)
-}
+const keyOf = p => `${p.s}-${p.f}`
+const pcAtPos = p => (appStore.currentTuning[p.s] + p.f) % 12
+const atMidi = m => fretboardPositionsForMidi(appStore.currentTuning, m)
 
 function clearBoard() {
-  circles().forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''
-    c.style.cssText = ''; c.style.opacity = '0.04'
-  })
+  clearMarks()
   marked = new Set()
 }
 
-function paint(el, { color, label, opacity = '1', ring = false }) {
-  if (!el) return
-  el.style.transition = 'all 0.2s ease'
-  el.style.backgroundColor = color
-  el.style.opacity = opacity
-  el.style.color = 'rgba(0,0,0,0.8)'
-  el.innerText = label
-  if (ring) { el.style.border = '2px solid white'; el.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)' }
+function paint(p, { color, label, opacity = 1, ring = false }) {
+  if (!p) return
+  setMark(p, { color, label, opacity, ring, glow: ring ? 'rgba(255,255,255,0.6)' : null })
 }
 
 function slotForPc(pc) {
@@ -466,32 +455,31 @@ function reveal(voicings) {
   if (r?.type === 'caged') {
     // the shape asked, every note of it
     r.shape.forEach(p => {
-      const c = circleAt(p.s, p.f)
-      if (!c || marked.has(c)) return
-      const slot = slotForPc(parseInt(c.dataset.noteIndex))
-      if (slot) paint(c, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
+      if (marked.has(keyOf(p))) return
+      const slot = slotForPc(pcAtPos(p))
+      if (slot) paint(p, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
     })
     return false   // shown, but it is not a fingering on a string set
   }
-  circles().forEach(c => {
-    const pc = parseInt(c.dataset.noteIndex)
-    if (!pcs.has(pc) || marked.has(c)) return
-    if (r?.type === 'zone' && !inZone(+c.dataset.fretIndex, r.zone)) return
-    if (r?.type === 'strings' && !r.strings.includes(+c.dataset.stringIndex)) return
+  allPositions().forEach(p => {
+    const pc = pcAtPos(p)
+    if (!pcs.has(pc) || marked.has(keyOf(p))) return
+    if (r?.type === 'zone' && !inZone(p.f, r.zone)) return
+    if (r?.type === 'strings' && !r.strings.includes(p.s)) return
     const slot = slotForPc(pc)
-    paint(c, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, opacity: '0.35' })
+    paint(p, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, opacity: 0.35 })
   })
   let shown = false
   voicings.forEach(midis => {
     let shapes = voicingShapes(midis, question.value.voicing)
     if (r?.type === 'strings') shapes = shapes.filter(sh => sh.every((p, i) => p.s === r.strings[i]))
     const cells = shapes.length
-      ? shapes.flat().map(({ s, f }) => circleAt(s, f))
-      : midis.flatMap(m => fretboardCirclesForMidi(appStore.currentTuning, m))
-    cells.forEach(c => {
-      if (!c || marked.has(c)) return
-      const slot = slotForPc(parseInt(c.dataset.noteIndex))
-      paint(c, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
+      ? shapes.flat().map(({ s, f }) => ({ s, f }))
+      : midis.flatMap(atMidi)
+    cells.forEach(p => {
+      if (marked.has(keyOf(p))) return
+      const slot = slotForPc(pcAtPos(p))
+      paint(p, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
     })
     shown = shown || shapes.length > 0
   })
@@ -591,9 +579,9 @@ function accept(slot, note) {
   slot.state = 'ok'
   slot.played = noteName(note.midi)
   accepted.push(note.midi)
-  if (note.element) {
-    paint(note.element, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label })
-    marked.add(note.element)
+  if (note.pos) {
+    paint(note.pos, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label })
+    marked.add(keyOf(note.pos))
   }
 }
 
@@ -605,10 +593,10 @@ function succeed(fromClick) {
   const voicings = settings.mode === 'chord' ? [] : groupsOf(expected)
   if (settings.mode === 'chord' && !fromClick) {
     // Show where the pitches just played lie on the neck.
-    accepted.forEach(m => fretboardCirclesForMidi(appStore.currentTuning, m).forEach(c => {
+    accepted.forEach(m => atMidi(m).forEach(p => {
       const slot = slotForPc(pcOf(m))
-      paint(c, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
-      marked.add(c)
+      paint(p, { color: INTERVAL_COLORS[slot.interval].color, label: slot.label, ring: true })
+      marked.add(keyOf(p))
     }))
   }
   const shapesShown = reveal(voicings)
@@ -621,26 +609,22 @@ function succeed(fromClick) {
 function fail(note, message, slot, place = false) {
   if (settings.retry) {
     misses.value++
-    const where = note.element
-      ? { s: parseInt(note.element.dataset.stringIndex), f: parseInt(note.element.dataset.fretIndex) }
-      : { guitar: true }
+    const where = note.pos ? { ...note.pos } : { guitar: true }
     practice.record(props.kind, itemKey(question.value), false, where)
-    const cells = note.element ? [note.element] : fretboardCirclesForMidi(appStore.currentTuning, note.midi)
-    cells.forEach(c => { if (!marked.has(c)) flashWrong(c, appStore.currentNotes[pcOf(note.midi)]) })
+    const cells = note.pos ? [note.pos] : atMidi(note.midi)
+    cells.forEach(p => { if (!marked.has(keyOf(p))) flashWrong(p, appStore.currentNotes[pcOf(note.midi)]) })
     statusText.value = place ? fmt('pm.wrong-place', refInline(question.value.ref)) : fmt('pm.retry-wrong', noteName(note.midi))
     return
   }
   active.value = false
   total.value++
-  const pos = note.element
-    ? { s: parseInt(note.element.dataset.stringIndex), f: parseInt(note.element.dataset.fretIndex) }
-    : { guitar: true }
+  const pos = note.pos ? { ...note.pos } : { guitar: true }
   practice.record(props.kind, itemKey(question.value), false, pos)
   if (slot) { slot.state = 'wrong'; slot.played = noteName(note.midi) }
-  const wrongCells = note.element ? [note.element] : fretboardCirclesForMidi(appStore.currentTuning, note.midi)
-  wrongCells.forEach(c => {
-    paint(c, { color: '#e74c3c', label: appStore.currentNotes[pcOf(note.midi)], ring: !note.element })
-    marked.add(c)
+  const wrongCells = note.pos ? [note.pos] : atMidi(note.midi)
+  wrongCells.forEach(p => {
+    paint(p, { color: '#e74c3c', label: appStore.currentNotes[pcOf(note.midi)], ring: !note.pos })
+    marked.add(keyOf(p))
   })
   // Show the voicing that was asked, from the bass played or the closest one.
   let voicings = []
@@ -689,14 +673,14 @@ function giveUp() {
   scheduleNext(3000)
 }
 
-// `note`: { midi, element? } — `element` is the clicked circle (absent for the guitar).
+// `note`: { midi, pos? } — `pos` is the clicked string and fret (absent for the guitar).
 function handleNote(note) {
   if (!active.value) return
   const pc = pcOf(note.midi)
   const chordPcs = new Set(slots.value.map(s => s.pc))
 
   const r = question.value.ref
-  const pos = note.element ? { s: parseInt(note.element.dataset.stringIndex), f: parseInt(note.element.dataset.fretIndex) } : null
+  const pos = note.pos || null
 
   if (settings.mode === 'chord') {
     const slot = slotForPc(pc)
@@ -704,7 +688,7 @@ function handleNote(note) {
     if (r && !inChordRef(r, note, pos)) return fail(note, fmt('pm.wrong-place', refInline(r)), null, true)
     if (slot.state === 'ok') return   // the same chord tone again (another octave): fine
     accept(slot, note)
-    if (slots.value.every(s => s.state === 'ok')) succeed(!!note.element)
+    if (slots.value.every(s => s.state === 'ok')) succeed(!!note.pos)
     return
   }
 
@@ -722,7 +706,7 @@ function handleNote(note) {
     const want = expected[step.value]
     // With the guitar, strings of the shape still ringing, re-picked or heard an
     // octave low are not a new note.
-    if (!note.element && chordPcs.has(pc) && (note.midi < want || accepted.includes(note.midi))) {
+    if (!note.pos && chordPcs.has(pc) && (note.midi < want || accepted.includes(note.midi))) {
       guitar.allowRepeat(slot.pc)   // the wanted note may share this pitch class
       return
     }
@@ -735,17 +719,16 @@ function handleNote(note) {
 
   accept(slot, note)
   step.value++
-  if (step.value === slots.value.length) return succeed(!!note.element)
+  if (step.value === slots.value.length) return succeed(!!note.pos)
   // Across inversions the next note may be one just played: let it count again.
   guitar.allowRepeat(slots.value[step.value].pc)
 }
 
-async function onNoteClick(e) {
-  const { midiNote, element } = e.detail
+async function onNoteClick({ s, f, midi: midiNote }) {
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, midiNote)
   audio.playChord([0], midiNote, 0, 0.8, 0.2, 'Electric Piano')
-  handleNote({ midi: midiNote, element })
+  handleNote({ midi: midiNote, pos: { s, f } })
 }
 
 function onGuitarNote({ midi }) {
@@ -759,14 +742,8 @@ watch(settings, () => {
   if (question.value) endQuestion()
 }, { deep: true })
 
-onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
-  clearBoard()
-})
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  clearTimeout(nextTimer)
-})
+useFretboardPick(onNoteClick)
+onUnmounted(() => clearTimeout(nextTimer))
 </script>
 
 <style scoped>

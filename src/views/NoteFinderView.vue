@@ -54,15 +54,16 @@
 
 <script setup>
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { useFretboardPick, setMarks, clearMarks, answerMark, RIGHT } from '../composables/useFretboardMarks.js'
 import { useAppStore }   from '../stores/app.js'
 import { useAudioStore } from '../stores/audio.js'
 import { useI18n }       from '../composables/useI18n.js'
-import { useGuitarInput, fretboardCirclesForMidi, midiToName } from '../composables/useGuitarInput.js'
+import { useGuitarInput, fretboardPositionsForMidi, midiToName } from '../composables/useGuitarInput.js'
 import { readStorage, writeStorage } from '../composables/useLocalStorage.js'
 import { usePracticeStore } from '../stores/practice.js'
 import { NOTES, NOTES_FLAT, TUNINGS } from '../utils/theory.js'
 import { BASE_OCTAVES }  from '../utils/constants.js'
-import { stringName, paintArea, clearArea, flashWrong, positionsOfMidi, allPositions, circleAt } from '../utils/fretRefs.js'
+import { stringName, paintArea, clearArea, flashWrong, positionsOfMidi, allPositions } from '../utils/fretRefs.js'
 import GuitarInputPanel  from '../components/shared/GuitarInputPanel.vue'
 import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes     from '../components/shared/PracticeModes.vue'
@@ -136,10 +137,7 @@ function playTarget() {
 }
 
 function clearBoard() {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''
-    c.style.cssText = ''; c.style.opacity = '0.04'
-  })
+  clearMarks()
 }
 
 // Next question: always in retry mode once the answer is right, otherwise without leaving
@@ -159,10 +157,10 @@ function rightPositions() {
   })
 }
 
-// `elements`: the circles to mark (the clicked one, or every position of the played pitch).
+// `positions`: where to mark the answer (the clicked one, or every position of the played pitch).
 // `played`: name of the note played on the guitar, if the answer came from it.
 // `pos`: string and fret of a clicked answer; `midi`: the pitch heard from the guitar.
-function checkAnswer({ noteIndex, elements, played = '', pos = {}, midi = null }) {
+function checkAnswer({ noteIndex, positions, played = '', pos = {}, midi = null }) {
   if (!active.value) return
   const rightNote = noteIndex === targetNote
   const rightPlace = targetString === null || (Number.isInteger(pos.s)
@@ -174,19 +172,14 @@ function checkAnswer({ noteIndex, elements, played = '', pos = {}, midi = null }
 
   if (!correct && settings.retry) {
     misses.value++
-    elements.forEach(el => flashWrong(el, notes()[noteIndex]))
+    positions.forEach(p => flashWrong(p, notes()[noteIndex]))
     statusText.value = (rightNote ? fmt('pm.wrong-place', refText.value) : fmt('pm.retry-wrong', notes()[noteIndex])) + heard
     return
   }
 
   active.value = false; total.value++
   if (correct && misses.value === 0) score.value++
-  elements.forEach(el => {
-    el.style.transition = 'all 0.2s ease'
-    el.style.backgroundColor = correct ? '#2ecc71' : '#e74c3c'; el.style.opacity = '1'
-    el.style.color = 'rgba(0,0,0,0.8)'; el.innerText = notes()[noteIndex]
-    if (played) { el.style.border = '2px solid white'; el.style.boxShadow = '0 0 12px 3px rgba(255,255,255,0.6)' }
-  })
+  setMarks(positions, answerMark(correct, notes()[noteIndex], !!played))
   if (correct) statusText.value = (misses.value ? fmt('pm.right-after', misses.value + 1) : t('nf.correct')) + heard
   else statusText.value = (rightNote ? fmt('pm.wrong-place', refText.value) : t('nf.wrong')) + heard
   revealPositions()
@@ -195,12 +188,7 @@ function checkAnswer({ noteIndex, elements, played = '', pos = {}, midi = null }
 
 function revealPositions() {
   clearArea()
-  for (const p of rightPositions()) {
-    const c = circleAt(p)
-    if (!c) continue
-    c.style.transition = 'all 0.2s ease'; c.style.backgroundColor = '#2ecc71'
-    c.style.opacity = '1'; c.innerText = notes()[targetNote]; c.style.color = 'rgba(0,0,0,0.8)'
-  }
+  setMarks(rightPositions(), { color: RIGHT, label: notes()[targetNote] })
 }
 
 // Retry mode: stop trying and see where the note is.
@@ -212,14 +200,13 @@ function giveUp() {
   scheduleNext(2500, false)
 }
 
-async function onNoteClick(e) {
-  const { noteIndex, stringIndex, fretIndex, element } = e.detail
+async function onNoteClick({ s: stringIndex, f: fretIndex, noteIndex }) {
   const tuning = TUNINGS[appStore.tuningName] || TUNINGS['E Standard']
   const oct    = BASE_OCTAVES[stringIndex] + Math.floor((tuning[stringIndex] + fretIndex) / 12)
   await audio.init()
   guitar.holdOff(SELF_SOUND_HOLDOFF_MS, noteIndex)
   audio.playChord([0], noteIndex, 0, 0.8, 0.2, 'Electric Piano', oct)
-  checkAnswer({ noteIndex, elements: [element], pos: { s: stringIndex, f: fretIndex } })
+  checkAnswer({ noteIndex, positions: [{ s: stringIndex, f: fretIndex }], pos: { s: stringIndex, f: fretIndex } })
 }
 
 function onGuitarNote({ midi, noteIndex }) {
@@ -227,7 +214,7 @@ function onGuitarNote({ midi, noteIndex }) {
   checkAnswer({
     noteIndex,
     midi,
-    elements: fretboardCirclesForMidi(appStore.currentTuning, midi),
+    positions: fretboardPositionsForMidi(appStore.currentTuning, midi),
     played: midiToName(midi, notes()),
   })
 }
@@ -239,11 +226,8 @@ watch(settings, () => {
   if (hasQuestion.value) endQuestion()
 }, { deep: true })
 
-onMounted(() => { window.addEventListener('fretboard:noteClick', onNoteClick); clearBoard() })
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  clearTimeout(nextTimer)
-})
+useFretboardPick(onNoteClick)
+onUnmounted(() => clearTimeout(nextTimer))
 </script>
 
 <style scoped>

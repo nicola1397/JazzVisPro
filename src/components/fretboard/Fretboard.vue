@@ -2,9 +2,12 @@
   <div class="scroll-wrapper" v-show="showFretboard" :class="{ lefty: appStore.leftHanded, windowed: !!win }" :style="winStyle">
     <div class="scroll-content">
       <div class="fretboard-container">
-        <div class="fretboard-layer" :class="{ 'game-mode': isGameMode }" @click.stop="handleClick">
+        <div
+          class="fretboard-layer" :class="{ 'game-mode': isGameMode }" @click.stop="handleClick"
+          tabindex="0" role="group" :aria-label="t('fb.aria')" @keydown="onKey" @focus="onFocus"
+        >
           <div v-for="sIdx in STRINGS" :key="sIdx" class="string" :class="`s${sIdx}`">
-            <div v-for="fIdx in (FRETS + 1)" :key="fIdx" class="fret" :class="[`fret-${fIdx-1}`, { 'fret-out': outOfWindow(fIdx-1), 'fret-first': win && fIdx-1 === win.from && win.from > 0 }]">
+            <div v-for="fIdx in (FRETS + 1)" :key="fIdx" class="fret" :class="[`fret-${fIdx-1}`, { 'fret-out': outOfWindow(fIdx-1), 'fret-first': win && fIdx-1 === win.from && win.from > 0, 'kbd-cursor': cursor.s === sIdx-1 && cursor.f === fIdx-1 }]">
               <div
                 class="note-circle"
                 :class="getCircleClass(sIdx-1, fIdx-1)"
@@ -18,6 +21,7 @@
           </div>
         </div>
       </div>
+      <div class="sr-only" aria-live="polite">{{ cursorText }}</div>
       <div class="fret-numbers" id="numbers-layer">
         <div v-for="f in (FRETS + 1)" :key="f" class="num" :class="{ 'num-0': f === 1, 'fret-out': outOfWindow(f - 1) }">
           {{ f - 1 }}
@@ -28,11 +32,14 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute }  from 'vue-router'
 import { useAppStore } from '../../stores/app.js'
 import { STRINGS, FRETS } from '../../utils/constants.js'
 import { INTERVAL_COLORS, getPitchClass, getAbsoluteNote } from '../../utils/theory.js'
+import { fretboard, markStyle } from '../../composables/useFretboardMarks.js'
+import { useI18n } from '../../composables/useI18n.js'
+import { positionName } from '../../utils/fretRefs.js'
 
 const props = defineProps({
   gameMode: { type: String, default: '' },
@@ -62,16 +69,6 @@ const winStyle = computed(() => {
 
 const isGameMode = computed(() => ['interval', 'note', 'lick', 'chord', 'playback', 'changes', 'scale', 'transcribe', 'lesson'].includes(props.gameMode))
 
-// When leaving game mode, purge inline transition/color set directly on DOM by game views.
-// These are outside Vue's style tracking so Vue won't clear them on its own re-render.
-watch(isGameMode, (newVal) => {
-  if (!newVal) {
-    document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-      c.style.removeProperty('transition')
-      c.style.removeProperty('color')
-    })
-  }
-}, { flush: 'post' })
 const showFretboard = computed(() => route.meta?.fretboard !== false)
 
 // Computed grid state to ensure reactivity and performance
@@ -146,7 +143,10 @@ const boardState = computed(() => {
 })
 
 function getCircleClass(s, f) {
-  if (isGameMode.value) return 'note-circle'
+  if (isGameMode.value) {
+    const m = fretboard.marks[`${s}-${f}`]
+    return m?.cls ? ['note-circle', ...[].concat(m.cls)] : 'note-circle'
+  }
   const state = boardState.value[s][f]
   return {
     'note-circle': true,
@@ -165,7 +165,10 @@ function getCircleClass(s, f) {
 const inCustomZone = f => f >= appStore.customZone.from && f <= appStore.customZone.to
 
 function getCircleStyle(s, f) {
-  if (isGameMode.value) return { opacity: '0.04', visibility: 'visible', pointerEvents: 'auto' }
+  if (isGameMode.value) {
+    const m = fretboard.marks[`${s}-${f}`]
+    return m ? markStyle(m) : { opacity: '0.04', visibility: 'visible', pointerEvents: 'auto' }
+  }
   const state = boardState.value[s][f]
   if (!state.isActive && appStore.explorerMode !== 'custom' && !state.finalVisible) {
     return { visibility: 'hidden' }
@@ -194,7 +197,7 @@ function getCircleStyle(s, f) {
 }
 
 function getCircleText(s, f) {
-  if (isGameMode.value) return ''
+  if (isGameMode.value) return fretboard.marks[`${s}-${f}`]?.label ?? ''
   const state = boardState.value[s][f]
   return state.isActive ? state.text : ''
 }
@@ -207,6 +210,45 @@ function hasMarker(s, f) {
   return false
 }
 
+// ── Keyboard: arrows move a cursor over strings and frets, Enter or Space touches ──
+const { t } = useI18n()
+const cursor = ref({ s: 2, f: 5 })
+const cursorText = ref('')
+const fretRange = () => (win.value ? { lo: win.value.from, hi: win.value.to } : { lo: 0, hi: FRETS })
+function announce() {
+  const p = cursor.value
+  const name = positionName(p, appStore.lang)
+  // in the exercises the note is not said: it would give the answer away
+  cursorText.value = isGameMode.value ? name : `${name} · ${appStore.currentNotes[boardState.value[p.s][p.f].nIdx]}`
+}
+function onFocus() {
+  const { lo, hi } = fretRange()
+  cursor.value = { s: cursor.value.s, f: Math.min(hi, Math.max(lo, cursor.value.f)) }
+  announce()
+}
+function onKey(e) {
+  const { lo, hi } = fretRange()
+  const dir = appStore.leftHanded ? -1 : 1                       // mirrored neck: left is up the neck
+  let { s, f } = cursor.value
+  if (e.key === 'ArrowRight') f += dir
+  else if (e.key === 'ArrowLeft') f -= dir
+  else if (e.key === 'ArrowUp') s -= 1
+  else if (e.key === 'ArrowDown') s += 1
+  else if (e.key === 'Home') f = lo
+  else if (e.key === 'End') f = hi
+  else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault(); e.stopPropagation()
+    const state = boardState.value[s][f]
+    emit('noteClick', { noteIndex: state.nIdx, midiNote: state.absNote, stringIndex: s, fretIndex: f })
+    return
+  } else return
+  e.preventDefault(); e.stopPropagation()                         // not also a page shortcut
+  cursor.value = { s: Math.min(STRINGS - 1, Math.max(0, s)), f: Math.min(hi, Math.max(lo, f)) }
+  announce()
+  // keep the cursor in view on narrow screens
+  document.querySelector(`.string.s${cursor.value.s + 1} .fret-${cursor.value.f}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}
+
 // The whole fret cell answers, not just the circle: on small screens the circles are small.
 function handleClick(e) {
   const circle = e.target.closest('.note-circle') || e.target.closest('.fret')?.querySelector('.note-circle')
@@ -214,12 +256,6 @@ function handleClick(e) {
   const s = parseInt(circle.dataset.stringIndex)
   const f = parseInt(circle.dataset.fretIndex)
   const state = boardState.value[s][f]
-  emit('noteClick', {
-    noteIndex: state.nIdx,
-    midiNote: state.absNote,
-    stringIndex: s,
-    fretIndex: f,
-    element: circle,
-  })
+  emit('noteClick', { noteIndex: state.nIdx, midiNote: state.absNote, stringIndex: s, fretIndex: f })
 }
 </script>

@@ -142,6 +142,7 @@
 </template>
 
 <script setup>
+import { useFretboardPick, setMark, clearMarks, addMarkClass, removeMarkClass } from '../composables/useFretboardMarks.js'
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore }      from '../stores/app.js'
@@ -217,36 +218,21 @@ function cancelAll() {
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 // ── Fretboard ────────────────────────────────────────────────────────────────
-function circleAt(p) {
+// The circle element, only to read where it is on screen (scrolling)
+function circleEl(p) {
   return document.querySelector(`.fretboard-layer .note-circle[data-string-index="${p.s}"][data-fret-index="${p.f}"]`)
 }
 
 function clearBoard() {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''
-    c.style.cssText = ''; c.style.opacity = '0.04'
-  })
+  clearMarks()
 }
 
 // style: 'solid' (filled, with label), 'dim' (already shown in a demonstration), 'ghost' (dashed outline)
 function paint(p, { color = NOTE_COLOR, label = '', style = 'solid', cls = '' } = {}) {
-  const c = circleAt(p)
-  if (!c) return
-  c.className = cls ? `note-circle ${cls}` : 'note-circle'
-  c.style.cssText = ''
-  c.innerText = ''
-  if (style === 'ghost') {
-    c.style.backgroundColor = 'transparent'
-    c.style.border = `2px dashed ${color}`
-    c.style.boxShadow = 'none'
-    c.style.opacity = '0.9'
-    if (label) { c.innerText = label; c.style.color = color }
-  } else {
-    c.style.backgroundColor = color
-    c.style.opacity = style === 'dim' ? '0.45' : '1'
-    c.style.color = 'rgba(0,0,0,0.85)'
-    c.innerText = label
-  }
+  setMark(p, {
+    color, label, cls: cls || undefined,
+    ghost: style === 'ghost', opacity: style === 'dim' ? 0.45 : style === 'ghost' ? 0.9 : 1,
+  })
 }
 
 // Draws the fretboard for the current state of the step.
@@ -278,7 +264,7 @@ function scrollToBoard() {
 // Scrolls the fretboard sideways (on narrow screens) so that this note is visible.
 // Only horizontally: a second vertical smooth scroll would cut short scrollToBoard().
 function scrollToCircle(p) {
-  const c = circleAt(p)
+  const c = circleEl(p)
   const w = document.querySelector('.scroll-wrapper')
   if (!c || !w || p.f === 0) return          // fret 0 sits on the sticky nut, always in view
   const cr = c.getBoundingClientRect()
@@ -353,12 +339,11 @@ async function listenMarks() {
   playing.value = true
   for (const mk of step.value.marks || []) {
     if (my !== token) return
-    const c = circleAt(mk)
-    c?.classList.add('lsn-now')
+    addMarkClass(mk, 'lsn-now')
     scrollToCircle(mk)
     playPos(mk)
     await wait(DEMO_STEP_MS)
-    c?.classList.remove('lsn-now')
+    removeMarkClass(mk, 'lsn-now')
   }
   if (my === token) playing.value = false
 }
@@ -575,9 +560,8 @@ const quizResult = computed(() => {
 })
 
 // ── Input ────────────────────────────────────────────────────────────────────
-async function onNoteClick(e) {
+async function onNoteClick({ s: stringIndex, f: fretIndex }) {
   if (!standard.value || finished.value || !step.value) return
-  const { stringIndex, fretIndex } = e.detail
   const pos = { s: stringIndex, f: fretIndex }
   const s = step.value
   if (s.type === 'mirror' && m.phase === 'watch') return
@@ -602,15 +586,9 @@ watch(standard, ok => {
   else redraw()
 })
 
-onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
-  openLesson()
-})
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  cancelAll()
-  clearBoard()
-})
+useFretboardPick(onNoteClick)
+onMounted(() => openLesson())
+onUnmounted(() => cancelAll())
 </script>
 
 <style scoped>

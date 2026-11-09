@@ -2,6 +2,7 @@ import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import PitchWorker from '../workers/pitch.worker.js?worker'
 import { readStorage, writeStorage } from './useLocalStorage.js'
 import { getAbsoluteNote } from '../utils/theory.js'
+import { STRINGS, FRETS } from '../utils/constants.js'
 
 // Lets the fretboard exercises be answered by playing a connected guitar
 // (audio interface or microphone) instead of clicking the fretboard.
@@ -274,10 +275,11 @@ export function useGuitarInput({ onNote } = {}) {
   })
 }
 
-// Circles of the on-screen fretboard that sound exactly this MIDI note in the current tuning.
-export function fretboardCirclesForMidi(tuning, midi) {
-  return Array.from(document.querySelectorAll('.fretboard-layer .note-circle')).filter(c =>
-    getAbsoluteNote(tuning, c.dataset.stringIndex, c.dataset.fretIndex) === midi)
+// Positions of the on-screen fretboard that sound exactly this MIDI note in the current tuning.
+export function fretboardPositionsForMidi(tuning, midi) {
+  const out = []
+  for (let s = 0; s < STRINGS; s++) for (let f = 0; f <= FRETS; f++) if (getAbsoluteNote(tuning, s, f) === midi) out.push({ s, f })
+  return out
 }
 
 export function midiToName(midi, noteNames) {

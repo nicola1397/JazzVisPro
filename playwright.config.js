@@ -14,9 +14,9 @@ export default defineConfig({
   projects: [
     // Layout and question/answer visibility on three screens; smoke on two; features once.
     { name: 'desktop', use: { browserName: 'chromium', viewport: { width: 1440, height: 900 } } },
-    { name: 'phone', testIgnore: ['**/features.spec.js'],
+    { name: 'phone', testIgnore: ['**/features.spec.js', '**/fretboard-exercises.spec.js'],
       use: { browserName: 'chromium', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } },
-    { name: 'phone-land', testIgnore: ['**/features.spec.js', '**/smoke.spec.js'],
+    { name: 'phone-land', testIgnore: ['**/features.spec.js', '**/smoke.spec.js', '**/fretboard-exercises.spec.js'],
       use: { browserName: 'chromium', viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } },
   ],
   webServer: {

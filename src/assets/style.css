@@ -3106,3 +3106,9 @@ button.tap-feedback,
 @media (min-width: 1025px) { .navbar .search-toggle { margin-left: auto; } }
 /* With the menu button (tablets, phones) the title stays centred between it and search + language */
 @media (max-width: 1024px) { .navbar #view-title { margin: 0 auto !important; } }
+
+/* Fretboard from the keyboard: the cell under the cursor is outlined while the neck has focus */
+.fretboard-layer:focus { outline: none; }
+.fretboard-layer:focus-visible { outline: 2px solid rgba(255, 214, 10, 0.5); outline-offset: 3px; }
+.fretboard-layer:focus-visible .fret.kbd-cursor { box-shadow: inset 0 0 0 2px var(--jd-amber); border-radius: 4px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

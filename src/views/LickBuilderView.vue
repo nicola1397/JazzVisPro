@@ -126,6 +126,7 @@
 </template>
 
 <script setup>
+import { useFretboardPick } from '../composables/useFretboardMarks.js'
 import { toast } from '../composables/useToast.js'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import draggable from 'vuedraggable'
@@ -333,16 +334,15 @@ function importJson(event) {
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
-function onNoteClick(e) { addNote(e.detail) }
+function onNoteClick({ s, f, noteIndex, midi }) { addNote({ stringIndex: s, fretIndex: f, noteIndex, midiNote: midi }) }
+useFretboardPick(onNoteClick)
 function onLickStop() { stopPlay() }
 
 onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
   window.addEventListener('lickbuilder:stop', onLickStop)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
   window.removeEventListener('lickbuilder:stop', onLickStop)
   stopPlay()
 })

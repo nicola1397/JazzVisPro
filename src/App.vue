@@ -52,6 +52,7 @@ import ToastHost        from './components/shared/ToastHost.vue'
 import QuickSearch      from './components/shared/QuickSearch.vue'
 import KeyScaleChip     from './components/fretboard/KeyScaleChip.vue'
 import { recordVisit }  from './composables/useRecentPages.js'
+import { fretboard }    from './composables/useFretboardMarks.js'
 
 const appStore      = useAppStore()
 const playbackStore = usePlaybackStore()
@@ -81,12 +82,11 @@ watch(() => appStore.lang, lang => {
   document.documentElement.setAttribute('lang', lang)
 }, { immediate: true })
 
-function handleNoteClick({ noteIndex, midiNote, stringIndex, fretIndex, element }) {
-  const path = route.path
-  if (['/interval-learner', '/note-finder', '/lick-builder', '/triad-trainer', '/seventh-trainer', '/ear-playback', '/changes-trainer', '/scale-tempo', '/transcribe'].includes(path) || path.startsWith('/lessons/')) {
-    window.dispatchEvent(new CustomEvent('fretboard:noteClick', {
-      detail: { noteIndex, midiNote, stringIndex, fretIndex, element }
-    }))
+// A click on the fretboard goes to the exercise on screen (useFretboardPick); elsewhere it
+// edits the Explorer's selection.
+function handleNoteClick({ noteIndex, midiNote, stringIndex, fretIndex }) {
+  if (fretboard.pick) {
+    fretboard.pick({ s: stringIndex, f: fretIndex, noteIndex, midi: midiNote })
   } else {
     const posKey = `${stringIndex}-${fretIndex}`
     let sounding = true

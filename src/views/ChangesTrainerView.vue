@@ -163,7 +163,8 @@ import { STANDARDS, parseChart, classifyNote } from '../utils/standards.js'
 import { setStepDone } from '../utils/studyPath.js'
 import { getInputLatency } from '../utils/latency.js'
 import { INTERVAL_COLORS } from '../utils/theory.js'
-import { zoneName, randomZone, inZone, playableInZone, paintArea } from '../utils/fretRefs.js'
+import { zoneName, randomZone, inZone, playableInZone, paintArea, allPositions } from '../utils/fretRefs.js'
+import { useFretboardPick, setMarks, clearMarks } from '../composables/useFretboardMarks.js'
 import GuitarInputPanel from '../components/shared/GuitarInputPanel.vue'
 import StageHud from '../components/shared/StageHud.vue'
 import PracticeModes from '../components/shared/PracticeModes.vue'
@@ -254,7 +255,7 @@ function settle(ev, result, why = '') {
   if (settings.mode !== 'free') practice.record('changes', `${settings.mode}:${ev.info.group}`, result === 'ok' || result === 'held')
 }
 
-function onNote({ midi, time = performance.now(), element = null }) {
+function onNote({ midi, time = performance.now(), pos = null }) {
   if (!backing.playing.value) return
   const note = { midi, pc: pcOf(midi), time }
   noteLog.push(note)
@@ -270,7 +271,7 @@ function onNote({ midi, time = performance.now(), element = null }) {
   if (r.result) return
 
   // reference mode: a note outside the zone (clicked there, or not playable there) is a mistake
-  if (zone.value && !(element ? inZone(+element.dataset.fretIndex, zone.value) : playableInZone(appStore.currentTuning, midi, zone.value))) {
+  if (zone.value && !(pos ? inZone(pos.f, zone.value) : playableInZone(appStore.currentTuning, midi, zone.value))) {
     return settle(ev, 'wrong', t('pm.out-of-zone'))
   }
 
@@ -392,10 +393,7 @@ const soloAria = computed(() => KINDS.map(k => `${t(`ch.kind-${k}`)} ${soloShare
 
 // ── Fretboard hints ───────────────────────────────────────────────────────────
 function clearBoard() {
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    c.className = 'note-circle'; c.innerText = ''
-    c.style.cssText = ''; c.style.opacity = '0.04'
-  })
+  clearMarks()
 }
 
 function paintHints(ev) {
@@ -407,13 +405,10 @@ function paintHints(ev) {
   const show = settings.mode === 'guide' ? guideTargets(ev)
     : settings.mode === 'approach' ? [ev.info.guide[0]]
     : ev.info.tones
-  document.querySelectorAll('.fretboard-layer .note-circle').forEach(c => {
-    const tone = show.find(x => x.pc === parseInt(c.dataset.noteIndex))
-    if (!tone || (zone.value && !inZone(+c.dataset.fretIndex, zone.value))) return
-    c.style.backgroundColor = INTERVAL_COLORS[tone.iv].color
-    c.style.opacity = '0.85'
-    c.style.color = 'rgba(0,0,0,0.8)'
-    c.innerText = tone.label
+  const toneAt = (s, f) => show.find(x => x.pc === (appStore.currentTuning[s] + f) % 12)
+  setMarks(allPositions((s, f) => toneAt(s, f) && !(zone.value && !inZone(f, zone.value))), p => {
+    const tone = toneAt(p.s, p.f)
+    return { color: INTERVAL_COLORS[tone.iv].color, opacity: 0.85, label: tone.label }
   })
 }
 
@@ -454,22 +449,16 @@ function finishRun() {
   }
 }
 
-async function onNoteClick(e) {
-  onNote({ midi: e.detail.midiNote, time: performance.now(), element: e.detail.element })
+async function onNoteClick({ s, f, midi }) {
+  onNote({ midi, time: performance.now(), pos: { s, f } })
 }
 
 watch(settings, () => writeStorage(STORAGE_KEY, { ...settings }), { deep: true })
 watch(() => settings.reference, on => { if (!on && !backing.playing.value) zone.value = null })
 watch(() => [settings.song, settings.mode], () => { if (backing.playing.value) stopRun(); results.clear() })
 
-onMounted(() => {
-  window.addEventListener('fretboard:noteClick', onNoteClick)
-  clearBoard()
-})
-onUnmounted(() => {
-  window.removeEventListener('fretboard:noteClick', onNoteClick)
-  checkTimers.forEach(clearTimeout)
-})
+useFretboardPick(onNoteClick)
+onUnmounted(() => checkTimers.forEach(clearTimeout))
 </script>
 
 <style scoped>
