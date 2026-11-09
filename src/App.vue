@@ -70,6 +70,14 @@ const gameMode      = computed(() => route.meta?.game || '')
 // Exercises (and the Player, which you watch while it plays) keep the fretboard in view.
 const onStage       = computed(() => (!!gameMode.value || !!route.meta?.stage) && showFretboard.value)
 
+// The page scrolls inside .main-content, which the router does not reset: without this a
+// new view opens at the previous view's scroll offset. Views that only change a param
+// (course steps) keep handling their own scroll.
+watch(() => route.matched[0]?.path, (now, before) => {
+  if (before === undefined || now === before) return
+  document.querySelector('.main-content')?.scrollTo({ top: 0 })
+}, { flush: 'post' })
+
 watch(() => appStore.lang, lang => {
   document.documentElement.setAttribute('lang', lang)
 }, { immediate: true })

@@ -252,6 +252,8 @@ onUnmounted(stopListening)
 .fh-actions { justify-content: center; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
 .fh-hint { position: relative; z-index: 1; text-align: center; font-size: 0.9em; color: var(--jd-text); margin: 0 0 16px; }
 .fh-grid { margin-bottom: 20px; }
+/* Phones: four answers per row instead of one long column */
+@media (max-width: 600px) { .fh-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; } }
 .fh-grid .et-choice-btn { padding: 10px 4px; font-family: var(--jd-mono); font-size: 0.95em; font-weight: 700; }
 /* after answering the buttons are disabled (dimmed): keep the right and the chosen one fully visible */
 .fh-grid .et-choice-btn.correct, .fh-grid .et-choice-btn.wrong { opacity: 1; }

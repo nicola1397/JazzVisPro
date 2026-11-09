@@ -340,6 +340,8 @@ onUnmounted(() => timers.forEach(clearTimeout))
   background: rgba(34, 197, 94, 0.035);
 }
 .ct--done { border-color: rgba(46, 204, 113, 0.45); }
+/* The card's own width (not the screen) decides when the footer stacks */
+.ct { container-type: inline-size; }
 .ct-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ct-kind {
   font-family: var(--jd-mono); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
@@ -371,4 +373,10 @@ onUnmounted(() => timers.forEach(clearTimeout))
   text-transform: uppercase; color: var(--jd-green);
 }
 .ct-guitar { margin-top: 6px; }
+/* Narrow card: count above, buttons centred under it, like the status and guitar panel */
+@container (max-width: 420px) {
+  .ct-actions { justify-content: center; row-gap: 8px; }
+  .ct-actions .ct-spacer { display: none; }
+  .ct-count { flex-basis: 100%; text-align: center; }
+}
 </style>

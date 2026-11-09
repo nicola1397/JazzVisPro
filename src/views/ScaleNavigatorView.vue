@@ -98,7 +98,8 @@ const SUGGESTIONS = {
               { scale:'Ionio (Maj7)',              tension:1, it:'Più stabile, senza #11.',                           en:'More stable, without #11.' }],
 }
 
-const selectedRoot      = ref(appStore.root || 'C')
+// The store may hold a flat name (Bb from the Grade Learner): show it as the sharp in the list
+const selectedRoot      = ref(NOTES[appStore.rootIdx] ?? 'C')
 const selectedChordType = ref('maj7')
 const suggestions       = computed(() => SUGGESTIONS[selectedChordType.value] || [])
 

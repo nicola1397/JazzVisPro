@@ -352,6 +352,11 @@ onUnmounted(() => {
 .ct-sound { margin-top: 8px; }
 .ct-listen { color: var(--jd-amber); border-color: var(--jd-line-strong); }
 .ct-guitar { margin-top: 6px; }
+.sp { container-type: inline-size; }
+@container (max-width: 420px) {
+  .ct-actions { justify-content: center; row-gap: 8px; }
+  .ct-actions .ct-spacer { display: none; }
+}
 
 .sp-medals { display: inline-flex; gap: 5px; }
 .sp-medal { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #3a342c; background: transparent; }

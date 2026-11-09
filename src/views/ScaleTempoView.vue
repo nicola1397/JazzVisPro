@@ -470,7 +470,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.sc-master { display: flex; justify-content: center; margin-bottom: 4px; }
+.sc-master { display: flex; justify-content: center; margin-bottom: 16px; }
 .jd-question-box { background: rgba(255, 109, 0, 0.05); border: 1px solid rgba(255, 109, 0, 0.18); border-radius: 16px; padding: 26px; text-align: center; margin: 10px 0; position: relative; z-index: 1; }
 .jd-question-text { font-size: 28px; font-weight: 900; color: var(--jd-drums); }
 .sc-sub { font-family: var(--jd-mono); font-size: 11px; letter-spacing: 1px; color: var(--jd-text-soft); margin-top: 6px; }

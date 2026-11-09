@@ -2748,6 +2748,7 @@ button.tap-feedback,
 .jd-channel.on .jd-channel-led { background: var(--engine-color); box-shadow: 0 0 10px var(--engine-color), inset 0 0 6px rgba(255, 255, 255, 0.30); }
 
 .jd-channel-id { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 140px; max-width: 200px; }
+.jd-channel-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .jd-channel-name { font-family: var(--jd-mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--jd-text-soft); }
 .jd-channel.on .jd-channel-name { color: var(--jd-text); }
 .jd-channel-tag { font-family: var(--jd-display); font-style: italic; font-size: 12px; color: var(--jd-muted); line-height: 1.2; }
@@ -2858,6 +2859,8 @@ button.tap-feedback,
 @media (max-width: 1024px) {
   .jd-master { grid-template-columns: 1fr 1fr; gap: 18px; }
   .jd-bpm, .jd-transport { grid-column: 1 / -1; justify-content: center; }
+  /* Ear trainers: the lone reset button goes centred under play, not under the score */
+  .jd-master > .jd-streak-badge ~ .jd-modes { grid-column: 1 / -1; }
   .jd-channel { flex-wrap: wrap; }
   .jd-channel-id { flex: 1 1 50%; }
   .jd-select, .jd-fader { flex: 1 1 100%; }
@@ -3019,9 +3022,16 @@ button.tap-feedback,
   .stage-hud .jd-score-label { display: none; }
 }
 
-/* What stays of the question box below the stage (guitar input, toggles) */
-.stage-rest { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+/* What stays of the question box below the stage (guitar input, toggles): one column
+   with room between the groups, and the practice options after it. */
+.stage-rest { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 0 0 18px; }
 .stage-rest:empty { display: none; }
+.jd-console .stage-rest .gi-panel { margin-top: 0; }
+.jd-console > .stage-rest:first-child,
+.jd-console > .jd-grain + .stage-rest { margin-top: 2px; }
+
+/* Small switches keep their look but get a finger-sized target */
+.jd-switch::after { content: ''; position: absolute; inset: -11px -6px; }
 
 /* On the exercises the navbar already names the view: the big title only costs room
    on small or short screens. */
@@ -3030,4 +3040,33 @@ button.tap-feedback,
 }
 @media (max-height: 520px) {
   .jd-view { padding-top: 8px !important; }
+}
+
+/* Navbar: a long view name shrinks and is cut with an ellipsis instead of pushing the
+   language button onto a second line. */
+.navbar #view-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-transform: uppercase; /* every view title in the same case */
+  /* room for the italic overhang so the last letter is not clipped */
+  padding-right: 0.15em;
+}
+.navbar .nav-toggle, .navbar .lang-toggle { flex-shrink: 0; }
+@media (max-width: 480px) {
+  .navbar #view-title { font-size: clamp(18px, 6vw, 1.7em) !important; }
+}
+
+/* Tuner reference strings: three per row on phones so "6ª · 82 Hz" fits on one line */
+@media (max-width: 600px) {
+  .tuner-strings-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+  .tuner-string-btn .ts-freq { white-space: nowrap; }
+}
+
+/* Banners (label + text): on phones the text goes under the label instead of a thin column */
+@media (max-width: 600px) {
+  .jd-improv-banner { flex-wrap: wrap; row-gap: 6px; }
+  .jd-improv-banner > .jd-improv-helper { flex: 1 1 100%; }
 }

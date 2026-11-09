@@ -121,9 +121,6 @@
 
     <div class="teoria-tip">
       <strong>{{ t('label.pro-tip') }}:</strong> {{ t('lb.tip') }}
-      <div style="font-size:0.9em; opacity:0.7; margin-top:6px;">
-        {{ t('lb.tip') }}
-      </div>
     </div>
   </div>
 </template>

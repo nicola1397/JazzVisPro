@@ -195,10 +195,10 @@ function restart() {
 .cv-module-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .cv-module-title { font-family: var(--jd-display); font-style: italic; font-size: 1.45em; color: var(--jd-text); line-height: 1.15; }
 .cv-module-desc { font-size: 0.86em; color: var(--jd-text-soft); line-height: 1.5; }
-.cv-module-meta { display: flex; align-items: center; gap: 10px; font-family: var(--jd-mono); font-size: 0.7em; letter-spacing: 1px; color: var(--jd-muted); text-transform: uppercase; margin-top: 4px; }
+.cv-module-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; white-space: nowrap; font-family: var(--jd-mono); font-size: 0.7em; letter-spacing: 1px; color: var(--jd-muted); text-transform: uppercase; margin-top: 4px; }
 .cv-bar { width: 140px; height: 5px; border-radius: 3px; background: #2a2620; overflow: hidden; }
 .cv-bar-fill { display: block; height: 100%; background: var(--jd-green); border-radius: 3px; transition: width 0.3s; }
-.cv-medals { display: inline-flex; align-items: center; gap: 6px; }
+.cv-medals { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cv-medal { display: inline-flex; align-items: center; gap: 3px; }
 .cv-medal::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
 .cv-medal--1::before { background: #cd7f32; }
@@ -214,7 +214,7 @@ function restart() {
 .cv-eyebrow { display: block; margin-top: 16px; font-family: var(--jd-mono); font-size: 10px; letter-spacing: 3.5px; text-transform: uppercase; color: var(--jd-amber); }
 .cv-title { font-family: var(--jd-display); font-style: italic; font-weight: 400; font-size: clamp(2em, 4vw, 2.8em); color: var(--jd-text); margin: 4px 0 0; line-height: 1.05; }
 
-.cv-rail { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 10px; margin-bottom: 8px; }
+.cv-rail { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 2px 10px; margin-bottom: 8px; }
 .cv-rail-step {
   flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
@@ -244,8 +244,9 @@ function restart() {
 .cv-complete-actions a { text-decoration: none; }
 
 @media (max-width: 640px) {
+  .cv-bar { flex: 1 1 100%; width: auto; }
   .cv-module-link { grid-template-columns: auto 1fr; padding: 14px 16px; gap: 12px; }
-  .cv-medals { display: inline-flex; align-items: center; gap: 6px; }
+  .cv-medals { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cv-medal { display: inline-flex; align-items: center; gap: 3px; }
 .cv-medal::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
 .cv-medal--1::before { background: #cd7f32; }

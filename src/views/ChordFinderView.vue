@@ -25,7 +25,7 @@
             <span class="jd-section-rule"></span>
           </div>
 
-          <div class="jd-grid-fixed-6" style="justify-items:center; margin-bottom:20px; padding: 10px 0;">
+          <div class="jd-grid-fixed-6 cf-note-grid" style="justify-items:center; margin-bottom:20px; padding: 10px 0;">
             <button
               v-for="(note, idx) in NOTES"
               :key="note"
@@ -381,6 +381,8 @@ function renderSVG(frets, fingers, baseFret) {
 </script>
 
 <style scoped>
+/* Phones: the twelve notes in three rows of four */
+@media (max-width: 600px) { .cf-note-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
 .cf-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
 .cf-subtitle { color: var(--jd-text-soft); font-size: 0.85em; margin: 0; font-family: var(--jd-mono); letter-spacing: 0.5px; flex: 1 1 320px; }
 .cf-modes { display: inline-flex; border: 1px solid var(--jd-line-strong); border-radius: 10px; overflow: hidden; }

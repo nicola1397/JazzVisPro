@@ -2,11 +2,13 @@
   <div class="cf">
     <div class="cf-tabs" role="tablist">
       <button class="cf-arrow" type="button" :aria-label="t('cr.prev')" @click="go(i - 1)">◂</button>
-      <button
-        v-for="(fr, k) in frames" :key="k" type="button" role="tab"
-        class="cf-tab" :class="{ on: k === i }" :aria-selected="k === i"
-        @click="go(k)"
-      >{{ L(fr.tab) || k + 1 }}</button>
+      <div class="cf-chips">
+        <button
+          v-for="(fr, k) in frames" :key="k" type="button" role="tab"
+          class="cf-tab" :class="{ on: k === i }" :aria-selected="k === i"
+          @click="go(k)"
+        >{{ L(fr.tab) || k + 1 }}</button>
+      </div>
       <button class="cf-arrow" type="button" :aria-label="t('cr.next')" @click="go(i + 1)">▸</button>
     </div>
     <NeckDiagram v-bind="frames[i].diagram" :key="i" />
@@ -31,7 +33,10 @@ const go = k => { i.value = (k + props.frames.length) % props.frames.length }
 
 <style scoped>
 .cf { margin: 18px 0; padding: 12px 14px; border: 1px solid var(--jd-line); border-radius: 12px; background: rgba(0, 0, 0, 0.18); }
-.cf-tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.cf-tabs { display: flex; gap: 8px; justify-content: center; align-items: center; }
+/* Arrows stay at the two ends; only the tabs wrap between them */
+.cf-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-width: 0; }
+.cf-arrow { flex-shrink: 0; min-width: 32px; }
 .cf-tab, .cf-arrow {
   font-family: var(--jd-mono); font-size: 11px; letter-spacing: 1px;
   background: transparent; color: var(--jd-text-soft);
