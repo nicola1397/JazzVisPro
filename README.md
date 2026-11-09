@@ -121,6 +121,6 @@ schermo annuncia la posizione, non la nota).
 - **CI**: `.github/workflows/ci.yml` esegue tutto a ogni push e pull request; se un test nel browser
   fallisce, il report di Playwright resta tra gli artifact della run.
 
-Script di supporto in `scripts/`: `build-chord-voicings.mjs` (rigenera `public/chords/voicings.json`
+Script di supporto in `scripts/`: `find-unused-css.py` (selettori del CSS globale che non compaiono più nel codice; con `--write` li toglie), `build-chord-voicings.mjs` (rigenera `public/chords/voicings.json`
 dalla collezione completa in `scripts/data`) e `extract-bootstrap-subset.py` (le poche regole di
 Bootstrap ancora usate).

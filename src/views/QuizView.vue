@@ -7,20 +7,20 @@
       </div>
     </header>
 
-    <div class="importer-area jd-container--narrow text-center" style="padding-top: 20px;">
-      <p style="color:var(--jd-text-soft); font-size:0.85em; margin-bottom:24px; font-family:var(--jd-mono); letter-spacing:0.5px;">{{ t('quiz.subtitle') }}</p>
+    <div class="importer-area jd-container--narrow text-center qz-page">
+      <p class="qz-intro">{{ t('quiz.subtitle') }}</p>
 
       <!-- ───── SETUP PHASE ───── -->
-      <section v-if="gameState === 'setup'" class="jd-console" style="padding: 25px;">
+      <section v-if="gameState === 'setup'" class="jd-console qz-setup">
         <div class="jd-grain" aria-hidden="true"></div>
         <div class="jd-section-label"><span>{{ t('quiz.setup') }}</span><span class="jd-section-rule"></span></div>
 
         <!-- Difficulty -->
-        <div class="mb-4" style="width:100%">
-          <label class="jd-pitch-label" style="display:block; margin-bottom:10px;">{{ t('quiz.difficulty') }}</label>
-          <div style="display:flex; gap:8px; justify-content:center;">
-            <button v-for="d in ['easy', 'medium', 'hard']" :key="d" class="et-diff-btn"
-              style="flex:1; max-width:120px;" :class="{ active: selectedDifficulty === d }"
+        <div class="mb-4 qz-full">
+          <label class="jd-pitch-label qz-label">{{ t('quiz.difficulty') }}</label>
+          <div class="qz-levels">
+            <button v-for="d in ['easy', 'medium', 'hard']" :key="d" class="et-diff-btn qz-level"
+              :class="{ active: selectedDifficulty === d }"
               @click="selectedDifficulty = d">{{ t('et.' + d) }}</button>
           </div>
         </div>
@@ -28,15 +28,15 @@
         <div class="jd-rule" aria-hidden="true"></div>
 
         <!-- SRS mode -->
-        <div class="mb-4" style="width:100%">
-          <label class="jd-pitch-label" style="display:block; margin-bottom:10px;">{{ t('srs.title') }}</label>
-          <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="mb-4 qz-full">
+          <label class="jd-pitch-label qz-label">{{ t('srs.title') }}</label>
+          <div class="qz-srs-list">
             <button v-for="m in srsModes" :key="m.id" class="srs-mode-btn" :class="{ active: srsMode === m.id }" @click="srsMode = m.id">
-              <div style="display:flex; align-items:center; gap:12px;">
+              <div class="qz-row">
                 <span class="srs-radio" :class="{ active: srsMode === m.id }"></span>
-                <div style="flex:1; text-align:left;">
-                  <div style="font-weight:700; font-size:0.85em;">{{ m.label }}</div>
-                  <div style="font-size:0.72em; color:var(--jd-muted); margin-top:2px; letter-spacing:0.2px;">{{ m.desc }}</div>
+                <div class="qz-srs-text">
+                  <div class="qz-srs-label">{{ m.label }}</div>
+                  <div class="qz-srs-desc">{{ m.desc }}</div>
                 </div>
               </div>
             </button>
@@ -46,9 +46,9 @@
         <div class="jd-rule" aria-hidden="true"></div>
 
         <!-- Categories -->
-        <div class="mb-4" style="width:100%">
-          <label class="jd-pitch-label" style="display:block; margin-bottom:10px;">{{ t('quiz.categories') }}</label>
-          <div class="checkbox-group" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center; background:rgba(0,0,0,0.2);">
+        <div class="mb-4 qz-full">
+          <label class="jd-pitch-label qz-label">{{ t('quiz.categories') }}</label>
+          <div class="checkbox-group qz-cats">
             <div v-for="cat in availableCategories" :key="cat.id" class="checkbox-container">
               <input type="checkbox" :id="'cat-' + cat.id" v-model="selectedCategories" :value="cat.id">
               <label :for="'cat-' + cat.id">{{ t('quiz.cat.' + cat.id) }}</label>
@@ -56,81 +56,81 @@
           </div>
         </div>
 
-        <button class="btn-add-step" style="height:52px; font-size:1.1em; width:100%; max-width:400px; margin-top:10px;"
+        <button class="btn-add-step qz-start"
           :disabled="selectedCategories.length === 0 || !quizReady" @click="startQuiz">{{ t('quiz.start') }}</button>
-        <p v-if="setupMsg" role="status" style="margin-top:12px; color:var(--jd-red); font-family:var(--jd-mono); font-size:0.8em;">{{ setupMsg }}</p>
+        <p class="qz-setup-msg" v-if="setupMsg" role="status">{{ setupMsg }}</p>
 
         <!-- Box distribution chart -->
-        <div v-if="totalSeen > 0" style="width:100%; margin-top:30px; padding:20px; background:var(--jd-bg-deep); border:1px solid var(--jd-line); border-radius:12px;">
-          <div style="font-family:var(--jd-mono); font-size:0.7em; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--jd-muted); margin-bottom:14px; text-align:left; display:flex; justify-content:space-between;">
+        <div v-if="totalSeen > 0" class="qz-boxes">
+          <div class="qz-boxes-head">
             <span>{{ t('srs.boxes') }}</span>
             <span>{{ totalSeen }} {{ t('srs.total') }}</span>
           </div>
-          <div style="display:flex; flex-direction:column; gap:10px;">
-            <div v-for="b in boxRows" :key="b.box" style="display:flex; align-items:center; gap:12px;">
-              <span style="font-family:var(--jd-mono); font-size:0.65em; font-weight:700; min-width:85px; text-align:left; letter-spacing:0.5px;" :style="{color: b.color}">{{ b.label }}</span>
-              <div style="flex:1; height:6px; background:rgba(255,255,255,0.03); border-radius:3px; overflow:hidden;">
+          <div class="qz-boxes-list">
+            <div class="qz-row" v-for="b in boxRows" :key="b.box">
+              <span class="qz-box-name" :style="{color: b.color}">{{ b.label }}</span>
+              <div class="qz-box-track">
                 <div :style="{width: b.pct + '%', height: '100%', background: b.color, transition: 'width .4s cubic-bezier(0.4, 0, 0.2, 1)', borderRadius: '3px'}"></div>
               </div>
-              <span style="font-family:var(--jd-mono); font-size:0.7em; color:var(--jd-muted); font-weight:600; min-width:30px; text-align:right;">{{ b.count }}</span>
+              <span class="qz-box-count">{{ b.count }}</span>
             </div>
           </div>
         </div>
       </section>
 
       <!-- ───── ACTIVE PHASE ───── -->
-      <div v-else-if="gameState === 'active'" style="width:100%;">
+      <div class="qz-full" v-else-if="gameState === 'active'">
         <!-- Progress -->
-        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:flex-end;">
-          <div style="font-family:var(--jd-mono); font-size:0.8em; color:var(--jd-muted);">
-            {{ t('quiz.progress') }} <strong style="color:var(--jd-text); font-size:1.2em;">{{ currentQuestionIdx + 1 }}</strong> <span style="opacity:0.4;">/ {{ quizQuestions.length }}</span>
+        <div class="qz-progress-row">
+          <div class="qz-progress-label">
+            {{ t('quiz.progress') }} <strong class="qz-progress-now">{{ currentQuestionIdx + 1 }}</strong> <span class="qz-dim">/ {{ quizQuestions.length }}</span>
           </div>
-          <div style="font-family:var(--jd-mono); font-size:0.8em; color:var(--jd-muted); text-align:right;">
-            {{ t('label.score') }} <strong style="color:var(--jd-amber); font-size:1.2em;">{{ score }}</strong>
+          <div class="qz-score-label">
+            {{ t('label.score') }} <strong class="qz-score-now">{{ score }}</strong>
           </div>
         </div>
-        <div style="width:100%; height:4px; background:var(--jd-line); border-radius:2px; margin-bottom:30px; overflow:hidden;">
+        <div class="qz-progress-track">
           <div :style="{ width: ((currentQuestionIdx + 1) / quizQuestions.length * 100) + '%', background: 'var(--jd-amber)', height: '100%', transition: 'width 0.4s ease', boxShadow: '0 0 10px rgba(255,214,10,0.5)' }"></div>
         </div>
 
         <!-- Question Box -->
-        <div class="jd-console" style="padding:40px; margin-bottom:30px; min-height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column; border-radius:16px;">
+        <div class="jd-console qz-card">
           <div class="jd-grain" aria-hidden="true"></div>
-          <div style="font-family:var(--jd-mono); font-size:0.7em; text-transform:uppercase; color:var(--jd-amber); font-weight:700; margin-bottom:15px; letter-spacing:3px; display:flex; align-items:center; gap:10px;">
+          <div class="qz-card-kicker">
             <span>{{ t('quiz.cat.' + currentQuestionRaw.category) }} • {{ langContent.sub }}</span>
             <span v-if="currentIsReview" class="srs-badge">{{ t('srs.badge') }}</span>
           </div>
-          <div class="h3 mb-0" style="font-family:var(--jd-display); font-style:italic; font-weight:400; color:var(--jd-text); line-height:1.3; text-align:center;">
+          <div class="h3 mb-0 qz-question">
             {{ langContent.question }}
           </div>
         </div>
 
         <!-- Options -->
-        <div style="display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:35px;">
-          <button v-for="(opt, idx) in currentOptions" :key="opt.idx" class="et-choice-btn"
-            style="text-align:left; padding:18px 24px; min-height:64px; height:auto; line-height:1.3;" :class="{
+        <div class="qz-options">
+          <button v-for="(opt, idx) in currentOptions" :key="opt.idx" class="et-choice-btn qz-option"
+            :class="{
               correct: answered && opt.isCorrect,
               wrong: answered && opt.idx === selectedIdx && !opt.isCorrect,
             }" :disabled="answered" @click="checkAnswer(opt)">
-            <span style="margin-right:18px; opacity:0.3; font-family:var(--jd-mono); font-size:0.8em;">{{ String.fromCharCode(65 + idx) }}</span>
+            <span class="qz-option-letter">{{ String.fromCharCode(65 + idx) }}</span>
             {{ (langContent.options || [])[opt.idx] }}
           </button>
         </div>
 
         <!-- Feedback -->
         <Transition name="jd-fade">
-          <div v-if="answered" class="jd-console"
-            style="padding:24px; text-align:left; border-radius:16px; background:var(--jd-bg-deep);">
+          <div v-if="answered" class="jd-console qz-feedback"
+           >
             <div class="jd-grain" aria-hidden="true"></div>
-            <div style="font-family:var(--jd-mono); font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:0.9em; letter-spacing:1px;"
+            <div class="qz-feedback-title"
               :style="{ color: isCorrect ? 'var(--jd-improv)' : 'var(--jd-red)' }">
               <span v-if="isCorrect">✓ {{ t('et.correct') }}</span>
               <span v-else>✗ {{ t('et.wrong') }}</span>
             </div>
-            <div style="font-size:0.9em; color:var(--jd-text-soft); line-height:1.6; font-family:var(--jd-mono);">
+            <div class="qz-feedback-text">
               {{ langContent.explanation }}
             </div>
-            <button class="btn-add-step mt-4 w-100" style="height:48px;" @click="nextQuestion">
+            <button class="btn-add-step mt-4 w-100 qz-btn-tall" @click="nextQuestion">
               {{ isLastQuestion ? t('quiz.show-results') : t('fh.next') }}
             </button>
           </div>
@@ -138,27 +138,27 @@
       </div>
 
       <!-- ───── RESULTS PHASE ───── -->
-      <section v-else-if="gameState === 'results'" class="jd-console" style="padding:50px; text-align:center;">
+      <section v-else-if="gameState === 'results'" class="jd-console qz-results">
         <div class="jd-grain" aria-hidden="true"></div>
-        <div style="font-size:5em; margin-bottom:15px; filter: drop-shadow(0 0 20px rgba(255,214,10,0.3));">🏆</div>
-        <h2 style="font-family:var(--jd-display); font-style:italic; font-weight:400; color:var(--jd-text); margin-bottom:8px; font-size:2.2em;">{{ t('quiz.complete') }}</h2>
-        <p style="color:var(--jd-muted); margin-bottom:25px; font-family:var(--jd-mono); text-transform:uppercase; letter-spacing:2px; font-size:0.75em;">{{ t('quiz.final-score') }}</p>
+        <div class="qz-trophy">🏆</div>
+        <h2 class="qz-results-title">{{ t('quiz.complete') }}</h2>
+        <p class="qz-results-sub">{{ t('quiz.final-score') }}</p>
 
-        <div style="font-size:4.5em; font-weight:400; font-family:var(--jd-display); color:var(--jd-amber); margin-bottom:25px; line-height:1;">
-          {{ score }}<span style="opacity:0.2; font-size:0.5em; margin:0 10px;">/</span>{{ quizQuestions.length }}
+        <div class="qz-final">
+          {{ score }}<span class="qz-final-slash">/</span>{{ quizQuestions.length }}
         </div>
 
         <!-- Session breakdown -->
-        <div style="display:flex; gap:24px; justify-content:center; flex-wrap:wrap; font-family:var(--jd-mono); font-size:0.75em; color:var(--jd-muted); margin-bottom:40px; text-transform:uppercase; letter-spacing:1px;">
-          <div><strong style="color:var(--jd-improv);">{{ score }}</strong> {{ t('srs.statsCorrect') }}</div>
-          <div><strong style="color:var(--jd-red);">{{ quizQuestions.length - score }}</strong> {{ t('srs.statsWrong') }}</div>
-          <div><strong style="color:var(--jd-synth);">{{ sessNew }}</strong> {{ t('srs.statsNew') }}</div>
-          <div><strong style="color:var(--jd-drums);">{{ sessReview }}</strong> {{ t('srs.statsReview') }}</div>
+        <div class="qz-stats">
+          <div><strong class="qz-c-ok">{{ score }}</strong> {{ t('srs.statsCorrect') }}</div>
+          <div><strong class="qz-c-wrong">{{ quizQuestions.length - score }}</strong> {{ t('srs.statsWrong') }}</div>
+          <div><strong class="qz-c-new">{{ sessNew }}</strong> {{ t('srs.statsNew') }}</div>
+          <div><strong class="qz-c-review">{{ sessReview }}</strong> {{ t('srs.statsReview') }}</div>
         </div>
 
-        <div style="display:flex; gap:12px; max-width:600px; margin:0 auto;">
-          <button class="btn-io flex-grow-1" style="height:48px;" @click="gameState = 'setup'">{{ t('quiz.restart') }}</button>
-          <button class="btn-reset" style="width:auto; padding:0 30px; height:48px;" @click="resetToDashboard">{{ t('btn.close') }}</button>
+        <div class="qz-results-actions">
+          <button class="btn-io flex-grow-1 qz-btn-tall" @click="gameState = 'setup'">{{ t('quiz.restart') }}</button>
+          <button class="btn-reset qz-close" @click="resetToDashboard">{{ t('btn.close') }}</button>
         </div>
       </section>
 
@@ -397,6 +397,58 @@ function resetToDashboard() {
 </script>
 
 <style scoped>
+/* Layout of the quiz (was inline in the template) */
+.qz-full { width:100%; }
+.qz-label { display:block; margin-bottom:10px; }
+.qz-row { display:flex; align-items:center; gap:12px; }
+.qz-btn-tall { height:48px; }
+.qz-page { padding-top: 20px; }
+.qz-intro { color:var(--jd-text-soft); font-size:0.85em; margin-bottom:24px; font-family:var(--jd-mono); letter-spacing:0.5px; }
+.qz-setup { padding: 25px; }
+.qz-levels { display:flex; gap:8px; justify-content:center; }
+.qz-level { flex:1; max-width:120px; }
+.qz-srs-list { display:flex; flex-direction:column; gap:8px; }
+.qz-srs-text { flex:1; text-align:left; }
+.qz-srs-label { font-weight:700; font-size:0.85em; }
+.qz-srs-desc { font-size:0.72em; color:var(--jd-muted); margin-top:2px; letter-spacing:0.2px; }
+.qz-cats { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; background:rgba(0,0,0,0.2); }
+.qz-start { height:52px; font-size:1.1em; width:100%; max-width:400px; margin-top:10px; }
+.qz-setup-msg { margin-top:12px; color:var(--jd-red); font-family:var(--jd-mono); font-size:0.8em; }
+.qz-boxes { width:100%; margin-top:30px; padding:20px; background:var(--jd-bg-deep); border:1px solid var(--jd-line); border-radius:12px; }
+.qz-boxes-head { font-family:var(--jd-mono); font-size:0.7em; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--jd-muted); margin-bottom:14px; text-align:left; display:flex; justify-content:space-between; }
+.qz-boxes-list { display:flex; flex-direction:column; gap:10px; }
+.qz-box-name { font-family:var(--jd-mono); font-size:0.65em; font-weight:700; min-width:85px; text-align:left; letter-spacing:0.5px; }
+.qz-box-track { flex:1; height:6px; background:rgba(255,255,255,0.03); border-radius:3px; overflow:hidden; }
+.qz-box-count { font-family:var(--jd-mono); font-size:0.7em; color:var(--jd-muted); font-weight:600; min-width:30px; text-align:right; }
+.qz-progress-row { margin-bottom:15px; display:flex; justify-content:space-between; align-items:flex-end; }
+.qz-progress-label { font-family:var(--jd-mono); font-size:0.8em; color:var(--jd-muted); }
+.qz-progress-now { color:var(--jd-text); font-size:1.2em; }
+.qz-dim { opacity:0.4; }
+.qz-score-label { font-family:var(--jd-mono); font-size:0.8em; color:var(--jd-muted); text-align:right; }
+.qz-score-now { color:var(--jd-amber); font-size:1.2em; }
+.qz-progress-track { width:100%; height:4px; background:var(--jd-line); border-radius:2px; margin-bottom:30px; overflow:hidden; }
+.qz-card { padding:40px; margin-bottom:30px; min-height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column; border-radius:16px; }
+.qz-card-kicker { font-family:var(--jd-mono); font-size:0.7em; text-transform:uppercase; color:var(--jd-amber); font-weight:700; margin-bottom:15px; letter-spacing:3px; display:flex; align-items:center; gap:10px; }
+.qz-question { font-family:var(--jd-display); font-style:italic; font-weight:400; color:var(--jd-text); line-height:1.3; text-align:center; }
+.qz-options { display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:35px; }
+.qz-option { text-align:left; padding:18px 24px; min-height:64px; height:auto; line-height:1.3; }
+.qz-option-letter { margin-right:18px; opacity:0.3; font-family:var(--jd-mono); font-size:0.8em; }
+.qz-feedback { padding:24px; text-align:left; border-radius:16px; background:var(--jd-bg-deep); }
+.qz-feedback-title { font-family:var(--jd-mono); font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:0.9em; letter-spacing:1px; }
+.qz-feedback-text { font-size:0.9em; color:var(--jd-text-soft); line-height:1.6; font-family:var(--jd-mono); }
+.qz-results { padding:50px; text-align:center; }
+.qz-trophy { font-size:5em; margin-bottom:15px; filter: drop-shadow(0 0 20px rgba(255,214,10,0.3)); }
+.qz-results-title { font-family:var(--jd-display); font-style:italic; font-weight:400; color:var(--jd-text); margin-bottom:8px; font-size:2.2em; }
+.qz-results-sub { color:var(--jd-muted); margin-bottom:25px; font-family:var(--jd-mono); text-transform:uppercase; letter-spacing:2px; font-size:0.75em; }
+.qz-final { font-size:4.5em; font-weight:400; font-family:var(--jd-display); color:var(--jd-amber); margin-bottom:25px; line-height:1; }
+.qz-final-slash { opacity:0.2; font-size:0.5em; margin:0 10px; }
+.qz-stats { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; font-family:var(--jd-mono); font-size:0.75em; color:var(--jd-muted); margin-bottom:40px; text-transform:uppercase; letter-spacing:1px; }
+.qz-c-ok { color:var(--jd-improv); }
+.qz-c-wrong { color:var(--jd-red); }
+.qz-c-new { color:var(--jd-synth); }
+.qz-c-review { color:var(--jd-drums); }
+.qz-results-actions { display:flex; gap:12px; max-width:600px; margin:0 auto; }
+.qz-close { width:auto; padding:0 30px; height:48px; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }

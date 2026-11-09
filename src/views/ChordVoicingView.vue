@@ -69,11 +69,11 @@
             <!-- Cell 2: Interval Badges -->
             <div class="jd-grid-cell cell-intervals" style="display:flex; align-items:center; justify-content:center; padding:12px; border-left: 1px solid rgba(34,197,94,0.15);">
               <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:280px;">
-                <div v-for="(intv, k) in chord.intervals" :key="intv" class="cv-int-badge" style="padding: 4px 10px; border-radius:20px; background:rgba(0,0,0,0.4); border-color:rgba(34,197,94,0.3); display:flex; align-items:center; gap:6px;">
-                  <div class="cv-int-dot" :style="{ background: INTERVAL_COLORS[intv].color, width:'20px', height:'24px', fontSize:'9px', borderRadius:'50%' }">
+                <div v-for="(intv, k) in chord.intervals" :key="intv" class="cv-int-badge">
+                  <div class="cv-int-dot" :style="{ background: INTERVAL_COLORS[intv].color }">
                     {{ toneLabels[k] }}
                   </div>
-                  <span style="font-family:var(--jd-mono); font-size:12px; font-weight:800; color:#fff;">{{ toneNames[k] }}</span>
+                  <span class="cv-int-name">{{ toneNames[k] }}</span>
                 </div>
               </div>
             </div>
@@ -214,24 +214,28 @@ onMounted(async () => { await load() })
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 12px;
   background: var(--jd-surface-alt);
-  border: 1px solid var(--jd-line);
-  padding: 4px 6px 4px 6px;
-  border-radius: 20px;
+  border: 1.5px solid var(--jd-line-strong);
+  padding: 8px 10px;
+  border-radius: 30px;
 }
 
 .cv-int-dot {
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #000;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
+.cv-int-name { font-family: var(--jd-mono); font-size: 14px; font-weight: 700; color: #fff; }
 
 .chord-diagram-grid {
   display: grid;
