@@ -41,6 +41,12 @@ function lint(touch) {
     if (cs.textOverflow !== 'ellipsis' && el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0 &&
         (cs.overflowX !== 'visible' || el.matches('button, a, select, .jd-mode, .cq-opt'))) out.push(`cut text ${name(el)}`)
   }
+  // Content taller than its control (a fixed-height button with two or three lines inside)
+  for (const { el } of boxes) {
+    // (.jd-switch: its finger-sized hit area is a larger pseudo-element on purpose)
+    if (!el.matches('button, a.jd-toolbtn, label.jd-mode') || el.matches('.jd-switch') || getComputedStyle(el).overflowY !== 'visible') continue
+    if (el.scrollHeight > el.clientHeight + 3) out.push(`spills out vertically ${name(el)} (${el.scrollHeight}>${el.clientHeight})`)
+  }
   if (touch) for (const { el, r } of boxes) {
     if (!el.matches('button, a.jd-toolbtn, label.jd-mode, select, .cs-key, .cf-tab, .cq-opt, .cv-rail-step, .ls-step') || el.matches('.jd-switch')) continue
     if (r.height < 28 || r.width < 28) out.push(`small ${name(el)} ${Math.round(r.width)}x${Math.round(r.height)}`)
@@ -73,3 +79,12 @@ test('snapshots page with saved snapshots', async ({ page }, info) => {
   await expect(page.locator('.snapshot-card')).toHaveCount(1)
   expect(await page.evaluate(lint, info.project.name !== 'desktop')).toEqual([])
 })
+
+// Timed drills of the guided path, before pressing start (the page tests above start them)
+for (const path of ['/percorso/routine/2', '/percorso/degrees/4']) {
+  test(`speed drill levels ${path}`, async ({ page }, info) => {
+    await open(page, path)
+    await expect(page.locator('.sp-level').first()).toBeVisible()
+    expect(await page.evaluate(lint, info.project.name !== 'desktop')).toEqual([])
+  })
+}

@@ -16,11 +16,11 @@
         <button
           v-for="(target, i) in levels" :key="i" type="button" role="radio"
           class="sp-level" :class="[`sp-level--${i + 1}`, { on: level === i, won: bestLevel > i }]"
-          :aria-checked="level === i" :disabled="i > bestLevel" @click="level = i"
+          :aria-checked="level === i" :disabled="i > bestLevel" :title="i > bestLevel ? t('cr.locked') : null" @click="level = i"
         >
-          <span class="sp-level-name">{{ t('cr.medal-' + (i + 1)) }}</span>
-          <span class="sp-level-target">≤ {{ fmt(target * 1000) }}</span>
-          <span v-if="i > bestLevel" class="sp-level-lock">{{ t('cr.locked') }}</span>
+          <span class="sp-level-name"><span class="sp-level-dot" aria-hidden="true"></span>{{ t('cr.medal-' + (i + 1)) }}</span>
+          <span class="sp-level-target">≤ {{ fmt(target * 1000) }}<span v-if="bestLevel > i" class="sp-level-ok" :aria-label="t('cr.passed')"> ✓</span></span>
+          <span v-if="i > bestLevel" class="sp-level-lock"><span aria-hidden="true">🔒 </span>{{ t('cr.after').replace('{m}', t('cr.medal-' + i)) }}</span>
         </button>
       </div>
       <div class="sp-start-row">
@@ -364,20 +364,27 @@ onUnmounted(() => {
 .sp-medal--2.won { background: #c9ced6; border-color: #c9ced6; }
 .sp-medal--3.won { background: var(--jd-amber); border-color: var(--jd-amber); box-shadow: 0 0 8px rgba(255, 214, 10, 0.5); }
 
-.sp-levels { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 12px; }
+/* Three equal cards; each grows with its content (the global button height is fixed) */
+.sp-levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 540px; margin: 14px 0 12px; }
 .sp-level {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 120px;
-  padding: 8px 12px; border-radius: 10px; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 4px;
+  height: auto; min-height: 66px; min-width: 0; padding: 9px 12px 10px;
+  border-radius: 10px; cursor: pointer; text-align: left; white-space: normal; text-transform: none; letter-spacing: normal;
   background: rgba(255, 255, 255, 0.03); border: 1px solid var(--jd-line-strong); color: var(--jd-text-soft);
 }
+.sp-level-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0.1em; flex-shrink: 0; }
+.sp-level--1 .sp-level-dot { background: #cd7f32; }
+.sp-level--2 .sp-level-dot { background: #c9ced6; }
+.sp-level--3 .sp-level-dot { background: var(--jd-amber); }
+.sp-level-ok { color: var(--jd-green); }
 .sp-level.on { border-color: var(--jd-amber); background: rgba(255, 214, 10, 0.08); color: var(--jd-text); }
 .sp-level:disabled { opacity: 0.4; cursor: default; }
-.sp-level-name { font-family: var(--jd-display); font-style: italic; font-size: 1.15em; }
+.sp-level-name { display: flex; align-items: center; font-family: var(--jd-display); font-style: italic; font-size: 1.15em; line-height: 1.1; }
 .sp-level--1 .sp-level-name { color: #e09a5a; }
 .sp-level--2 .sp-level-name { color: #d5d9e0; }
 .sp-level--3 .sp-level-name { color: var(--jd-amber); }
-.sp-level-target, .sp-level-lock { font-family: var(--jd-mono); font-size: 10px; letter-spacing: 1px; color: var(--jd-muted); }
-.sp-level.won .sp-level-target::after { content: ' ✓'; color: var(--jd-green); }
+.sp-level-target, .sp-level-lock { font-family: var(--jd-mono); font-size: 10px; letter-spacing: 0.5px; line-height: 1.35; color: var(--jd-muted); }
+.sp-level-lock { overflow-wrap: anywhere; }
 .sp-start-row { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
 .sp-start { color: var(--jd-amber); border-color: var(--jd-amber); }
 .sp-best { font-family: var(--jd-mono); font-size: 0.72em; color: var(--jd-muted); }

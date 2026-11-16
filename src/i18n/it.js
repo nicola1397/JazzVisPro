@@ -28,6 +28,7 @@ export default {
   'ksc.change':'Cambia','ksc.title':'Manico: tonalità, scala e vista','ksc.done':'Fatto',
   'fb.aria':'Manico: frecce per spostarsi tra corde e tasti, Invio per scegliere la nota',
   'bk.title':'Backup dei dati','bk.text':'Progressi, percorso guidato, snapshot, scale personalizzate e impostazioni restano solo in questo browser. Esportali in un file per tenerli al sicuro o per portarli su un altro dispositivo, e reimportali quando serve.','bk.export':'Esporta i dati','bk.import':'Importa un backup','bk.exported':'Backup scaricato ({n} elementi).','bk.invalid':'Questo file non è un backup di JazzViz Pro.','bk.confirm':'Sostituire tutti i dati di questo browser con il backup del {d} ({n} elementi)? Quelli attuali andranno persi.','bk.replace':'Sostituisci','bk.restored':'Backup ripristinato: ricarico l\'app.',
+  'cr.after':'dopo {m}','cr.passed':'superato',
   'explorer.help':'Clicca una swatch per evidenziare tutti gli intervalli. Clicca un tasto per attivare/disattivare la nota.',
   'label.display-mode':'Modalità Display','opt.normal':'Normale','opt.highlight':'Evidenzia','opt.custom':'Personalizzato',
   'btn.export-json':'Esporta JSON','btn.import-json':'Importa JSON',

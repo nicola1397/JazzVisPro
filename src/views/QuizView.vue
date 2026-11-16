@@ -470,7 +470,8 @@ function resetToDashboard() {
 }
 
 .srs-mode-btn {
-  display: block; /* not the global centred button flex: dot and text start at the left edge */
+  display: block;
+  height: auto;                 /* two lines: the global button height would cut them */ /* not the global centred button flex: dot and text start at the left edge */
   background: var(--jd-surface);
   border: 1px solid var(--jd-line);
   border-radius: 12px;
